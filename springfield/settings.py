@@ -35,6 +35,11 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'connect.apps.ConnectConfig',
+    'director.apps.DirectorConfig',
+    'events.apps.EventsConfig',
+    'mh.apps.MhConfig',
+    'user.apps.UserConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -77,11 +82,13 @@ WSGI_APPLICATION = 'springfield.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        "OPTIONS": {
-            "service": 'django_service',
-        },
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "springfield",
+        "USER": "django",
+        "PASSWORD": "django",
+        "HOST": "127.0.0.1",
+        "PORT": "5432",
     }
 }
 
