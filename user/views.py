@@ -1,7 +1,7 @@
 from django.http import HttpResponse, JsonResponse
-from pathlib import Path
 
-import random, json, hashlib
+import json
+import hashlib
 
 # Create your views here.
 

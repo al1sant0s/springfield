@@ -9,6 +9,7 @@ from pathlib import Path
 
 import math
 import json
+import jwt
 import base64
 import hashlib
 import uuid
@@ -58,27 +59,25 @@ def auth(request):
     # Generate new code and new access token.
     token.code = hashlib.sha1(secrets.token_bytes(32)).hexdigest()
 
-    # For the access token define a random code and lifetime.
-    lifetime = "4707"
-
     token.access_token = ":".join(
         [
             "AT0",
             "2.0",
             "3.0",
-            lifetime,
+            "720", # lifetime in minutes (possibly)
             token.code[:35],
             str(token.user.persona_id)[-5:],
             token.code[-5:].lower()
         ]
     )
-    token.refresh_token = "NotSupported"
+
+    token.refresh_token = token.access_token
     token.timestamp = time.time()
     token.save()
 
     response = {
         "code": token.code,
-        "lnglv_token": base64.b64encode(token.access_token.encode()).decode()
+        "lnglv_token": base64.b64encode(token.access_token.encode()).decode(),
     }
 
     return JsonResponse(response)
@@ -92,39 +91,51 @@ def get_token(request):
     code = request.GET.get("code")
     token = get_object_or_404(DeviceToken, code=code)
 
-    id_token = ".".join(
-        [
-            base64.b64encode('{"typ":"JWT","alg":"HS256"}'.encode("utf-8")).decode("utf-8"),
-            base64.b64encode(
-                json.dumps(
-                    { 
-                    "aud":"simpsons4-android-client",
-                    "iss":"accounts.ea.com",
-                    "iat": int(round(time.time() * 1000)),
-                    "exp": int(round(time.time() * 1000)) + 3600,
-                    "pid_id": token.user.pid_id,
-                    "user_id": token.user.user_id,
-                    "persona_id": token.user.persona_id,
-                    "pid_type":"AUTHENTICATOR_ANONYMOUS",
-                    "auth_time":0
-                    }
-                ).encode("utf-8")
-            ).decode("utf-8"),
-            base64.b64encode(
-                bytes.fromhex(
-                    "033b68a1deed4f9724690b1b69923bb719c56395128128dac76066713b1e"
-                )
-            ).decode("utf-8")
-        ]
-    )
+    id_token = {
+        "aud":"simpsons4-android-client",
+        "iss":"http://localhost:8081",
+        "iat": int(round(time.time() * 1000)),
+        "exp": int(round(time.time() * 1000)) + 86400,
+        "pid_id": token.user.pid_id,
+        "user_id": token.user.user_id,
+        "persona_id": token.user.persona_id,
+        "pid_type":"AUTHENTICATOR_ANONYMOUS",
+        "auth_time": 0
+    }
+
+    #id_token = ".".join(
+    #    [
+    #        base64.b64encode('{"typ":"JWT","alg":"HS256"}'.encode("utf-8")).decode("utf-8"),
+    #        base64.b64encode(
+    #            json.dumps(
+    #                { 
+    #                "aud":"simpsons4-android-client",
+    #                "iss":"accounts.ea.com",
+    #                "iat": int(round(time.time() * 1000)),
+    #                "exp": int(round(time.time() * 1000)) + 3600,
+    #                "pid_id": token.user.pid_id,
+    #                "user_id": token.user.user_id,
+    #                "persona_id": token.user.persona_id,
+    #                "pid_type":"AUTHENTICATOR_ANONYMOUS",
+    #                "auth_time":0
+    #                }
+    #            ).encode("utf-8")
+    #        ).decode("utf-8"),
+    #        base64.b64encode(
+    #            bytes.fromhex(
+    #                "033b68a1deed4f9724690b1b69923bb719c56395128128dac76066713b1e"
+    #            )
+    #        ).decode("utf-8")
+    #    ]
+    #)
 
     response = {
         "access_token": base64.b64encode(token.access_token.encode()).decode(),
         "token_type": "Bearer",
         "expires_in": int(token.access_token.split(":")[3]),
-        "refresh_token": token.refresh_token,
-        "refresh_token_expires_in": 4707,
-        "id_token": id_token
+        "refresh_token": token.access_token,
+        "refresh_token_expires_in": int(token.access_token.split(":")[3]),
+        "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
 
     return JsonResponse(response)
