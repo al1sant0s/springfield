@@ -1,34 +1,26 @@
-import uuid
 from django.db import models
+
+import uuid
 
 # Create your models here.
 
 class UserId(models.Model):
-    username = models.CharField(max_length=8)
+    username = models.CharField(max_length=12)
     email = models.EmailField(unique=True)
-    pid_id = models.IntegerField(unique=True)
-    user_id = models.IntegerField(unique=True)
+    pid_id = models.BigIntegerField(unique=True)
+    user_id = models.BigIntegerField(unique=True)
     persona_id = models.BigIntegerField(unique=True)
-    mayhem_id = models.IntegerField(unique=True)
-
-
-    # Generate all ids.
-    def __init__(self):
-        try:
-            last_user = UserId.objects.latest('id')
-        except UserId.DoesNotExist:
-            self.persona_id = 1001000000000
-        else:
-            self.persona_id = last_user.persona_id + 1
-
-
-        self.user_id = self.persona_id + 20000000000
-        self.pid_id = self.user_id + 200000
-        self.mayhem_id = uuid.uuid4().int
+    telemetry_id = models.BigIntegerField(unique=True)
+    mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    date_created = models.DateTimeField("User Date Created")
+    last_authenticated = models.DateTimeField("Last Auth Date")
+    is_registered = models.BooleanField(default=False)
 
 
 class DeviceToken(models.Model):
     user = models.ForeignKey(UserId, on_delete=models.CASCADE)
-    advertisingId = models.UUIDField(unique=True)
-    access_token_base64 = models.TextField()
-    refresh_token_base64 = models.TextField()
+    advertising_id = models.UUIDField(unique=True)
+    code = models.CharField(max_length=64)
+    access_token = models.TextField()
+    refresh_token = models.TextField()
+    timestamp = models.FloatField("Token Creation/Update Time")

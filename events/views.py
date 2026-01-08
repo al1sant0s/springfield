@@ -11,3 +11,13 @@ def pinEvents(request):
 def probe(request):
     return HttpResponse("")
 
+
+@csrf_exempt
+def logEvent(request):
+
+    response = {
+        "status": "ok"
+    }
+
+    return JsonResponse(response)
+

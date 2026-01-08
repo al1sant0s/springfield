@@ -6,28 +6,19 @@ from pathlib import Path
 import json
 # Create your views here.
 
-def json_view(request):
-    json_data = cache.get('my_json_data')
-    
-    if json_data is None:
-        # Read from file and cache it
-        with open('path/to/your/file.json', 'r') as f:
-            json_data = json.load(f)
-        # Cache for a long time (e.g., 1 day or more)
-        cache.set('my_json_data', json_data, timeout=60*60*24)
-    
-    return JsonResponse(json_data)
-
-def get_directions_android(request):
+def getDirectionByPackage(request, platform):
 
     json_data = cache.get("directions_android")
 
     if json_data is None:
 
-        response = Path("director/api/android/getdirectionbypackage.json")
+        response = Path("director/api/getdirectionbypackage.json")
         with open(response, "r") as f:
             json_data = json.load(f)
 
+        # Override platform.
+        json_data["clientId"] = json_data["clientId"].replace("platform", platform)
+        json_data["mdmAppKey"] = json_data["mdmAppKey"].replace("platform", platform)
 
         # Load settings and override urls.
         with open("config.json", "r") as f:

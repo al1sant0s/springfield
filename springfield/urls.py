@@ -22,6 +22,7 @@ urlpatterns = [
     path('director/', include('director.urls')),
     path('user/', include('user.urls')),
     path('connect/', include('connect.urls')),
+    path('proxy/', include('proxy.urls')),
     path('admin/', admin.site.urls),
     path('', include('events.urls')),
 ]

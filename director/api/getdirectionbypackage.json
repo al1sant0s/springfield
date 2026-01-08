@@ -1,17 +1,15 @@
 {
-  "resultCode": 0,
-  "serverApiVersion": "1.0.0",
   "DMGId": 0,
   "appUpgrade": 0,
-  "clientId": "simpsons4-android-client",
+  "clientId": "simpsons4-platform-client",
   "clientSecret": "D0fpQvaBKmAgBRCwGPvROmBf96zHnAuZmNepQht44SgyhbCdCfFgtUTdCezpWpbRI8N6oPtb38aOVg2y",
   "disabledFeatures": [],
   "facebookAPIKey": "43b9130333cc984c79d06aa0cad3a0c8",
   "facebookAppId": "185424538221919",
   "hwId": 2363,
   "mayhemGameCode": "bg_gameserver_plugin",
-  "mdmAppKey": "simpsons-4-android",
-  "packageId": "com.ea.game.simpsons4_na",
+  "mdmAppKey": "simpsons-4-platform",
+  "packageId": "com.ea.game.simpsons4_row",
   "pollIntervals": [
     {
       "key": "badgePollInterval",
@@ -19,7 +17,9 @@
     }
   ],
   "productId": 48302,
-  "sellId": 857119,
+  "resultCode": 0,
+  "sellId": 857120,
+  "serverApiVersion": "1.0.0",
   "serverData": [
     {
       "key": "nexus.portal",

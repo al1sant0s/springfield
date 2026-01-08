@@ -4,5 +4,5 @@ from . import views
 
 app_name = "director"
 urlpatterns = [
-    path("api/android/getDirectionByPackage", views.get_directions_android, name="getDirectionByPackage"),
+    path("api/<str:platform>/getDirectionByPackage", views.getDirectionByPackage, name="getDirectionByPackage"),
 ]
