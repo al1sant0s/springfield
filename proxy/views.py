@@ -1,4 +1,4 @@
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from connect.models import UserId
@@ -15,7 +15,7 @@ def geoagerequirements(request):
             "minLegalRegAge": 13,
             "minAgeWithConsent": "3",
             "minLegalContactAge": 13,
-            "country": "BR"
+            "country": "US"
         }
     }
 
@@ -40,6 +40,31 @@ def me_persona(request, persona_id):
             "dateCreated": user.date_created,
             "lastAuthenticated": user.last_authenticated,
             "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
+        }
+    }
+
+    return JsonResponse(response)
+
+
+def me_personas(request):
+
+    response = {
+        "personas": {
+            "persona": [
+                {
+                    "personaId": "1001000000001",
+                    "pidId": "1021000200001",
+                    "displayName": "user",
+                    "name": "user",
+                    "namespaceName": "cem_ea_id",
+                    "isVisible": True,
+                    "status": "ACTIVE",
+                    "statusReasonCode": "",
+                    "showPersona": "FRIENDS",
+                    "dateCreated": "2024-12-25T0:00Z",
+                    "lastAuthenticated": ""
+                }
+            ]
         }
     }
 

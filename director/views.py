@@ -1,3 +1,4 @@
+from django.db.utils import settings
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.core.cache import cache
@@ -8,27 +9,27 @@ import json
 
 def getDirectionByPackage(request, platform):
 
-    json_data = cache.get("directions_android")
+    directions_android = cache.get("directions_android")
 
-    if json_data is None:
+    if directions_android  is None:
 
-        response = Path("director/api/getdirectionbypackage.json")
+        response = Path("director/responses/getdirectionbypackage.json")
         with open(response, "r") as f:
-            json_data = json.load(f)
+            directions_android  = json.load(f)
 
         # Override platform.
-        json_data["clientId"] = json_data["clientId"].replace("platform", platform)
-        json_data["mdmAppKey"] = json_data["mdmAppKey"].replace("platform", platform)
+        directions_android["clientId"] = directions_android["clientId"].replace("platform", platform)
+        directions_android["mdmAppKey"] = directions_android["mdmAppKey"].replace("platform", platform)
 
         # Load settings and override urls.
         with open("config.json", "r") as f:
-            settings = json.load(f)
-            protocol = settings["protocol"]
-            proxy = settings["host"]
-            port = settings["port"]
-            for item in json_data["serverData"]:
+            config = json.load(f)
+            protocol = config["protocol"]
+            proxy = config["host"]
+            port = config["port"]
+            for item in directions_android["serverData"]:
                 item = item.update({"value": f"{protocol}://{proxy}:{port}"})
 
-        cache.set("directions_android", json_data, timeout = 3600)
+            cache.set("directions_android", directions_android, timeout = config["cache_minutes"])
 
-    return JsonResponse(json_data)
+    return JsonResponse(directions_android)

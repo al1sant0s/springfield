@@ -65,7 +65,7 @@ def auth(request):
             "2.0",
             "3.0",
             "720", # lifetime in minutes (possibly)
-            token.code[:35],
+            token.code[:17],
             str(token.user.persona_id)[-5:],
             token.code[-5:].lower()
         ]
@@ -143,25 +143,53 @@ def get_token(request):
 
 def tokeninfo(request):
 
-    token = get_object_or_404(DeviceToken, access_token=base64.b64decode(request.headers.get("Access-Token", "").encode()).decode())
+    # access_token comes through the URL.
+    if request.GET.get("access_token") is not None:
 
-    response = {
-            "client_id": "simpsons4-android-client",
-            "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
-            "expires_in": int(token.access_token.split(":")[3]),
-            "pid_id": str(token.user.pid_id),
-            "pid_type": "AUTHENTICATOR_ANONYMOUS",
-            "user_id": str(token.user.user_id),
-            "persona_id": token.user.persona_id,
-            "authenticators": [
-                {
-                "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
-                "authenticator_pid_id": token.user.pid_id
-                }
-            ],
-            "is_underage": False,
-            "stopProcess": "OFF",
-            "telemetry_id": str(token.user.telemetry_id)
-        }
+        token = get_object_or_404(DeviceToken, access_token=base64.b64decode(request.GET.get("access_token", "").encode()).decode())
+
+        response = {
+                "client_id": "simpsons4-android-client",
+                "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
+                "expires_in": int(token.access_token.split(":")[3]),
+                "pid_id": str(token.user.pid_id),
+                "pid_type": "AUTHENTICATOR_ANONYMOUS",
+                "user_id": str(token.user.user_id),
+                "persona_id": token.user.persona_id,
+                "authenticators": [
+                    {
+                    "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
+                    "authenticator_pid_id": token.user.pid_id
+                    }
+                ],
+                "is_underage": False,
+                "stopProcess": "OFF",
+                "telemetry_id": str(token.user.telemetry_id)
+            }
+
+    else:
+
+        #token = get_object_or_404(DeviceToken, access_token=base64.b64decode(request.headers.get("Access-Token", "").encode()).decode())
+        token = get_object_or_404(DeviceToken.objects.order_by('-id')[:1])
+
+        response = {
+                "client_id": "simpsons4-android-client",
+                "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
+                "expires_in": int(token.access_token.split(":")[3]),
+                "pid_id": str(token.user.pid_id),
+                "pid_type": "AUTHENTICATOR_ANONYMOUS",
+                "user_id": str(token.user.user_id),
+                "persona_id": token.user.persona_id,
+                "authenticators": [
+                    {
+                    "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
+                    "authenticator_pid_id": token.user.pid_id
+                    }
+                ],
+                "is_underage": False,
+                "stopProcess": "OFF",
+                "telemetry_id": str(token.user.telemetry_id)
+            }
+
 
     return JsonResponse(response)
