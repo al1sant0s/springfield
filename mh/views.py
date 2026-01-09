@@ -1,13 +1,17 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 
-from protofiles import *
+from connect.models import UserId
 from pathlib import Path
+from protofiles import *
 
 import xml.etree.ElementTree as ET
 import json
 import time
+import secrets
+import uuid
 
 
 
@@ -36,9 +40,10 @@ def protoClientConfig(request):
 
         clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()
 
-        for entry in json_data:
-            for keys, values in entry.items():
-                setattr(clientconfig_response.items.add(), keys, values)
+        for obj in json_data:
+            entry = clientconfig_response.items.add()
+            for key, value in obj.items():
+                setattr(entry, key, value)
 
         clientconfig_response = clientconfig_response.SerializeToString()
 
@@ -61,9 +66,10 @@ def gameplayconfig(request):
 
         gameplayconfig_response = GameplayConfigData_pb2.GameplayConfigResponse()
 
-        for entry in json_data:
-            for keys, values in entry.items():
-                setattr(gameplayconfig_response.item.add(), keys, values)
+        for obj in json_data:
+            entry = gameplayconfig_response.item.add()
+            for key, value in obj.items():
+                setattr(entry, key, value)
 
         gameplayconfig_response = gameplayconfig_response.SerializeToString()
 
@@ -75,5 +81,65 @@ def gameplayconfig(request):
     return HttpResponse(gameplayconfig_response, content_type = "application/x-protobuf")
 
 
+@csrf_exempt
+def users(request):
+
+    application_user_id = request.GET.get("applicationUserId")
+
+    if application_user_id is None:
+        return HttpResponseBadRequest("Missing required attribute: applicationUserId")
+
+    user = get_object_or_404(UserId, user_id = application_user_id)
+
+    response = {
+        "user": {
+            "userId": str(user.mayhem_id.int),
+            "telemetryId": str(user.telemetry_id)
+        },
+        "token": {
+            "sessionKey": secrets.token_urlsafe(32)
+        }
+    }
+
+    user_response = AuthData_pb2.UsersResponseMessage()
+    for key, value in response.items():
+        for subkey, subvalue in value.items():
+            setattr(getattr(user_response, key), subkey, subvalue)
+
+    user_response = user_response.SerializeToString()
+
+    return HttpResponse(user_response, content_type = "application/x-protobuf")
 
 
+@csrf_exempt
+def friendData(request):
+
+    friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
+
+    # Process friends.
+
+    friend_data_response = friend_data_response.SerializeToString()
+
+    return HttpResponse(friend_data_response, content_type = "application/x-protobuf")
+
+
+@csrf_exempt
+def protoWholeLandToken(request, mayhem_id):
+
+    # Generate land token and save land token to user.
+
+    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
+
+    response = {
+        "token": str(user.land_token),
+        "conflict": False,
+    }
+
+    proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
+    for key, value in response.items():
+        setattr(proto_whole_land_token_response, key, value)
+
+
+    proto_whole_land_token_response = proto_whole_land_token_response.SerializeToString()
+
+    return HttpResponse(proto_whole_land_token_response, content_type = "application/x-protobuf")

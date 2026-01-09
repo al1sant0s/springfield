@@ -1,5 +1,4 @@
-from os import access
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -21,22 +20,26 @@ import secrets
 
 def auth(request):
 
+    sig = request.GET.get("sig")
+
+    if sig is None:
+        return HttpResponseBadRequest("Missing required attribute: sig")
+
     # Look up for advertisingId in database.
-    jsondata = request.GET.get("sig").split(".")[0]
+    jsondata = sig.split(".")[0]
     jsondata += "=" * (math.ceil(len(jsondata) / 64) * 64 - len(jsondata))
     jsondata = json.loads(base64.b64decode(jsondata))
     advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, jsondata["advertisingId"])
 
     # Grab existing DeviceToken. If it does not exist, make one.
-    token = DeviceToken.objects.filter(advertising_id=advertising_id)
+    token, created = DeviceToken.objects.get_or_create(
+        advertising_id=advertising_id,
+        defaults={'advertising_id': advertising_id}
+    )
 
-    if token.exists() is True:
-        token = token.latest("id")
+    if created:
 
-    else:
         # Each new token creates a new user.
-        token = DeviceToken(advertising_id = advertising_id)
-
         try:
             last_user = UserId.objects.latest("id")
         except UserId.DoesNotExist:
@@ -87,8 +90,14 @@ def auth(request):
 @csrf_exempt
 def get_token(request):
 
+
     # Retrieve token code from url.
     code = request.GET.get("code")
+
+    if code is None:
+        return HttpResponseBadRequest("Missing required attribute: code")
+
+
     token = get_object_or_404(DeviceToken, code=code)
 
     id_token = {
@@ -167,28 +176,29 @@ def tokeninfo(request):
                 "telemetry_id": str(token.user.telemetry_id)
             }
 
+    # Token comes through header but we won't accept it as it contains underscores. Give fake response instead.
     else:
 
         #token = get_object_or_404(DeviceToken, access_token=base64.b64decode(request.headers.get("Access-Token", "").encode()).decode())
-        token = get_object_or_404(DeviceToken.objects.order_by('-id')[:1])
+        #token = get_object_or_404(DeviceToken.objects.order_by('-id')[:1])
 
         response = {
                 "client_id": "simpsons4-android-client",
                 "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
-                "expires_in": int(token.access_token.split(":")[3]),
-                "pid_id": str(token.user.pid_id),
+                "expires_in": 720,
+                "pid_id": "1021000200000",
                 "pid_type": "AUTHENTICATOR_ANONYMOUS",
-                "user_id": str(token.user.user_id),
-                "persona_id": token.user.persona_id,
+                "user_id": "1021000000000",
+                "persona_id": 1001000000000,
                 "authenticators": [
                     {
                     "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
-                    "authenticator_pid_id": token.user.pid_id
+                    "authenticator_pid_id": 1021000200000
                     }
                 ],
                 "is_underage": False,
                 "stopProcess": "OFF",
-                "telemetry_id": str(token.user.telemetry_id)
+                "telemetry_id": "1041000200000"
             }
 
 

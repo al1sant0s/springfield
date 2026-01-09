@@ -15,6 +15,7 @@ class UserId(models.Model):
     date_created = models.DateTimeField("User Date Created")
     last_authenticated = models.DateTimeField("Last Auth Date")
     is_registered = models.BooleanField(default=False)
+    land_token = models.UUIDField(default=uuid.uuid4, unique=True)
 
 
 class DeviceToken(models.Model):

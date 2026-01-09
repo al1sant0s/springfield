@@ -30,7 +30,7 @@ def getAnonUid(request, platform):
 def validateDeviceID(request, platform):
 
     response = {
-        "deviceId": request.GET.get("eadeviceid"),
+        "deviceId": request.GET.get("eadeviceid", "NO-EADEVICEID-PROVIDED"),
         "resultCode": 0,
         "serverApiVersion": "1.0.0"
     }
