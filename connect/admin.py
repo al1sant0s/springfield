@@ -6,4 +6,3 @@ from .models import UserId, DeviceToken
 
 admin.site.register(UserId)
 admin.site.register(DeviceToken)
-

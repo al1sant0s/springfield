@@ -259,7 +259,9 @@ def protoland(request, mayhem_id):
             with open(town_file, "wb") as f:
                 f.write(protoland_response)
 
-            return HttpResponse(protoland_response, content_type = "application/x-protobuf")
+
+            root = ET.Element("WholeLandUpdateResponse")
+            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
     else:
         return HttpResponseBadRequest(f"Method '{request.method}' not supported!")
@@ -318,8 +320,9 @@ def extraLandUpdate(request, mayhem_id):
             # There's also other stuff here like "reason" but we don't care about that.
             # Only update the donuts balance.
             processed_currency_delta = list()
+            donuts_amount = 0
             for currency_delta in extraland_update_request.currencyDelta:
-                user.donuts_balance += int(currency_delta.amount)
+                donuts_amount += int(currency_delta.amount)
                 processed_currency_delta.append(
                     LandData_pb2.ExtraLandMessage.CurrencyDelta(
                         id=currency_delta.id,
@@ -329,8 +332,8 @@ def extraLandUpdate(request, mayhem_id):
                 )
 
             # Update donuts balance in database.
+            user.donuts_balance = F("donuts_balance") + donuts_amount
             user.save()
-
 
             # Note: you need to use extend() method if you define the response first and edit a repeated field later.
             # extraland_update_response = LandData_pb2.ExtraLandResponse()
@@ -352,4 +355,5 @@ def event_user(request, mayhem_id):
 
 
 def event_fakefriend(request):
-    return JsonResponse({"status": "ok"})
+    fakefriend_response = LandData_pb2.LandMessage.FakeFriendData()
+    return HttpResponse(fakefriend_response.SerializeToString(), content_type = "application/x-protobuf")

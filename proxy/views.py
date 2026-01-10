@@ -1,10 +1,15 @@
-from django.http import Http404, HttpResponse, JsonResponse
+from django.utils import timezone
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 
-from connect.models import UserId
+from connect.models import UserId, DeviceToken
+from .models import ProgRegCode
 
 import base64
 import hashlib
+import json
+import datetime
 
 # Create your views here.
 
@@ -97,3 +102,38 @@ def user_id_personas(request, user_id):
     response = {"error":"not_found","error_description":"no mediator found"}
 
     return JsonResponse(response)
+
+
+@csrf_exempt
+def progreg_code(request):
+
+    try:
+        json_data = json.loads(request.body)
+
+    except json.JSONDecodeError as e:
+        return HttpResponseBadRequest(f"Invalid JSON data: {e}")
+
+    else:
+
+        if json_data["codeType"].lower() == "email":
+            email = json_data["email"]
+
+            # Get token from header.
+            authorization = request.headers.get("Authorization")
+
+            if authorization is None:
+                return HttpResponseBadRequest("Missing Authorization header")
+
+            token = get_object_or_404(DeviceToken, access_token = authorization.split(" ")[1])
+
+            # Search for current active code in database.
+            # If it cannot find one, create a new one.
+            try:
+                ProgRegCode.objects.get(email=email)
+            except ProgRegCode.DoesNotExist:
+                ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
+
+            return HttpResponse("")
+
+        else:
+            return HttpResponseBadRequest("Only email login is supported.")
