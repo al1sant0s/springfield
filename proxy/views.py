@@ -22,7 +22,7 @@ def geoagerequirements(request):
     return JsonResponse(response)
 
 
-def me_persona(request, persona_id):
+def me_personas(request, persona_id):
 
     # Fake response for fake persona_id.
     if persona_id == 1001000000000:
@@ -67,7 +67,12 @@ def me_persona(request, persona_id):
     return JsonResponse(response)
 
 
-def me_personas(request):
+def personas(request):
+
+    return JsonResponse({"error":"not_found","error_description":"no mediator found"})
+
+
+def user_id_personas(request, user_id):
 
     response = {
         "personas": {

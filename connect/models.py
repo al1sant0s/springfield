@@ -1,6 +1,7 @@
 from django.db import models
 
 import uuid
+import secrets
 
 # Create your models here.
 
@@ -13,6 +14,7 @@ class UserId(models.Model):
     telemetry_id = models.BigIntegerField(unique=True)
     mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
     date_created = models.DateTimeField("User Date Created")
+    session_key = models.CharField(max_length=44, unique=True, default=secrets.token_urlsafe(32))
     last_authenticated = models.DateTimeField("Last Auth Date")
     is_registered = models.BooleanField(default=False)
     land_token = models.UUIDField(default=uuid.uuid4, unique=True)
@@ -24,4 +26,5 @@ class DeviceToken(models.Model):
     code = models.CharField(max_length=64)
     access_token = models.TextField()
     refresh_token = models.TextField()
-    timestamp = models.FloatField("Token Creation/Update Time")
+    session_key = models.CharField(max_length=44, unique=True, default=secrets.token_urlsafe(32))
+    timestamp = models.DateTimeField("Token Creation/Update Time")

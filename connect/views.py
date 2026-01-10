@@ -31,13 +31,16 @@ def auth(request):
     jsondata = json.loads(base64.b64decode(jsondata))
     advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, jsondata["advertisingId"])
 
-    # Grab existing DeviceToken. If it does not exist, make one.
-    token, created = DeviceToken.objects.get_or_create(
-        advertising_id=advertising_id,
-        defaults={'advertising_id': advertising_id}
-    )
+    # Give everything the exact same time.
+    timestamp = timezone.now()
 
-    if created:
+    # Grab existing DeviceToken. If it does not exist, make one.
+    try:
+        token = DeviceToken.objects.get(advertising_id=advertising_id)
+
+    except DeviceToken.DoesNotExist:
+
+        token = DeviceToken(advertising_id=advertising_id)
 
         # Each new token creates a new user.
         try:
@@ -47,16 +50,30 @@ def auth(request):
         else:
             token.user = UserId(persona_id = last_user.persona_id + 1)
 
+        # Set each entry in the database accordingly except mayhem_id and land_token which
+        # Django will produce values by itself with the default argument specified in models.
         token.user.user_id = token.user.persona_id + 20000000000
         token.user.pid_id = token.user.user_id + 200000
         token.user.telemetry_id = token.user.pid_id + 20000000000
-        token.user.mayhem_id = uuid.uuid4().int
         token.user.username = f"anon{str(token.user.persona_id)[-5:]}"
         token.user.email = f"user_{str(token.user.mayhem_id)}@tsto.app"
-        token.user.date_created = timezone.now()
+        token.user.date_created = timestamp
+
+    else:
+        # Difference between UserID and DeviceToken session_keys means user is logging in another device.
+        # Do something about it.
+        if token.user.session_key != token.session_key:
+            pass
 
 
-    token.user.last_authenticated = timezone.now()
+
+    # Update both user and token session key.
+    token.user.session_key = secrets.token_urlsafe(32)
+    token.session_key = secrets.token_urlsafe(32)
+
+    # Finally update timestamps in both UserID and DeviceToken.
+    token.user.last_authenticated = timestamp
+    token.timestamp = timestamp
     token.user.save()
 
     # Generate new code and new access token.
@@ -74,8 +91,7 @@ def auth(request):
         ]
     )
 
-    token.refresh_token = token.access_token
-    token.timestamp = time.time()
+    token.refresh_token = token.access_token.replace("AT0", "RT0")
     token.save()
 
     response = {
@@ -102,7 +118,7 @@ def get_token(request):
 
     id_token = {
         "aud":"simpsons4-android-client",
-        "iss":"http://localhost:8081",
+        "iss":"accounts.ea.com",
         "iat": int(round(time.time() * 1000)),
         "exp": int(round(time.time() * 1000)) + 86400,
         "pid_id": token.user.pid_id,
@@ -112,38 +128,12 @@ def get_token(request):
         "auth_time": 0
     }
 
-    #id_token = ".".join(
-    #    [
-    #        base64.b64encode('{"typ":"JWT","alg":"HS256"}'.encode("utf-8")).decode("utf-8"),
-    #        base64.b64encode(
-    #            json.dumps(
-    #                { 
-    #                "aud":"simpsons4-android-client",
-    #                "iss":"accounts.ea.com",
-    #                "iat": int(round(time.time() * 1000)),
-    #                "exp": int(round(time.time() * 1000)) + 3600,
-    #                "pid_id": token.user.pid_id,
-    #                "user_id": token.user.user_id,
-    #                "persona_id": token.user.persona_id,
-    #                "pid_type":"AUTHENTICATOR_ANONYMOUS",
-    #                "auth_time":0
-    #                }
-    #            ).encode("utf-8")
-    #        ).decode("utf-8"),
-    #        base64.b64encode(
-    #            bytes.fromhex(
-    #                "033b68a1deed4f9724690b1b69923bb719c56395128128dac76066713b1e"
-    #            )
-    #        ).decode("utf-8")
-    #    ]
-    #)
-
     response = {
         "access_token": base64.b64encode(token.access_token.encode()).decode(),
         "token_type": "Bearer",
         "expires_in": int(token.access_token.split(":")[3]),
-        "refresh_token": token.access_token,
-        "refresh_token_expires_in": int(token.access_token.split(":")[3]),
+        "refresh_token": base64.b64encode(token.refresh_token.encode()).decode() + "." + token.code[:27],
+        "refresh_token_expires_in": int(token.refresh_token.split(":")[3]),
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
 

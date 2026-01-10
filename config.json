@@ -2,5 +2,6 @@
   "protocol": "http",
   "host": "192.168.1.115",
   "port": "8081",
-  "cache_minutes": 3600
+  "cache_minutes": 3600,
+  "towns_dir": "towns"
 }
