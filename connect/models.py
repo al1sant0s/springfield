@@ -1,11 +1,12 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser
 
 import uuid
 import secrets
 
 # Create your models here.
 
-class UserId(models.Model):
+class UserId(AbstractBaseUser):
     username = models.CharField(max_length=12)
     email = models.EmailField(unique=True)
     pid_id = models.BigIntegerField(unique=True)
@@ -18,6 +19,7 @@ class UserId(models.Model):
     last_authenticated = models.DateTimeField("Last Auth Date")
     is_registered = models.BooleanField(default=False)
     land_token = models.UUIDField(default=uuid.uuid4, unique=True)
+    donuts_balance = models.PositiveIntegerField(default=50)
 
 
 class DeviceToken(models.Model):

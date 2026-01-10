@@ -2,6 +2,7 @@ from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpRespo
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
+from django.db.models import F
 
 from connect.models import UserId
 from pathlib import Path
@@ -9,6 +10,7 @@ from protofiles import *
 
 import xml.etree.ElementTree as ET
 import json
+import gzip
 import time
 import secrets
 import uuid
@@ -176,10 +178,9 @@ def protoland(request, mayhem_id):
     towns_dir = cache.get("towns_dir")
     if towns_dir is None:
         with open("config.json", "r") as f:
-            config = json_load(f)
+            config = json.load(f)
             towns_dir = Path(config["towns_dir"])
             cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
-
 
         if not towns_dir.exists():
             towns_dir.mkdir()
@@ -198,6 +199,12 @@ def protoland(request, mayhem_id):
         protoland_response.friendData.rating = 0
         protoland_response.friendData.boardwalkTileCount = 0
         protoland_response = protoland_response.SerializeToString()
+
+        # Save town.
+        with open(town_file, "wb") as f:
+            f.write(protoland_response)
+
+        return HttpResponse(protoland_response, content_type = "application/x-protobuf")
 
     # Load town.
     if request.method == "GET":
@@ -223,32 +230,52 @@ def protoland(request, mayhem_id):
                     protoland_response.friendData.name = user.username
                     protoland_response.friendData.rating = 0
                     protoland_response.friendData.boardwalkTileCount = 0
-                    protoland_response = protoland_response.SerializeToString()
+                    return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
 
-            # Override mayhem id.
-            else:
-                protoland_response.id = mayhem_id
+        # Override Mayhem id.
+        if protoland_response.HasField("id") and protoland_response.id != str(mayhem_id):
+            protoland_response.id = str(mayhem_id)
+
+            with open(town_file, "wb") as f:
+                f.write(protoland_response.SerializeToString())
+
+        return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
 
     elif request.method == "POST":
-        protoland_response.ParseFromString(request.body)
+
+        # Try to decompress.
+        try:
+            decompressed_data = gzip.decompress(request.body)
+
+        except gzip.BadGzipFile:
+            decompressed_data = request.body
+
+        finally:
+
+            # Update town.
+            protoland_response.ParseFromString(decompressed_data) # type: ignore
+            protoland_response = protoland_response.SerializeToString()
+
+            with open(town_file, "wb") as f:
+                f.write(protoland_response)
+
+            return HttpResponse(protoland_response, content_type = "application/x-protobuf")
 
     else:
         return HttpResponseBadRequest(f"Method '{request.method}' not supported!")
 
-    # Save town.
-    with open(town_file, "wb") as f:
-        f.write(protoland_response)
 
-    return HttpResponse(protoland_response, content_type = "application/x-protobuf")
 
 def protocurrency(request, mayhem_id):
+
+    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
 
     # Initial currency setup.
     protocurrency_response = PurchaseData_pb2.CurrencyData()
     protocurrency_response.id = str(mayhem_id)
     protocurrency_response.vcTotalPurchased = 0
     protocurrency_response.vcTotalAwarded = 0
-    protocurrency_response.vcBalance = 1234567                    # number of donuts
+    protocurrency_response.vcBalance = user.donuts_balance                    # number of donuts
     protocurrency_response.createdAt = int(round(time.time() * 1000))
     protocurrency_response.updatedAt = int(round(time.time() * 1000))
     protocurrency_response = protocurrency_response.SerializeToString()
@@ -271,9 +298,50 @@ def extraLandUpdate(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
 
-    extraland_update_response = LandData_pb2.ExtraLandResponse()
-    extraland_update_response = extraland_update_response.SerializeToString()
-    return HttpResponse(extraland_update_response, content_type = "application/x-protobuf")
+    # Update donuts balance.
+    if request.method == "POST":
+
+        # Try to decompress.
+        try:
+            decompressed_data = gzip.decompress(request.body)
+
+        except gzip.BadGzipFile:
+            decompressed_data = request.body
+
+        finally:
+
+            # Get list of events to update donuts.
+            # Each event is a list with an amount to increase/decrease donuts balance.
+            extraland_update_request = LandData_pb2.ExtraLandMessage()
+            extraland_update_request.ParseFromString(decompressed_data) # type: ignore
+
+            # There's also other stuff here like "reason" but we don't care about that.
+            # Only update the donuts balance.
+            processed_currency_delta = list()
+            for currency_delta in extraland_update_request.currencyDelta:
+                user.donuts_balance += int(currency_delta.amount)
+                processed_currency_delta.append(
+                    LandData_pb2.ExtraLandMessage.CurrencyDelta(
+                        id=currency_delta.id,
+                        reason=currency_delta.reason,
+                        amount=currency_delta.amount
+                    )
+                )
+
+            # Update donuts balance in database.
+            user.save()
+
+
+            # Note: you need to use extend() method if you define the response first and edit a repeated field later.
+            # extraland_update_response = LandData_pb2.ExtraLandResponse()
+            # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
+            extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
+            return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
+
+
+    else:
+        return HttpResponseBadRequest(f"Method '{request.method}' not supported!")
+
 
 
 def event_user(request, mayhem_id):

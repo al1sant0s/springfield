@@ -21,4 +21,5 @@ urlpatterns = [
     path("games/bg_gameserver_plugin/extraLandUpdate/<int:mayhem_id>/protoland/", views.extraLandUpdate, name="extraLandUpdate"),
     path("games/bg_gameserver_plugin/event/<int:mayhem_id>/protoland/", views.event_user, name="event_user"),
     path("games/bg_gameserver_plugin/event/fakefriend/protoland/", views.event_fakefriend, name="event_fakefriend"),
+    path("games/bg_gameserver_plugin/trackingmetrics/", views.trackinglog, name="trackingmetrics"),
 ]
