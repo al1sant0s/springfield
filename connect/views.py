@@ -24,17 +24,10 @@ import secrets
 
 def auth(request):
 
-    # Normal user login. We won't bother with headers with underscores so just give a fake response to pass.
-    if request.GET.get("authenticator_login_type") == "mobile_ea_account" and request.GET.get("response_type") == "code":
-        return JsonResponse({"code": hashlib.sha1(secrets.token_bytes(32)).hexdigest()})
-
     # Anonymous login or normal user registration.
-    else:
-
-        # Try to get sig from URL.
-        sig = request.GET.get("sig")
-        if sig is None:
-            return HttpResponseBadRequest("Missing required attribute: sig")
+    # Try to get sig from URL.
+    sig = request.GET.get("sig")
+    if sig is not None:
 
         # Read sig for further authentication.
         jsondata = sig.split(".")[0]
@@ -42,7 +35,7 @@ def auth(request):
         jsondata = json.loads(base64.b64decode(jsondata))
 
         # Anonymous login.
-        if request.GET.get("response_type") == "code":
+        if request.GET.get("authenticator_login_type") == "mobile_anonymous":
 
             # Look up for advertisingId in database.
             advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, jsondata["advertisingId"])
@@ -121,7 +114,7 @@ def auth(request):
 
 
         # Normal user registration. No need to refresh the token and the user, just reassociate them with each other.
-        elif request.GET.get("response_type") == "code lnglv_token":
+        else:
 
             auth_code = get_object_or_404(ProgRegCode, email=str(jsondata["email"]), code=int(str(jsondata["cred"])))
 
@@ -150,23 +143,16 @@ def auth(request):
                 auth_code.delete()
                 return JsonResponse(response)
 
-
-    return HttpResponseBadRequest(f"The server doesn't know what to do with this: {request.get_full_path()}")
-
+    else:
+        return JsonResponse({"code": hashlib.sha1(secrets.token_bytes(32)).hexdigest()})
 
 
 @csrf_exempt
 def get_token(request):
 
-    # Login: either as anonymous or normal user.
-    if request.GET.get("grant_type") == "authorization_code" or request.GET.get("grant_type") == "add_authenticator":
-
-        # Retrieve token code from url.
-        code = request.GET.get("code")
-
-        if code is None:
-            return HttpResponseBadRequest("Missing required attribute: code")
-
+    # Retrieve token code from url.
+    code = request.GET.get("code")
+    if code is not None:
 
         token = get_object_or_404(DeviceToken, code=code)
         pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
@@ -194,8 +180,7 @@ def get_token(request):
 
         return JsonResponse(response)
 
-    # Logout from registered account.
-    elif request.GET.get("grant_type") == "remove_authenticator":
+    else:
 
         id_token = {
             "aud":"simpsons4-android-client",
@@ -220,71 +205,51 @@ def get_token(request):
 
         return JsonResponse(response)
 
-    else:
-        return HttpResponseBadRequest(f"The server doesn't know what to do with this: {request.get_full_path()}")
-
 
 def tokeninfo(request):
 
-    pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
+
+    # Template response.
+    response = {
+        "client_id": "simpsons4-android-client",
+        "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
+        "expires_in": 39509,
+        "pid_id": "1021000200000",
+        "pid_type": "AUTHENTICATOR_ANONYMOUS",
+        "user_id": "1021000000000",
+        "persona_id": 1001000000000,
+        "authenticators": [
+            {
+            "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
+            "authenticator_pid_id": 1021000200000
+            },
+        ],
+        "is_underage": False,
+        "stopProcess": "OFF",
+        "telemetry_id": "1041000200000"
+    }
 
     # access_token comes through the URL.
     if request.GET.get("access_token", "") != "":
 
         token = get_object_or_404(DeviceToken, access_token=request.GET.get("access_token", ""))
 
-        response = {
-                "client_id": "simpsons4-android-client",
-                "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
-                "expires_in": 720,
+        response.update(
+            {
                 "pid_id": str(token.user.pid_id),
-                "pid_type": pid_type[token.user.is_registered],
                 "user_id": str(token.user.user_id),
                 "persona_id": token.user.persona_id,
-                "authenticators": [
-                    {
-                    "authenticator_type": pid_type[token.user.is_registered],
-                    "authenticator_pid_id": token.user.pid_id
-                    }
-                ],
-                "is_underage": False,
-                "stopProcess": "OFF",
                 "telemetry_id": str(token.user.telemetry_id),
             }
+        )
 
-    # Token comes through header but we won't accept it as it contains underscores. Give fake response instead.
-    elif "x-check-underage" in request.headers.keys():
-
-        response = {
-            "client_id": "simpsons4-android-client",
-            "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
-            "expires_in": 39509,
-            "pid_id": "1021000200000",
-            "pid_type": "AUTHENTICATOR_ANONYMOUS",
-            "user_id": "1021000000000",
-            "persona_id": 1001000000000,
-            "authenticators": [
+        # Include second authenticator for registered users.
+        if token.user.is_registered:
+            response["authenticators"].append(
                 {
-                "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
-                "authenticator_pid_id": 1021000200000
-                },
-            ],
-            "is_underage": False,
-            "stopProcess": "OFF",
-            "telemetry_id": "1041000200000"
-        }
-
-    else:
-
-        response = {
-            "client_id": "long_live_token",
-            "scope": "basic.identity basic.persona",
-            "expires_in": 4084253,
-            "pid_id": "1021000200000",
-            "pid_type": "NUCLEUS",
-            "user_id": "1021000000000",
-            "persona_id": None
-        }
-
+                    "authenticator_type": "NUCLEUS",
+                    "authenticator_pid_id": token.user.pid_id
+                }
+            )
 
     return JsonResponse(response)

@@ -75,28 +75,18 @@ def users(request):
         }
 
     else:
+        # Get a proper response.
+        user = get_object_or_404(UserId, user_id = application_user_id)
+
         response = {
             "user": {
-                "userId": "42737543889826165017982902041168565847",
-                "telemetryId": "42737543889826165017982902041168565847"
+                "userId": str(user.mayhem_id.int),
+                "telemetryId": str(user.telemetry_id)
             },
             "token": {
-                "sessionKey": "fakesessionkey"
+                "sessionKey": user.session_key
             }
         }
-
-        ## Get a proper response.
-        #user = get_object_or_404(UserId, user_id = application_user_id)
-
-        #response = {
-        #    "user": {
-        #        "userId": str(user.mayhem_id.int),
-        #        "telemetryId": str(user.telemetry_id)
-        #    },
-        #    "token": {
-        #        "sessionKey": user.session_key
-        #    }
-        #}
 
     user_response = AuthData_pb2.UsersResponseMessage()
     for key, value in response.items():
