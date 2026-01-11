@@ -30,23 +30,56 @@ def geoagerequirements(request):
 def me_personas(request, persona_id):
 
     # Fake response for fake persona_id.
-    if persona_id == 1001000000000:
-        response = {
-            "persona": {
-                "personaId": 1001000000000,
-                "pidId": 1021000000000,
-                "displayName": "fakeuser",
-                "name": "fakeuser",
-                "namespaceName": "cem_ea_id",
-                "isVisible": True,
-                "status": "ACTIVE",
-                "statusReasonCode": "",
-                "showPersona": "EVERYONE",
-                "dateCreated": "2024-10-06T11:3Z",
-                "lastAuthenticated": "2024-10-08T11:35Z",
-                "anonymousId": "1"
-            }
+    response = {
+        "persona": {
+            "personaId": 1001000000000,
+            "pidId": 1021000000000,
+            "displayName": "fakeuser",
+            "name": "fakeuser",
+            "namespaceName": "gsp-redcrow-simpsons4",
+            "isVisible": True,
+            "status": "ACTIVE",
+            "statusReasonCode": "",
+            "showPersona": "EVERYONE",
+            "dateCreated": "2024-10-06T11:3Z",
+            "lastAuthenticated": "2024-10-08T11:35Z",
+            "anonymousId": "1"
         }
+    }
+
+    if persona_id == 1001000000000:
+
+        # Fall back for authorization.
+        if "Bearer" in request.headers.get("Authorization"):
+
+            try:
+                token = DeviceToken.objects.get(access_token=request.headers.get("Authorization", "").split(" ")[-1])
+
+            except DeviceToken.DoesNotExist:
+                return JsonResponse(response)
+
+            else:
+                response = {
+                    "persona": {
+                        "personaId": token.user.persona_id,
+                        "pidId": token.user.pid_id,
+                        "displayName": token.user.username,
+                        "name": token.user.username.lower(),
+                        "namespaceName": "gsp-redcrow-simpsons4",
+                        "isVisible": True,
+                        "status": "ACTIVE",
+                        "statusReasonCode": "",
+                        "showPersona": "EVERYONE",
+                        "dateCreated": token.user.date_created,
+                        "lastAuthenticated": token.user.last_authenticated,
+                        "anonymousId": base64.b64encode(hashlib.md5(token.user.username.encode("utf-8")).digest()).decode("utf-8")
+                    }
+                }
+
+                return JsonResponse(response)
+
+        else:
+            return JsonResponse(response)
 
     else:
 

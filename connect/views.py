@@ -8,7 +8,6 @@ from django.views.decorators.csrf import csrf_exempt
 from proxy.models import ProgRegCode
 
 from .models import UserId, DeviceToken
-from pathlib import Path
 
 import math
 import json
