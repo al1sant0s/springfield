@@ -33,8 +33,8 @@ def me_personas(request, persona_id):
     # Fake response for fake persona_id.
     response = {
         "persona": {
-            "personaId": 1001000000000,
-            "pidId": 1021000000000,
+            "personaId": persona_id,
+            "pidId": persona_id + 20000200000,
             "displayName": "user",
             "name": "user",
             "namespaceName": "gsp-redcrow-simpsons4",
@@ -62,18 +62,17 @@ def me_personas(request, persona_id):
         else:
             user = token.user
 
-    finally:
-        response["persona"].update(
-            {
-                "personaId": user.persona_id,
-                "pidId": user.pid_id,
-                "displayName": user.username,
-                "name": user.username.lower(),
-                "dateCreated": user.date_created,
-                "lastAuthenticated": user.last_authenticated,
-                "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
-            }
-        )
+    response["persona"].update(
+        {
+            "personaId": user.persona_id,
+            "pidId": user.pid_id,
+            "displayName": user.username,
+            "name": user.username.lower(),
+            "dateCreated": user.date_created.strftime('%Y-%m-%dT%H:%MZ'),
+            "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
+            "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
+        }
+    )
 
     return JsonResponse(response)
 
@@ -104,8 +103,8 @@ def user_id_personas(request, user_id):
                         "status": "ACTIVE",
                         "statusReasonCode": "",
                         "showPersona": "FRIENDS",
-                        "dateCreated": str(user.date_created),
-                        "lastAuthenticated": str(user.last_authenticated),
+                        "dateCreated": user.date_created.strftime('%Y-%m-%dT%H:%MZ'),
+                        "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
                     }
                 ]
             }
@@ -134,7 +133,7 @@ def progreg_code(request):
             if authorization is None:
                 return HttpResponseBadRequest("Missing Authorization header")
 
-            token = get_object_or_404(DeviceToken, access_token = authorization.split(" ")[1])
+            token = get_object_or_404(DeviceToken, access_token = authorization.split(" ")[-1])
 
             # Search for current active code in database.
             # If it cannot find one, create a new one.
@@ -186,6 +185,7 @@ def links(request):
 
     else:
 
+        print(authorization.split(" ")[-1])
         token = get_object_or_404(DeviceToken, access_token = authorization.split(" ")[-1])
 
         response = {

@@ -70,7 +70,7 @@ def users(request):
                 "telemetryId": "123456789"
             },
             "token": {
-                "sessionKey": "fakesessionkey"
+                "sessionKey": "123456789"
             }
         }
 
@@ -204,6 +204,7 @@ def protoland(request, mayhem_id):
 
     protoland_response = LandData_pb2.LandMessage()
     town_file = Path(towns_dir, f"{mayhem_id}.pb")
+    town_file = Path(towns_dir, "mytown.pb")
 
     # Create a new fresh town if one does not exist.
     if not town_file.exists():

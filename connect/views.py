@@ -41,6 +41,8 @@ def auth(request):
             advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, jsondata["advertisingId"])
 
             # Give everything the exact same time.
+
+            # Current time in UTC
             timestamp = timezone.now()
 
             # Grab existing DeviceToken. If it does not exist, make one.
@@ -208,25 +210,28 @@ def get_token(request):
 
 def tokeninfo(request):
 
-
     # Template response.
     response = {
-        "client_id": "simpsons4-android-client",
+        "client_id": "long_lived_token",
         "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
         "expires_in": 39509,
-        "pid_id": "1021000200000",
-        "pid_type": "AUTHENTICATOR_ANONYMOUS",
-        "user_id": "1021000000000",
+        "pid_id": "1021000200002",
+        "pid_type": "NUCLEUS",
+        "user_id": "1021000000002",
         "persona_id": 1001000000000,
         "authenticators": [
             {
             "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
             "authenticator_pid_id": 1021000200000
             },
+            {
+            "authenticator_type": "",
+            "authenticator_pid_id": 1021000200000
+            },
         ],
         "is_underage": False,
         "stopProcess": "OFF",
-        "telemetry_id": "1041000200000"
+        "telemetry_id": "1041000200002"
     }
 
     # access_token comes through the URL.
@@ -234,6 +239,7 @@ def tokeninfo(request):
 
         token = get_object_or_404(DeviceToken, access_token=request.GET.get("access_token", ""))
 
+        response["client_id"] = "simpsons4-android-client"
         response.update(
             {
                 "pid_id": str(token.user.pid_id),
@@ -245,11 +251,25 @@ def tokeninfo(request):
 
         # Include second authenticator for registered users.
         if token.user.is_registered:
-            response["authenticators"].append(
+            response["authenticators"] = [
+                {
+                    "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
+                    "authenticator_pid_id": token.user.pid_id
+                },
                 {
                     "authenticator_type": "NUCLEUS",
                     "authenticator_pid_id": token.user.pid_id
-                }
-            )
+                },
+            ]
+
+    # This comes after login.
+    elif request.headers.get("X-Check-Underage") is None:
+
+        response["authenticators"][-1].update(
+            {
+            "authenticator_type": "NUCLEUS",
+            "authenticator_pid_id": 1021000200000
+            },
+        )
 
     return JsonResponse(response)
