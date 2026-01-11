@@ -56,21 +56,38 @@ def gameplayconfig(request):
 def users(request):
 
     application_user_id = request.GET.get("applicationUserId")
+    response = {}
 
     if application_user_id is None:
         return HttpResponseBadRequest("Missing required attribute: applicationUserId")
 
-    user = get_object_or_404(UserId, user_id = application_user_id)
+    # Empty applicationUserId. Give a fake response just to pass.
+    elif application_user_id == "":
 
-    response = {
-        "user": {
-            "userId": str(user.mayhem_id.int),
-            "telemetryId": str(user.telemetry_id)
-        },
-        "token": {
-            "sessionKey": user.session_key
+        response = {
+            "user": {
+                "userId": "000000000",
+                "telemetryId": "00000000"
+            },
+            "token": {
+                "sessionKey": "fakesessionkey"
+            }
         }
-    }
+
+    else:
+
+        # Get a proper response.
+        user = get_object_or_404(UserId, user_id = application_user_id)
+
+        response = {
+            "user": {
+                "userId": str(user.mayhem_id.int),
+                "telemetryId": str(user.telemetry_id)
+            },
+            "token": {
+                "sessionKey": user.session_key
+            }
+        }
 
     user_response = AuthData_pb2.UsersResponseMessage()
     for key, value in response.items():

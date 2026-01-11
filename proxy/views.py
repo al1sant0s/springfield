@@ -37,14 +37,14 @@ def me_personas(request, persona_id):
                 "pidId": 1021000000000,
                 "displayName": "fakeuser",
                 "name": "fakeuser",
-                "namespaceName": "gsp-redcrow-simpsons4",
+                "namespaceName": "cem_ea_id",
                 "isVisible": True,
                 "status": "ACTIVE",
                 "statusReasonCode": "",
                 "showPersona": "EVERYONE",
                 "dateCreated": "2024-10-06T11:3Z",
                 "lastAuthenticated": "2024-10-08T11:35Z",
-                "anonymousId": ""
+                "anonymousId": "1"
             }
         }
 
@@ -58,7 +58,7 @@ def me_personas(request, persona_id):
                 "pidId": user.pid_id,
                 "displayName": user.username,
                 "name": user.username.lower(),
-                "namespaceName": "gsp-redcrow-simpsons4",
+                "namespaceName": "cem_ea_id",
                 "isVisible": True,
                 "status": "ACTIVE",
                 "statusReasonCode": "",
@@ -73,33 +73,55 @@ def me_personas(request, persona_id):
 
 
 def personas(request):
-
     return JsonResponse({"error":"not_found","error_description":"no mediator found"})
 
 
 def user_id_personas(request, user_id):
 
-    response = {
-        "personas": {
-            "persona": [
-                {
-                    "personaId": "1001000000001",
-                    "pidId": "1021000200001",
-                    "displayName": "user",
-                    "name": "user",
-                    "namespaceName": "cem_ea_id",
-                    "isVisible": True,
-                    "status": "ACTIVE",
-                    "statusReasonCode": "",
-                    "showPersona": "FRIENDS",
-                    "dateCreated": "2024-12-25T0:00Z",
-                    "lastAuthenticated": ""
-                }
-            ]
-        }
-    }
+    try:
+        user = UserId.objects.get(user_id = user_id)
 
-    response = {"error":"not_found","error_description":"no mediator found"}
+    except UserId.DoesNotExist:
+        response = {
+            "personas": {
+                "persona": [
+                    {
+                        "personaId": "1001000000000",
+                        "pidId": "1021000200000",
+                        "displayName": "user",
+                        "name": "user",
+                        "namespaceName": "gsp-redcrow-simpsons4",
+                        "isVisible": True,
+                        "status": "ACTIVE",
+                        "statusReasonCode": "",
+                        "showPersona": "FRIENDS",
+                        "dateCreated": "2024-12-25T0:00Z",
+                        "lastAuthenticated": ""
+                    }
+                ]
+            }
+        }
+
+    else:
+        response = {
+            "personas": {
+                "persona": [
+                    {
+                        "personaId": str(user.persona_id),
+                        "pidId": str(user.pid_id),
+                        "displayName": str(user.username),
+                        "name": str(user.username),
+                        "namespaceName": "gsp-redcrow-simpsons4",
+                        "isVisible": True,
+                        "status": "ACTIVE",
+                        "statusReasonCode": "",
+                        "showPersona": "FRIENDS",
+                        "dateCreated": str(user.date_created),
+                        "lastAuthenticated": str(user.last_authenticated),
+                    }
+                ]
+            }
+        }
 
     return JsonResponse(response)
 
@@ -129,11 +151,68 @@ def progreg_code(request):
             # Search for current active code in database.
             # If it cannot find one, create a new one.
             try:
-                ProgRegCode.objects.get(email=email)
+                auth_code = ProgRegCode.objects.get(email=email)
+
             except ProgRegCode.DoesNotExist:
                 ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
 
-            return HttpResponse("")
+            else:
+                if auth_code.expiry_on < timezone.now():
+                    auth_code.delete()
+                    ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
+
+            finally:
+                return HttpResponse("")
 
         else:
             return HttpResponseBadRequest("Only email login is supported.")
+
+
+def links(request):
+
+    # Get token from header.
+    authorization = request.headers.get("Authorization")
+
+    if authorization is None:
+        return HttpResponseBadRequest("Missing Authorization header")
+
+    response = {}
+
+    # User logging out, just give anything to pass.
+    if authorization == "Bearer":
+
+        response = {
+            "pidGamePersonaMappings": {
+                "pidGamePersonaMapping": [
+                    {
+                        "newCreated": False,
+                        "personaId": 100100000000,
+                        "personaNamespace": request.GET.get("personaNamespace", "gsp-redcrow-simpsons4"),
+                        "pidGamePersonaMappingId": 100100000000,
+                        "pidId": 1021000200000,
+                        "status":"ACTIVE"
+                    }
+                ]
+            }
+        }
+
+    else:
+
+        token = get_object_or_404(DeviceToken, access_token = authorization.split(" ")[-1])
+
+        response = {
+            "pidGamePersonaMappings": {
+                "pidGamePersonaMapping": [
+                    {
+                        "newCreated": False,
+                        "personaId": token.user.persona_id,
+                        "personaNamespace": request.GET.get("personaNamespace", "cem_ea_id"),
+                        "pidGamePersonaMappingId": token.user.persona_id,
+                        "pidId": token.user.pid_id,
+                        "status":"ACTIVE"
+                    }
+                ]
+            }
+        }
+
+    return JsonResponse(response)
