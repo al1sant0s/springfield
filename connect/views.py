@@ -77,6 +77,10 @@ def auth(request, device_id):
                 if token.user.session_key != token.session_key:
                     pass
 
+                # If it already exists check if user got logged out.
+                if device_id != token.device_id:
+                    token.login_status = False
+
 
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
@@ -86,9 +90,6 @@ def auth(request, device_id):
             token.session_key = token.user.session_key
             token.timestamp = timestamp
 
-            if request.GET.get("response_type") == "code":
-                token.login_status = False
-
             # Generate new code and new access token.
             token.code = hashlib.sha1(secrets.token_bytes(32)).hexdigest()
 
@@ -97,7 +98,7 @@ def auth(request, device_id):
                     "AT0",
                     "2.0",
                     "3.0",
-                    "720", # lifetime in minutes (possibly)
+                    "86400", # lifetime in minutes (possibly)
                     token.code[:17],
                     str(token.user.persona_id)[-5:],
                     token.code[-5:].lower()
@@ -172,7 +173,7 @@ def get_token(request, device_id):
         "aud":"simpsons4-android-client",
         "iss":"accounts.ea.com",
         "iat": int(round(time.time() * 1000)),
-        "exp": int(round(time.time() * 1000)) + 720,
+        "exp": int(round(time.time() * 1000)) + 86400,
         "pid_id": token.user.pid_id,
         "user_id": token.user.user_id,
         "persona_id": token.user.persona_id,
@@ -183,9 +184,9 @@ def get_token(request, device_id):
     response = {
         "access_token": token.access_token,
         "token_type": "Bearer",
-        "expires_in": 720,
+        "expires_in": 86400,
         "refresh_token": token.refresh_token + "." + token.code[:27],
-        "refresh_token_expires_in": 720,
+        "refresh_token_expires_in": 86400,
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
 

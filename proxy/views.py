@@ -66,7 +66,7 @@ def me_personas(request, device_id, persona_id):
     return JsonResponse(response)
 
 
-def personas(request, device_id):
+def pids_personas(request, device_id):
     return JsonResponse({"error":"not_found","error_description":"no mediator found"})
 
 
@@ -100,6 +100,30 @@ def user_id_personas(request, device_id, user_id):
         }
 
         return JsonResponse(response)
+
+
+def personas(request, device_id):
+
+    personas = list()
+
+    for user in UserId.objects.filter(username__icontains=request.GET.get("displayName")[:-1]):
+        personas.append(
+            {
+                "personaId": user.persona_id,
+                "pidId": user.pid_id,
+                "displayName": str(user.username),
+                "name": str(user.username),
+                "namespaceName": request.GET.get("namespaceName", "gsp-redcrow-simpsons4"),
+                "isVisible": True,
+                "status": "ACTIVE",
+                "statusReasonCode": "",
+                "showPersona": "NO_ONE",
+                "dateCreated": user.date_created.strftime('%Y-%m-%dT%H:%MZ'),
+                "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
+            }
+        )
+
+    return JsonResponse({"persona": personas})
 
 
 @csrf_exempt
