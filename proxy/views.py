@@ -1,5 +1,6 @@
-from django.utils import timezone
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse, response
+from django.db import models
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
@@ -104,11 +105,21 @@ def user_id_personas(request, device_id, user_id):
 def personas(request, device_id):
 
     friends = list()
+    username = request.GET.get("displayName")
 
-    for user in UserId.objects.filter(username__icontains=request.GET.get("displayName")[:-1]):
+    if username is None:
+        return HttpResponseBadRequest("Missing displayName in URL!")
+    elif username.endswith("*"):
+        username = username[:-1]
 
-        # Do not show ourselves. Neither show non registered users.
-        if not user.is_registered or user.devicetoken_set.first().device_id == device_id:
+    for user in UserId.objects.filter(
+        models.Q(username__icontains=username) |
+        models.Q(email__icontains=username)
+    ):
+
+        # Do not show ourselves. Neither show non registered users and users that are already our friends
+        our_user = get_object_or_404(DeviceToken, device_id=device_id).user
+        if not user.is_registered or user == our_user or user.friends.contains(our_user):
             continue
 
         friends.append(

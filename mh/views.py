@@ -165,7 +165,8 @@ def friendData(request):
     # Process friends.
     mayhem_id = request.GET.get("debug_mayhem_id")
     if mayhem_id is None:
-        raise Http404
+        mayhem_id = UserId.objects.first().mayhem_id.int
+        #return HttpResponse("", status=204)
     else:
         mayhem_id = int(mayhem_id)
 

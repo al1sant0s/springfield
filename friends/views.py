@@ -1,14 +1,41 @@
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.db import models, transaction
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
+from connect.models import UserId
+from friends.models import FriendInvitation
 
 # Create your views here.
 def outbound(request, user_id):
+
+    # Look up for sent_invitations.
+    user = get_object_or_404(UserId, user_id=user_id)
+    entries = list()
+
+    for invitation in user.sent_invitations.all():
+        entries.append(
+            {
+                "timestamp": int(invitation.invitation_date.timestamp() * 1000),
+                "userId": invitation.to_user.user_id,
+                "dateTime": invitation.invitation_date.isoformat(),
+                "inviteTags": {"invite_surface": "unknown"},
+                "userType": "NUCLEUS_USER",
+                "displayName": invitation.to_user.username,
+                "personaId": invitation.to_user.persona_id,
+                "nickName": invitation.to_user.username,
+                "level": 45,
+            }
+        )
+
     response = {
-        "entries":[],
+        "entries": entries,
         "pagingInfo": {
-            "size": 0,
-            "offset": 0, 
-            "totalSize":0
+            "size": len(entries),
+            "offset": 0,
+            "totalSize": len(entries)
         }
     }
 
@@ -16,27 +43,142 @@ def outbound(request, user_id):
 
 @csrf_exempt
 def outbound_sent(request, user_id, pid_id):
-    return HttpResponse("", status=204)
+
+    # Get user sending invitation and receiving invitation.
+    from_user = get_object_or_404(UserId, user_id=user_id)
+    to_user = get_object_or_404(
+        UserId.objects.filter(
+            models.Q(pid_id=pid_id) | models.Q(user_id=pid_id)
+        )
+    )
+
+    if request.method == "DELETE":
+        try:
+            with transaction.atomic():
+                FriendInvitation.objects.filter(
+                    models.Q(from_user=to_user, to_user=from_user) |
+                    models.Q(from_user=from_user, to_user=to_user)
+                ).delete()
+
+        except Exception:
+            return HttpResponseBadRequest("Failed to delete friend invitations.")
+
+        else:
+            return HttpResponse("", status=204)
+
+
+    if from_user == to_user:
+        return HttpResponseBadRequest("Cannot befriend yourself!")
+
+    try:
+        with transaction.atomic():
+            # Lock and check for existing invitations.
+            exists = FriendInvitation.objects.select_for_update().filter(
+                models.Q(from_user=to_user, to_user=from_user) |
+                models.Q(from_user=from_user, to_user=to_user)
+            ).exists()
+
+            if exists:
+                return HttpResponseBadRequest("An invitation already exists between these users.")
+
+            FriendInvitation.objects.create(from_user=from_user, to_user=to_user, invitation_date=timezone.now())
+            return HttpResponse("", status=204)
+
+    except Exception:
+        return HttpResponseBadRequest("Failed to create invitation.")
 
 
 def inbound(request, user_id):
-    response = {
-        "entries": [
+
+    # Look up for received_invitations.
+    user = get_object_or_404(UserId, user_id=user_id)
+
+    entries = list()
+    for invitation in user.received_invitations.all():
+        entries.append(
             {
-                "timestamp": 1730568876195,
-                "userId":1014813928340,
-                "dateTime":"2024-11-02T17:34:36.195Z",
+                "timestamp": int(invitation.invitation_date.timestamp()),
+                "userId": invitation.from_user.user_id,
+                "dateTime": invitation.invitation_date.isoformat(),
                 "inviteTags": {"invite_surface": "unknown"},
                 "userType": "NUCLEUS_USER",
-                "displayName": "TopDonuts",
-                "personaId": 1007225728340,
-                "nickName": "TopDonuts"
+                "displayName": invitation.from_user.username,
+                "personaId": invitation.from_user.persona_id,
+                "nickName": invitation.from_user.username,
             }
-        ],
+        )
+
+    response = {
+        "entries": entries,
         "pagingInfo": {
-            "size": 1,
+            "size": len(entries),
             "offset": 0,
-            "totalSize":1
+            "totalSize": len(entries)
+        }
+    }
+
+    return JsonResponse(response)
+
+
+@csrf_exempt
+def inbound_accept(request, to_user_id, from_user_id):
+
+    # Get user sending invitation and receiving invitation.
+    from_user = get_object_or_404(UserId, user_id=from_user_id)
+    to_user = get_object_or_404(UserId, user_id=to_user_id)
+
+    try:
+        with transaction.atomic():
+            FriendInvitation.objects.filter(
+                models.Q(from_user=to_user, to_user=from_user) |
+                models.Q(from_user=from_user, to_user=to_user)
+            ).delete()
+
+    except Exception:
+        return HttpResponseBadRequest("Failed to delete friend invitations.")
+
+    else:
+        if from_user == to_user:
+            return HttpResponseBadRequest("Cannot befriend yourself!")
+
+        else:
+            to_user.friends.add(from_user)
+            to_user.save()
+            return HttpResponse("", status=204)
+
+
+def get_friends(request, user_id):
+
+    user = get_object_or_404(UserId, user_id=user_id)
+    entries = list()
+
+    for friend in user.friends.all():
+        entries.append(
+            {
+                "timestamp": int(timezone.now().timestamp()),
+                "friendType": "OLD",
+                "userId": friend.user_id,
+                "favorite": False,
+                "dateTime": timezone.now().isoformat(),
+                "edgeAttribute": {
+                    "tags": {
+                        "friendface": "unknown",
+                    }
+                },
+                "userType": "NUCLEUS_USER",
+                "displayName": friend.username,
+                "personaId": friend.persona_id,
+                "nickName": friend.username,
+                "_friendTyoe": "OLD",
+            }
+        )
+
+    response = {
+        "entries": entries,
+        "pagingInfo": {
+            "size": len(entries),
+            "offset": 0,
+            "totalSize": len(entries)
         }
     }
 

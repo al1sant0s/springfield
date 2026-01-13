@@ -22,6 +22,7 @@ class UserId(AbstractBaseUser):
     donuts_balance = models.PositiveIntegerField(default=50)
     date_created = models.DateTimeField("User Date Created", default=timezone.now)
     last_authenticated = models.DateTimeField("Last Auth Date", default=timezone.now)
+    friends = models.ManyToManyField("self")
 
 
     def normalize_email(self):
@@ -47,7 +48,7 @@ class DeviceToken(models.Model):
     code = models.CharField(max_length=64)
     access_token = models.TextField()
     refresh_token = models.TextField()
-    session_key = models.CharField(max_length=44, unique=True, default=secrets.token_urlsafe(32))
+    session_key = models.CharField(max_length=44, unique=True)
     timestamp = models.DateTimeField("Token Creation/Update Time")
     login_status = models.BooleanField(default=False)
 

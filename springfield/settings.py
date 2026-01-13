@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'mh.apps.MhConfig',
     'user.apps.UserConfig',
     'proxy.apps.ProxyConfig',
+    'friends.apps.FriendsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

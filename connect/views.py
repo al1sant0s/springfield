@@ -232,11 +232,11 @@ def tokeninfo(request, device_id):
             }
         )
 
-    # Update token timestamp with 30 seconds from now. If auth gets called again, we only logout user if it
+    # Update token timestamp with 60 seconds from now. If auth gets called again, we only logout user if it
     # if the future time is greater than the deadline specified in timestamp. This way we avoid user getting logged out
     # everytime the game decides to call auth again during startup. If the user decides reinstall the app, they must wait
-    # at least 30 seconds since the last authentication to be able to login again.
-    token.timestamp = timezone.now() + datetime.timedelta(seconds=30)
+    # at least 60 seconds since the last authentication to be able to login again.
+    token.timestamp = timezone.now() + datetime.timedelta(seconds=60)
     token.save()
 
 
