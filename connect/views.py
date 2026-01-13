@@ -16,6 +16,7 @@ import base64
 import hashlib
 import uuid
 import time
+import datetime
 import secrets
 
 
@@ -77,6 +78,11 @@ def auth(request, device_id):
                 if token.user.session_key != token.session_key:
                     pass
 
+                # Time ran out. Logout user.
+                elif token.timestamp < timestamp:
+                    token.login_status = False
+
+
 
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
@@ -94,7 +100,7 @@ def auth(request, device_id):
                     "AT0",
                     "2.0",
                     "3.0",
-                    "86400", # lifetime in minutes (possibly)
+                    "720", # lifetime in minutes (possibly)
                     token.code[:17],
                     str(token.user.persona_id)[-5:],
                     token.code[-5:].lower()
@@ -169,7 +175,7 @@ def get_token(request, device_id):
         "aud":"simpsons4-android-client",
         "iss":"accounts.ea.com",
         "iat": int(round(time.time() * 1000)),
-        "exp": int(round(time.time() * 1000)) + 86400,
+        "exp": int(round(time.time() * 1000)) + 720,
         "pid_id": token.user.pid_id,
         "user_id": token.user.user_id,
         "persona_id": token.user.persona_id,
@@ -180,13 +186,14 @@ def get_token(request, device_id):
     response = {
         "access_token": token.access_token,
         "token_type": "Bearer",
-        "expires_in": 86400,
-        "refresh_token": token.refresh_token + "." + token.code[:27],
+        "expires_in": 720,
+        "refresh_token": "NotAvailable",
+        #"refresh_token": token.refresh_token + "." + token.code[:27],
         "refresh_token_expires_in": 86400,
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
 
-    if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator" or request.GET.get("grant_type", "") == "authorization_code":
+    if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
         token.login_status = False
         token.save()
 
@@ -200,7 +207,7 @@ def tokeninfo(request, device_id):
     response = {
         "client_id": "simpsons4-android-client",
         "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
-        "expires_in": 86400,
+        "expires_in": 720,
         "pid_id": str(token.user.pid_id),
         "pid_type": "AUTHENTICATOR_ANONYMOUS",
         "user_id": str(token.user.user_id),
@@ -224,6 +231,13 @@ def tokeninfo(request, device_id):
                 "authenticator_pid_id": token.user.pid_id
             }
         )
+
+    # Update token timestamp with 30 seconds from now. If auth gets called again, we only logout user if it
+    # if the future time is greater than the deadline specified in timestamp. This way we avoid user getting logged out
+    # everytime the game decides to call auth again during startup. If the user decides reinstall the app, they must wait
+    # at least 30 seconds since the last authentication to be able to login again.
+    token.timestamp = timezone.now() + datetime.timedelta(seconds=30)
+    token.save()
 
 
     return JsonResponse(response)

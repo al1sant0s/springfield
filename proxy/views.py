@@ -1,6 +1,5 @@
-from os import access
 from django.utils import timezone
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse, response
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
@@ -104,10 +103,15 @@ def user_id_personas(request, device_id, user_id):
 
 def personas(request, device_id):
 
-    personas = list()
+    friends = list()
 
     for user in UserId.objects.filter(username__icontains=request.GET.get("displayName")[:-1]):
-        personas.append(
+
+        # Do not show ourselves. Neither show non registered users.
+        if not user.is_registered or user.devicetoken_set.first().device_id == device_id:
+            continue
+
+        friends.append(
             {
                 "personaId": user.persona_id,
                 "pidId": user.pid_id,
@@ -123,7 +127,7 @@ def personas(request, device_id):
             }
         )
 
-    return JsonResponse({"persona": personas})
+    return JsonResponse({"personas": {"persona": friends}})
 
 
 @csrf_exempt

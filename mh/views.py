@@ -171,10 +171,14 @@ def friendData(request):
 
     user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
 
-    # Attempt to find the town level.
+
+    friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
+    friend_data_pair.friendData.name = user.username
+    friend_data_pair.authService = 0
+
+    # Attempt to find more town info.
     towns_dir = get_towns_dir()
     town_file = Path(towns_dir, f"{mayhem_id}.pb")
-    town_level = 1
 
     if town_file.exists():
         with open(town_file, "rb") as f:
@@ -182,17 +186,21 @@ def friendData(request):
                 land_data = LandData_pb2.LandMessage()
                 land_data.ParseFromString(f.read())
 
-            except:
-                pass
+            except Exception as e:
+                print(f"Unexpected error with {town_file}: {e}")
 
             else:
-                town_level = land_data.friendData.level
+                friend_data_pair.friendData.dataVersion = land_data.friendData.dataVersion
+                friend_data_pair.friendData.hasLemonTree = land_data.friendData.hasLemonTree
+                friend_data_pair.friendData.language = land_data.friendData.language
+                friend_data_pair.friendData.level = land_data.friendData.level
+                friend_data_pair.friendData.rating = land_data.friendData.rating
+                friend_data_pair.friendData.sublandInfos.extend(list(land_data.friendData.sublandInfos))
+                friend_data_pair.friendData.boardwalkTileCount = land_data.friendData.boardwalkTileCount
+                friend_data_pair.friendData.lastPlayedTime = land_data.friendData.lastPlayedTime
 
 
 
-    friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
-    friend_data_pair.friendData.level = town_level
-    friend_data_pair.friendData.name = user.username
 
     friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
     friend_data_response.friendData.extend([friend_data_pair])

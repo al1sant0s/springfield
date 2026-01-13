@@ -45,6 +45,7 @@ def getDirectionByPackage(request, platform):
     update_services = [
         "nexus.connect",
         "nexus.proxy",
+        "synergy.user",
     ]
 
     for service in update_services:
