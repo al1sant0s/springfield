@@ -19,8 +19,32 @@ import time
 import secrets
 
 
+def make_user(base_persona_id):
+
+    try:
+        last_user = UserId.objects.latest("id")
+    except UserId.DoesNotExist:
+        user = UserId(persona_id = base_persona_id)
+    else:
+        user = UserId(persona_id = last_user.persona_id + 1)
+
+    # Set each entry in the database accordingly except mayhem_id and land_token which
+    # Django will produce values by itself with the default argument specified in models.
+    user.username = f"anon{str(user.persona_id)[-5:]}"
+    user.reset_password() # Random password.
+    user.email = f"user_{str(user.mayhem_id.int)}@tsto.app"
+    user.user_id = user.persona_id + 20000000000
+    user.pid_id = user.user_id + 200000
+    user.telemetry_id = user.pid_id + 20000000000
+
+    return user
+
+
 # Create your views here.
 def auth(request, device_id):
+
+    # Give everything the exact same time.
+    timestamp = timezone.now()
 
     # Anonymous login or normal user registration.
     # Try to get sig from URL.
@@ -38,36 +62,14 @@ def auth(request, device_id):
             # Look up for advertisingId in database.
             advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, jsondata["advertisingId"])
 
-            # Give everything the exact same time.
-
-            # Current time in UTC
-            timestamp = timezone.now()
-
             # Grab existing DeviceToken. If it does not exist, make one.
             try:
                 token = DeviceToken.objects.get(advertising_id=advertising_id)
 
             except DeviceToken.DoesNotExist:
-
-                token = DeviceToken(advertising_id=advertising_id)
-
                 # Each new token creates a new user.
-                try:
-                    last_user = UserId.objects.latest("id")
-                except UserId.DoesNotExist:
-                    token.user = UserId(persona_id = 1001000000001)
-                else:
-                    token.user = UserId(persona_id = last_user.persona_id + 1)
-
-                # Set each entry in the database accordingly except mayhem_id and land_token which
-                # Django will produce values by itself with the default argument specified in models.
-                token.user.username = f"anon{str(token.user.persona_id)[-5:]}"
-                token.user.reset_password() # Random password.
-                token.user.email = f"user_{str(token.user.mayhem_id.int)}@tsto.app"
-                token.user.user_id = token.user.persona_id + 20000000000
-                token.user.pid_id = token.user.user_id + 200000
-                token.user.telemetry_id = token.user.pid_id + 20000000000
-                token.user.date_created = timestamp
+                token = DeviceToken(advertising_id=advertising_id)
+                token.user = make_user(1001000000001)
 
             else:
                 # Difference between UserID and DeviceToken session_keys means user is logging in another device.
@@ -76,13 +78,16 @@ def auth(request, device_id):
                     pass
 
 
-            token.device_id = device_id
             token.user.session_key = secrets.token_urlsafe(32)
-            token.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
-            token.timestamp = timestamp
-            token.login_status = False
             token.user.save()
+
+            token.device_id = device_id
+            token.session_key = token.user.session_key
+            token.timestamp = timestamp
+
+            if request.GET.get("response_type") == "code":
+                token.login_status = False
 
             # Generate new code and new access token.
             token.code = hashlib.sha1(secrets.token_bytes(32)).hexdigest()
@@ -122,26 +127,36 @@ def auth(request, device_id):
                 user = UserId.objects.get(email=jsondata["email"])
 
             # If a user with this email does not exist, it means we have to update the current user email associated with the token.
+            # However, if our user is already registered, then we need to create a new user.
             except UserId.DoesNotExist:
-                auth_code.token.user.email = jsondata["email"]
+                if auth_code.token.user.is_registered:
+                    user = make_user(1001000000001)
+                    user.email = jsondata["email"]
+                    user.normalize_email()
 
-            else:
-                auth_code.token.user = user
+                else:
+                    user = auth_code.token.user
+                    user.email = jsondata["email"]
+                    user.normalize_email()
 
-            finally:
-                auth_code.token.user.is_registered = True
-                auth_code.token.user.session_key = auth_code.token.session_key
-                auth_code.token.user.save()
-                auth_code.token.login_status = True
-                auth_code.token.save()
 
-                response = {
-                    "code": auth_code.token.code,
-                    "lnglv_token": auth_code.token.access_token
-                }
+            user.is_registered = True
+            user.session_key = secrets.token_urlsafe(32)
+            user.save()
 
-                auth_code.delete()
-                return JsonResponse(response)
+            auth_code.token.user = user
+            auth_code.token.session_key = user.session_key
+            auth_code.token.timestamp = user.last_authenticated
+            auth_code.token.login_status = True
+            auth_code.token.save()
+
+            response = {
+                "code": auth_code.token.code,
+                "lnglv_token": auth_code.token.access_token
+            }
+
+            auth_code.delete()
+            return JsonResponse(response)
 
     else:
         return JsonResponse({"code": hashlib.sha1(secrets.token_bytes(32)).hexdigest()})

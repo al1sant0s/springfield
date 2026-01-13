@@ -1,6 +1,6 @@
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.hashers import make_password
 
 import uuid
 import secrets
@@ -17,11 +17,11 @@ class UserId(AbstractBaseUser):
     persona_id = models.BigIntegerField(unique=True)
     telemetry_id = models.BigIntegerField(unique=True)
     mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
-    session_key = models.CharField(max_length=44, unique=True, default=secrets.token_urlsafe(32))
+    session_key = models.CharField(max_length=44, unique=True)
     land_token = models.UUIDField(default=uuid.uuid4, unique=True)
     donuts_balance = models.PositiveIntegerField(default=50)
-    date_created = models.DateTimeField("User Date Created")
-    last_authenticated = models.DateTimeField("Last Auth Date")
+    date_created = models.DateTimeField("User Date Created", default=timezone.now)
+    last_authenticated = models.DateTimeField("Last Auth Date", default=timezone.now)
 
 
     def normalize_email(self):

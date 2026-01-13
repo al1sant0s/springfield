@@ -5,12 +5,14 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from connect.models import UserId, DeviceToken
+from django.contrib.auth.models import BaseUserManager
 from .models import ProgRegCode
 
 import base64
 import hashlib
 import json
 import datetime
+import random
 
 # Create your views here.
 
@@ -112,7 +114,7 @@ def progreg_code(request, device_id):
     else:
 
         if json_data["codeType"].lower() == "email":
-            email = json_data["email"]
+            email = BaseUserManager.normalize_email(json_data["email"])
 
             token = get_object_or_404(DeviceToken, device_id=device_id)
 
@@ -122,7 +124,12 @@ def progreg_code(request, device_id):
                 auth_code = ProgRegCode.objects.get(email=email)
 
             except ProgRegCode.DoesNotExist:
-                ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
+                ProgRegCode.objects.create(
+                    email=email,
+                    code=random.randint(100000, 999999),
+                    expiry_on=timezone.now() + datetime.timedelta(hours=2),
+                    token=token
+                )
 
             else:
                 if auth_code.expiry_on < timezone.now():

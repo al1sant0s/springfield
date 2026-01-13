@@ -9,6 +9,6 @@ import random
 
 class ProgRegCode(models.Model):
     email = models.EmailField(primary_key=True)
-    code = models.PositiveIntegerField(default=random.randint(100000, 999999))
+    code = models.PositiveIntegerField()
     expiry_on = models.DateField()
     token = models.ForeignKey(DeviceToken, on_delete=models.CASCADE)
