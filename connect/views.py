@@ -77,10 +77,6 @@ def auth(request, device_id):
                 if token.user.session_key != token.session_key:
                     pass
 
-                # If it already exists check if user got logged out.
-                if device_id != token.device_id:
-                    token.login_status = False
-
 
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
@@ -190,7 +186,7 @@ def get_token(request, device_id):
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
 
-    if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
+    if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator" or request.GET.get("grant_type", "") == "authorization_code":
         token.login_status = False
         token.save()
 

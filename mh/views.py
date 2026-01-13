@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 from django.db.models import F
 
-from connect.models import UserId
+from connect.models import DeviceToken, UserId
 from pathlib import Path
 from protofiles import *
 
@@ -13,6 +13,21 @@ import json
 import gzip
 import time
 import uuid
+
+
+def get_towns_dir():
+
+    towns_dir = cache.get("towns_dir")
+    if towns_dir is None:
+        with open("config.json", "r") as f:
+            config = json.load(f)
+            towns_dir = Path(config["towns_dir"])
+            cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
+
+        if not towns_dir.exists():
+            towns_dir.mkdir()
+
+    return towns_dir
 
 
 #######################################
@@ -147,10 +162,40 @@ def protoClientConfig(request):
 @csrf_exempt
 def friendData(request):
 
-    friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
-
     # Process friends.
+    mayhem_id = request.GET.get("debug_mayhem_id")
+    if mayhem_id is None:
+        raise Http404
+    else:
+        mayhem_id = int(mayhem_id)
 
+    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+
+    # Attempt to find the town level.
+    towns_dir = get_towns_dir()
+    town_file = Path(towns_dir, f"{mayhem_id}.pb")
+    town_level = 1
+
+    if town_file.exists():
+        with open(town_file, "rb") as f:
+            try:
+                land_data = LandData_pb2.LandMessage()
+                land_data.ParseFromString(f.read())
+
+            except:
+                pass
+
+            else:
+                town_level = land_data.friendData.level
+
+
+
+    friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
+    friend_data_pair.friendData.level = town_level
+    friend_data_pair.friendData.name = user.username
+
+    friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
+    friend_data_response.friendData.extend([friend_data_pair])
     friend_data_response = friend_data_response.SerializeToString()
 
     return HttpResponse(friend_data_response, content_type = "application/x-protobuf")
@@ -190,16 +235,7 @@ def protoland(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
 
-    towns_dir = cache.get("towns_dir")
-    if towns_dir is None:
-        with open("config.json", "r") as f:
-            config = json.load(f)
-            towns_dir = Path(config["towns_dir"])
-            cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
-
-        if not towns_dir.exists():
-            towns_dir.mkdir()
-
+    towns_dir = get_towns_dir()
 
     protoland_response = LandData_pb2.LandMessage()
     town_file = Path(towns_dir, f"{mayhem_id}.pb")

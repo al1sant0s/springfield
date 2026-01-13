@@ -39,8 +39,9 @@ def getDirectionByPackage(request, platform):
             cache.set("services", services, timeout = config["cache_minutes"])
 
 
-    # Add an exclusive id for the connect app.
+    # Add an exclusive id for some apps.
     device_id = uuid.uuid4()
+
     update_services = [
         "nexus.connect",
         "nexus.proxy",
