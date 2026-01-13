@@ -20,7 +20,7 @@ import secrets
 
 
 # Create your views here.
-def auth(request, connect_id):
+def auth(request, device_id):
 
     # Anonymous login or normal user registration.
     # Try to get sig from URL.
@@ -76,7 +76,7 @@ def auth(request, connect_id):
                     pass
 
 
-            token.connect_id = connect_id
+            token.device_id = device_id
             token.user.session_key = secrets.token_urlsafe(32)
             token.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
@@ -148,9 +148,9 @@ def auth(request, connect_id):
 
 
 @csrf_exempt
-def get_token(request, connect_id):
+def get_token(request, device_id):
 
-    token = get_object_or_404(DeviceToken, connect_id=connect_id)
+    token = get_object_or_404(DeviceToken, device_id=device_id)
     pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
 
     id_token = {
@@ -181,9 +181,9 @@ def get_token(request, connect_id):
     return JsonResponse(response)
 
 
-def tokeninfo(request, connect_id):
+def tokeninfo(request, device_id):
 
-    token = get_object_or_404(DeviceToken, connect_id=connect_id)
+    token = get_object_or_404(DeviceToken, device_id=device_id)
 
     response = {
         "client_id": "simpsons4-android-client",
@@ -217,5 +217,5 @@ def tokeninfo(request, connect_id):
     return JsonResponse(response)
 
 
-def probe(request, connect_id):
+def probe(request, device_id):
     return HttpResponse("")

@@ -14,7 +14,7 @@ import datetime
 
 # Create your views here.
 
-def geoagerequirements(request):
+def geoagerequirements(request, device_id):
 
     response = {
         "geoAgeRequirements": {
@@ -28,13 +28,12 @@ def geoagerequirements(request):
     return JsonResponse(response)
 
 
-def me_personas(request, persona_id):
+def me_personas(request, device_id, persona_id):
 
-    # Fake response for fake persona_id.
     response = {
         "persona": {
             "personaId": persona_id,
-            "pidId": persona_id + 20000200000,
+            "pidId": persona_id,
             "displayName": "user",
             "name": "user",
             "namespaceName": "gsp-redcrow-simpsons4",
@@ -48,19 +47,7 @@ def me_personas(request, persona_id):
         }
     }
 
-    try:
-        user = UserId.objects.get(persona_id=persona_id)
-
-    except UserId.DoesNotExist:
-        # Try to find a token instead.
-        try:
-            token = DeviceToken.objects.get(access_token=request.headers.get("Authorization", "").split(" ")[-1])
-
-        except DeviceToken.DoesNotExist:
-            return JsonResponse(response)
-
-        else:
-            user = token.user
+    user = get_object_or_404(UserId, persona_id=persona_id)
 
     response["persona"].update(
         {
@@ -77,11 +64,11 @@ def me_personas(request, persona_id):
     return JsonResponse(response)
 
 
-def personas(request):
+def personas(request, device_id):
     return JsonResponse({"error":"not_found","error_description":"no mediator found"})
 
 
-def user_id_personas(request, user_id):
+def user_id_personas(request, device_id, user_id):
 
     try:
         user = UserId.objects.get(user_id = user_id)
@@ -114,7 +101,7 @@ def user_id_personas(request, user_id):
 
 
 @csrf_exempt
-def progreg_code(request):
+def progreg_code(request, device_id):
 
     try:
         json_data = json.loads(request.body)
@@ -127,13 +114,7 @@ def progreg_code(request):
         if json_data["codeType"].lower() == "email":
             email = json_data["email"]
 
-            # Get token from header.
-            authorization = request.headers.get("Authorization")
-
-            if authorization is None:
-                return HttpResponseBadRequest("Missing Authorization header")
-
-            token = get_object_or_404(DeviceToken, access_token = authorization.split(" ")[-1])
+            token = get_object_or_404(DeviceToken, device_id=device_id)
 
             # Search for current active code in database.
             # If it cannot find one, create a new one.
@@ -148,59 +129,29 @@ def progreg_code(request):
                     auth_code.delete()
                     ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
 
-            finally:
-                return HttpResponse("")
+
+            return HttpResponse("")
 
         else:
             return HttpResponseBadRequest("Only email login is supported.")
 
 
-def links(request):
+def links(request, device_id):
 
-    # Get token from header.
-    authorization = request.headers.get("Authorization")
-
-    if authorization is None:
-        return HttpResponseBadRequest("Missing Authorization header")
-
-    response = {}
-
-    # User logging out, just give anything to pass.
-    if authorization == "Bearer":
-
-        response = {
-            "pidGamePersonaMappings": {
-                "pidGamePersonaMapping": [
-                    {
-                        "newCreated": False,
-                        "personaId": 100100000000,
-                        "personaNamespace": request.GET.get("personaNamespace", "gsp-redcrow-simpsons4"),
-                        "pidGamePersonaMappingId": 100100000000,
-                        "pidId": 1021000200000,
-                        "status":"ACTIVE"
-                    }
-                ]
-            }
+    token = get_object_or_404(DeviceToken, device_id=device_id)
+    response = {
+        "pidGamePersonaMappings": {
+            "pidGamePersonaMapping": [
+                {
+                    "newCreated": False,
+                    "personaId": token.user.persona_id,
+                    "personaNamespace": request.GET.get("personaNamespace", "cem_ea_id"),
+                    "pidGamePersonaMappingId": token.user.persona_id,
+                    "pidId": token.user.pid_id,
+                    "status":"ACTIVE"
+                }
+            ]
         }
-
-    else:
-
-        print(authorization.split(" ")[-1])
-        token = get_object_or_404(DeviceToken, access_token = authorization.split(" ")[-1])
-
-        response = {
-            "pidGamePersonaMappings": {
-                "pidGamePersonaMapping": [
-                    {
-                        "newCreated": False,
-                        "personaId": token.user.persona_id,
-                        "personaNamespace": request.GET.get("personaNamespace", "cem_ea_id"),
-                        "pidGamePersonaMappingId": token.user.persona_id,
-                        "pidId": token.user.pid_id,
-                        "status":"ACTIVE"
-                    }
-                ]
-            }
-        }
+    }
 
     return JsonResponse(response)

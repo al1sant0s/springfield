@@ -11,7 +11,7 @@ import uuid
 def getDirectionByPackage(request, platform):
 
     directions_android = cache.get("directions_android")
-    connect_list_index = cache.get("connect_list_index")
+    services = cache.get("services")
 
     if directions_android is None:
 
@@ -25,22 +25,28 @@ def getDirectionByPackage(request, platform):
 
         # Load settings and override urls.
         with open("config.json", "r") as f:
+
             config = json.load(f)
             protocol = config["protocol"]
             proxy = config["host"]
             port = config["port"]
-            for i in range(len(directions_android["serverData"])):
-                item = directions_android["serverData"][i]
-                item.update({"value": f"{protocol}://{proxy}:{port}"})
-                if item["key"] == "nexus.connect":
-                    connect_list_index = i
+            services = {directions_android["serverData"][i]["key"]: i for i in range(len(directions_android["serverData"]))}
+
+            for i in services.values():
+                directions_android["serverData"][i]["value"] = f"{protocol}://{proxy}:{port}"
 
             cache.set("directions_android", directions_android, timeout = config["cache_minutes"])
-            cache.set("connect_list_index", connect_list_index, timeout = config["cache_minutes"])
+            cache.set("services", services, timeout = config["cache_minutes"])
 
 
     # Add an exclusive id for the connect app.
-    connect_id = uuid.uuid4()
-    directions_android["serverData"][connect_list_index]["value"] += f"/connect/{connect_id}"
+    device_id = uuid.uuid4()
+    update_services = [
+        "nexus.connect",
+        "nexus.proxy",
+    ]
+
+    for service in update_services:
+        directions_android["serverData"][services[service]]["value"] += f"/{service}/{device_id}"
 
     return JsonResponse(directions_android)
