@@ -12,7 +12,6 @@ import xml.etree.ElementTree as ET
 import json
 import gzip
 import time
-import secrets
 import uuid
 
 
@@ -204,7 +203,7 @@ def protoland(request, mayhem_id):
 
     protoland_response = LandData_pb2.LandMessage()
     town_file = Path(towns_dir, f"{mayhem_id}.pb")
-    town_file = Path(towns_dir, "mytown.pb")
+    #town_file = Path(towns_dir, "mytown.pb") # For testing purposes.
 
     # Create a new fresh town if one does not exist.
     if not town_file.exists():

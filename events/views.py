@@ -10,10 +10,6 @@ def pinEvents(request):
     return JsonResponse({"status": "ok"})
 
 
-def probe(request):
-    return HttpResponse("")
-
-
 @csrf_exempt
 def logEvent(request):
 

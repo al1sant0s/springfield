@@ -1,8 +1,8 @@
-import email
 from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.db.models import F
 from django.views.decorators.csrf import csrf_exempt
 
 from proxy.models import ProgRegCode
@@ -20,9 +20,7 @@ import secrets
 
 
 # Create your views here.
-
-
-def auth(request):
+def auth(request, connect_id):
 
     # Anonymous login or normal user registration.
     # Try to get sig from URL.
@@ -78,13 +76,12 @@ def auth(request):
                     pass
 
 
-            # Update both user and token session key.
+            token.connect_id = connect_id
             token.user.session_key = secrets.token_urlsafe(32)
             token.session_key = secrets.token_urlsafe(32)
-
-            # Finally update timestamps in both UserID and DeviceToken.
             token.user.last_authenticated = timestamp
             token.timestamp = timestamp
+            token.login_status = False
             token.user.save()
 
             # Generate new code and new access token.
@@ -132,10 +129,11 @@ def auth(request):
                 auth_code.token.user = user
 
             finally:
-
                 auth_code.token.user.is_registered = True
                 auth_code.token.user.session_key = auth_code.token.session_key
                 auth_code.token.user.save()
+                auth_code.token.login_status = True
+                auth_code.token.save()
 
                 response = {
                     "code": auth_code.token.code,
@@ -150,126 +148,74 @@ def auth(request):
 
 
 @csrf_exempt
-def get_token(request):
+def get_token(request, connect_id):
 
-    # Retrieve token code from url.
-    code = request.GET.get("code")
-    if code is not None:
+    token = get_object_or_404(DeviceToken, connect_id=connect_id)
+    pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
 
-        token = get_object_or_404(DeviceToken, code=code)
-        pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
+    id_token = {
+        "aud":"simpsons4-android-client",
+        "iss":"accounts.ea.com",
+        "iat": int(round(time.time() * 1000)),
+        "exp": int(round(time.time() * 1000)) + 720,
+        "pid_id": token.user.pid_id,
+        "user_id": token.user.user_id,
+        "persona_id": token.user.persona_id,
+        "pid_type": pid_type[token.login_status],
+        "auth_time": 0
+    }
 
-        id_token = {
-            "aud":"simpsons4-android-client",
-            "iss":"accounts.ea.com",
-            "iat": int(round(time.time() * 1000)),
-            "exp": int(round(time.time() * 1000)) + 720,
-            "pid_id": token.user.pid_id,
-            "user_id": token.user.user_id,
-            "persona_id": token.user.persona_id,
-            "pid_type": pid_type[token.user.is_registered],
-            "auth_time": 0
-        }
-
-        response = {
-            "access_token": token.access_token,
-            "token_type": "Bearer",
-            "expires_in": 720,
-            "refresh_token": token.refresh_token + "." + token.code[:27],
-            "refresh_token_expires_in": 720,
-            "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
-        }
-
-        return JsonResponse(response)
-
-    else:
-
-        id_token = {
-            "aud":"simpsons4-android-client",
-            "iss":"accounts.ea.com",
-            "iat": int(round(time.time() * 1000)),
-            "exp": int(round(time.time() * 1000)) + 720,
-            "pid_id": 1021000200000,
-            "user_id": 1021000000000,
-            "persona_id": 1001000000000,
-            "pid_type": "AUTHENTICATOR_ANONYMOUS",
-            "auth_time": 0
-        }
-
-        response = {
-            "access_token": "",
-            "token_type": "Bearer",
-            "expires_in": 720,
-            "refresh_token": "NotAvailable",
-            "refresh_token_expires_in": 720,
-            "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
-        }
-
-        return JsonResponse(response)
-
-
-def tokeninfo(request):
-
-    # Template response.
     response = {
-        "client_id": "long_lived_token",
+        "access_token": token.access_token,
+        "token_type": "Bearer",
+        "expires_in": 720,
+        "refresh_token": token.refresh_token + "." + token.code[:27],
+        "refresh_token_expires_in": 720,
+        "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
+    }
+
+    if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
+        token.login_status = False
+        token.save()
+
+    return JsonResponse(response)
+
+
+def tokeninfo(request, connect_id):
+
+    token = get_object_or_404(DeviceToken, connect_id=connect_id)
+
+    response = {
+        "client_id": "simpsons4-android-client",
         "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
-        "expires_in": 39509,
-        "pid_id": "1021000200002",
-        "pid_type": "NUCLEUS",
-        "user_id": "1021000000002",
-        "persona_id": 1001000000000,
+        "expires_in": 86400,
+        "pid_id": str(token.user.pid_id),
+        "pid_type": "AUTHENTICATOR_ANONYMOUS",
+        "user_id": str(token.user.user_id),
+        "persona_id": token.user.persona_id,
         "authenticators": [
             {
             "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
-            "authenticator_pid_id": 1021000200000
-            },
-            {
-            "authenticator_type": "",
-            "authenticator_pid_id": 1021000200000
+            "authenticator_pid_id": token.user.pid_id
             },
         ],
         "is_underage": False,
         "stopProcess": "OFF",
-        "telemetry_id": "1041000200002"
+        "telemetry_id": str(token.user.telemetry_id),
     }
 
-    # access_token comes through the URL.
-    if request.GET.get("access_token", "") != "":
 
-        token = get_object_or_404(DeviceToken, access_token=request.GET.get("access_token", ""))
-
-        response["client_id"] = "simpsons4-android-client"
-        response.update(
+    if token.login_status:
+        response["authenticators"].append(
             {
-                "pid_id": str(token.user.pid_id),
-                "user_id": str(token.user.user_id),
-                "persona_id": token.user.persona_id,
-                "telemetry_id": str(token.user.telemetry_id),
+                "authenticator_type": "NUCLEUS",
+                "authenticator_pid_id": token.user.pid_id
             }
         )
 
-        # Include second authenticator for registered users.
-        if token.user.is_registered:
-            response["authenticators"] = [
-                {
-                    "authenticator_type": "AUTHENTICATOR_ANONYMOUS",
-                    "authenticator_pid_id": token.user.pid_id
-                },
-                {
-                    "authenticator_type": "NUCLEUS",
-                    "authenticator_pid_id": token.user.pid_id
-                },
-            ]
-
-    # This comes after login.
-    elif request.headers.get("X-Check-Underage") is None:
-
-        response["authenticators"][-1].update(
-            {
-            "authenticator_type": "NUCLEUS",
-            "authenticator_pid_id": 1021000200000
-            },
-        )
 
     return JsonResponse(response)
+
+
+def probe(request, connect_id):
+    return HttpResponse("")

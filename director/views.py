@@ -5,13 +5,15 @@ from django.core.cache import cache
 from pathlib import Path
 
 import json
+import uuid
 # Create your views here.
 
 def getDirectionByPackage(request, platform):
 
     directions_android = cache.get("directions_android")
+    connect_list_index = cache.get("connect_list_index")
 
-    if directions_android  is None:
+    if directions_android is None:
 
         response = Path("director/responses/getdirectionbypackage.json")
         with open(response, "r") as f:
@@ -27,9 +29,18 @@ def getDirectionByPackage(request, platform):
             protocol = config["protocol"]
             proxy = config["host"]
             port = config["port"]
-            for item in directions_android["serverData"]:
-                item = item.update({"value": f"{protocol}://{proxy}:{port}"})
+            for i in range(len(directions_android["serverData"])):
+                item = directions_android["serverData"][i]
+                item.update({"value": f"{protocol}://{proxy}:{port}"})
+                if item["key"] == "nexus.connect":
+                    connect_list_index = i
 
             cache.set("directions_android", directions_android, timeout = config["cache_minutes"])
+            cache.set("connect_list_index", connect_list_index, timeout = config["cache_minutes"])
+
+
+    # Add an exclusive id for the connect app.
+    connect_id = uuid.uuid4()
+    directions_android["serverData"][connect_list_index]["value"] += f"/connect/{connect_id}"
 
     return JsonResponse(directions_android)

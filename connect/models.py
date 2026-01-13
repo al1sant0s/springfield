@@ -40,8 +40,14 @@ class UserId(AbstractBaseUser):
 class DeviceToken(models.Model):
     user = models.ForeignKey(UserId, on_delete=models.CASCADE)
     advertising_id = models.UUIDField(primary_key=True)
+    # This field exists to circuvent issues with headers with underscores like "access_token".
+    # When /connect/tokeninfo is requested we will receive /<int:connect_id>/connect/tokeninfo
+    # and be able to find the DeviceToken.
+    connect_id = models.UUIDField(unique=True)
     code = models.CharField(max_length=64)
     access_token = models.TextField()
     refresh_token = models.TextField()
     session_key = models.CharField(max_length=44, unique=True, default=secrets.token_urlsafe(32))
     timestamp = models.DateTimeField("Token Creation/Update Time")
+    login_status = models.BooleanField(default=False)
+
