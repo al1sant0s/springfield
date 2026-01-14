@@ -30,6 +30,78 @@ def get_towns_dir():
     return towns_dir
 
 
+def save_proto(target, proto_data):
+
+    proto_data = proto_data.SerializeToString()
+    print(target)
+
+    with open(target, "wb") as f:
+        f.write(proto_data)
+
+
+def load_proto(target, proto_object):
+
+    if not target.exists():
+        return proto_object
+
+    else:
+        with open(target, "rb") as f:
+            proto_object.ParseFromString(f.read())
+
+        return proto_object
+
+
+def load_town(mayhem_id):
+
+    user = UserId.objects.get(mayhem_id=mayhem_id)
+
+    town_file = Path(get_towns_dir(), f"{mayhem_id}.pb")
+    land_data = LandData_pb2.LandMessage()
+
+    # Create a new fresh town if one does not exist already.
+    if not town_file.exists():
+        land_data.friendData.dataVersion = 72
+        land_data.friendData.hasLemonTree = False
+        land_data.friendData.language = 0
+        land_data.friendData.level = 0
+        land_data.friendData.name = user.username
+        land_data.friendData.rating = 0
+        land_data.friendData.boardwalkTileCount = 0
+        save_proto(Path(get_towns_dir(), f"{mayhem_id}.pb"), land_data)
+
+    else:
+
+        # Credits: Tjac python server.
+        with open(town_file, "rb") as f:
+
+            try:
+                land_data.ParseFromString(f.read())
+
+            except:
+
+                try:
+                    f.seek(0x0c)      # see if this might be a teamtsto.org backup
+                    land_data.ParseFromString(f.read())
+
+                # If everything fails just make a new town.
+                except:
+                    land_data.friendData.dataVersion = 72
+                    land_data.friendData.hasLemonTree = False
+                    land_data.friendData.language = 0
+                    land_data.friendData.level = 0
+                    land_data.friendData.name = user.username
+                    land_data.friendData.rating = 0
+                    land_data.friendData.boardwalkTileCount = 0
+
+            # Override Mayhem id.
+            if land_data.HasField("id") and land_data.id != str(mayhem_id):
+                land_data.id = str(mayhem_id)
+                save_proto(Path(get_towns_dir(), f"{mayhem_id}.pb"), land_data)
+
+
+    return land_data
+
+
 #######################################
 # Common views.
 #######################################
@@ -69,26 +141,19 @@ def gameplayconfig(request):
 @csrf_exempt
 def users(request):
 
-    application_user_id = request.GET.get("applicationUserId")
-    response = {}
-
-    if application_user_id is None:
-        return HttpResponseBadRequest("Missing required attribute: applicationUserId")
-
-    # Empty applicationUserId. Give a fake response just to pass.
-    elif application_user_id == "":
-
-        response = {
-            "user": {
-                "userId": "123456789",
-                "telemetryId": "123456789"
-            },
-            "token": {
-                "sessionKey": "123456789"
-            }
+    response = {
+        "user": {
+            "userId": "123456789",
+            "telemetryId": "123456789"
+        },
+        "token": {
+            "sessionKey": "123456789"
         }
+    }
 
-    else:
+    application_user_id = request.GET.get("applicationUserId", "")
+    if application_user_id != "":
+
         # Get a proper response.
         user = get_object_or_404(UserId, user_id = application_user_id)
 
@@ -114,6 +179,14 @@ def users(request):
 
 @csrf_exempt
 def userstats(request):
+    telemetry_id = request.GET.get("synergy_id")
+    if telemetry_id is not None:
+        # Store currentClientSessionId in user's device token.
+        user = get_object_or_404(UserId, telemetry_id=int(telemetry_id))
+        token = user.devicetoken_set.first()
+        token.current_client_session_id = uuid.UUID(request.headers.get("currentClientSessionId"))
+        token.save()
+
     return HttpResponse(status=409)
 
 
@@ -162,49 +235,57 @@ def protoClientConfig(request):
 @csrf_exempt
 def friendData(request):
 
-    # Process friends.
-    mayhem_id = request.GET.get("debug_mayhem_id")
-    if mayhem_id is None:
-        mayhem_id = UserId.objects.first().mayhem_id.int
-        #return HttpResponse("", status=204)
+
+    friend_data_pairs = list()
+    mayhem_ids = list()
+
+    debug_mayhem_id = request.GET.get("debug_mayhem_id")
+    current_client_session_id = request.headers.get("currentClientSessionId")
+
+    # Find user friends.
+    if debug_mayhem_id is not None:
+        mayhem_ids.append(int(debug_mayhem_id))
+
+    elif current_client_session_id is None:
+        return HttpResponseBadRequest("Missing header currentClientSessionId.")
+
     else:
-        mayhem_id = int(mayhem_id)
+        user = get_object_or_404(DeviceToken, current_client_session_id=uuid.UUID(current_client_session_id)).user
 
-    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+        for friend in user.friends.exclude(pk=user.pk):
+            mayhem_ids.append(friend.mayhem_id.int)
 
 
-    friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
-    friend_data_pair.friendData.name = user.username
-    friend_data_pair.authService = 0
+    for mayhem_id in mayhem_ids:
 
-    # Attempt to find more town info.
-    towns_dir = get_towns_dir()
-    town_file = Path(towns_dir, f"{mayhem_id}.pb")
+        user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
 
-    if town_file.exists():
-        with open(town_file, "rb") as f:
-            try:
-                land_data = LandData_pb2.LandMessage()
-                land_data.ParseFromString(f.read())
+        friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
+        friend_data_pair.friendData.name = user.username
+        friend_data_pair.authService = 0
+        friend_data_pair.externalId = str(user.user_id)
 
-            except Exception as e:
-                print(f"Unexpected error with {town_file}: {e}")
+        # Attempt to find more town info.
+        land_data = load_town(mayhem_id)
+        friend_data_pair.friendData.dataVersion = land_data.friendData.dataVersion
+        friend_data_pair.friendData.hasLemonTree = land_data.friendData.hasLemonTree
+        friend_data_pair.friendData.language = land_data.friendData.language
+        friend_data_pair.friendData.level = land_data.friendData.level
+        friend_data_pair.friendData.rating = land_data.friendData.rating
+        friend_data_pair.friendData.spendable.extend(list(land_data.friendData.spendable))
+        friend_data_pair.friendData.landVersion  = land_data.friendData.landVersion 
+        friend_data_pair.friendData.sublandInfos.extend(list(land_data.friendData.sublandInfos))
+        friend_data_pair.friendData.boardwalkTileCount = land_data.friendData.boardwalkTileCount
+        friend_data_pair.friendData.lastPlayedTime = land_data.friendData.lastPlayedTime
+        friend_data_pair.friendData.sharedVariableSet.variable.extend(list(land_data.friendData.sharedVariableSet.variable))
 
-            else:
-                friend_data_pair.friendData.dataVersion = land_data.friendData.dataVersion
-                friend_data_pair.friendData.hasLemonTree = land_data.friendData.hasLemonTree
-                friend_data_pair.friendData.language = land_data.friendData.language
-                friend_data_pair.friendData.level = land_data.friendData.level
-                friend_data_pair.friendData.rating = land_data.friendData.rating
-                friend_data_pair.friendData.sublandInfos.extend(list(land_data.friendData.sublandInfos))
-                friend_data_pair.friendData.boardwalkTileCount = land_data.friendData.boardwalkTileCount
-                friend_data_pair.friendData.lastPlayedTime = land_data.friendData.lastPlayedTime
 
+        friend_data_pairs.append(friend_data_pair)
 
 
 
     friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
-    friend_data_response.friendData.extend([friend_data_pair])
+    friend_data_response.friendData.extend(friend_data_pairs)
     friend_data_response = friend_data_response.SerializeToString()
 
     return HttpResponse(friend_data_response, content_type = "application/x-protobuf")
@@ -243,62 +324,15 @@ def deleteToken(request, mayhem_id):
 def protoland(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-
-    towns_dir = get_towns_dir()
-
     protoland_response = LandData_pb2.LandMessage()
-    town_file = Path(towns_dir, f"{mayhem_id}.pb")
+
     #town_file = Path(towns_dir, "mytown.pb") # For testing purposes.
 
-    # Create a new fresh town if one does not exist.
-    if not town_file.exists():
-        protoland_response.friendData.dataVersion = 72
-        protoland_response.friendData.hasLemonTree = False
-        protoland_response.friendData.language = 0
-        protoland_response.friendData.level = 0
-        protoland_response.friendData.name = user.username
-        protoland_response.friendData.rating = 0
-        protoland_response.friendData.boardwalkTileCount = 0
-        protoland_response = protoland_response.SerializeToString()
-
-        # Save town.
-        with open(town_file, "wb") as f:
-            f.write(protoland_response)
-
-        return HttpResponse(protoland_response, content_type = "application/x-protobuf")
 
     # Load town.
     if request.method == "GET":
 
-        # Credits: Tjac python server.
-        with open(town_file, "rb") as f:
-
-            try:
-                protoland_response.ParseFromString(f.read())
-
-            except:
-                try:
-                    f.seek(0x0c)      # see if this might be a teamtsto.org backup
-                    protoland_response.ParseFromString(f.read())
-
-                # If everything fails just make a new town.
-                except:
-                    protoland_response = LandData_pb2.LandMessage()
-                    protoland_response.friendData.dataVersion = 72
-                    protoland_response.friendData.hasLemonTree = False
-                    protoland_response.friendData.language = 0
-                    protoland_response.friendData.level = 0
-                    protoland_response.friendData.name = user.username
-                    protoland_response.friendData.rating = 0
-                    protoland_response.friendData.boardwalkTileCount = 0
-                    return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
-
-        # Override Mayhem id.
-        if protoland_response.HasField("id") and protoland_response.id != str(mayhem_id):
-            protoland_response.id = str(mayhem_id)
-
-            with open(town_file, "wb") as f:
-                f.write(protoland_response.SerializeToString())
+        protoland_response = load_town(mayhem_id)
 
         return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
 
@@ -315,11 +349,7 @@ def protoland(request, mayhem_id):
 
             # Update town.
             protoland_response.ParseFromString(decompressed_data) # type: ignore
-            protoland_response = protoland_response.SerializeToString()
-
-            with open(town_file, "wb") as f:
-                f.write(protoland_response)
-
+            save_proto(Path(get_towns_dir(), f"{mayhem_id}.pb"), protoland_response)
 
             root = ET.Element("WholeLandUpdateResponse")
             return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
@@ -408,11 +438,33 @@ def extraLandUpdate(request, mayhem_id):
 
 
 
+@csrf_exempt
 def event_user(request, mayhem_id):
 
-    event_response = LandData_pb2.EventsMessage()
-    event_response = event_response.SerializeToString()
-    return HttpResponse(event_response, content_type = "application/x-protobuf")
+    if request.method == "POST":
+
+        event_request = LandData_pb2.EventMessage()
+        event_request.ParseFromString(request.body)
+
+        events_files = {str(event.toPlayerId): load_proto(Path(get_towns_dir(), f"{event.toPlayerId}.events"), LandData_pb2.EventsMessage()) for event in [event_request]}
+
+        events_files[event_request.toPlayerId].event.extend([event_request])
+
+        for event_file, event_data in events_files.items():
+            save_proto(Path(get_towns_dir(), f"{event_file}.events"), event_data)
+
+        root = ET.Element("Land")
+        return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+
+    elif request.method == "GET":
+
+        event_response = LandData_pb2.EventsMessage()
+        event_response = load_proto(Path(get_towns_dir(), f"{mayhem_id}.events"), event_response)
+
+        return HttpResponse(event_response.SerializeToString(), content_type = "application/x-protobuf")
+
+    else:
+        return HttpResponseBadRequest(f"The {request.method} is not supported.")
 
 
 def event_fakefriend(request):

@@ -183,3 +183,13 @@ def get_friends(request, user_id):
     }
 
     return JsonResponse(response)
+
+
+@csrf_exempt
+def cancel_friendship(request, to_user_id, from_user_id):
+    from_user = get_object_or_404(UserId, user_id=from_user_id)
+    to_user = get_object_or_404(UserId, user_id=to_user_id)
+    from_user.friends.remove(to_user)
+    to_user.friends.remove(from_user)
+
+    return HttpResponse("", status=204)

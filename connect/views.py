@@ -187,8 +187,7 @@ def get_token(request, device_id):
         "access_token": token.access_token,
         "token_type": "Bearer",
         "expires_in": 720,
-        "refresh_token": "NotAvailable",
-        #"refresh_token": token.refresh_token + "." + token.code[:27],
+        "refresh_token": token.refresh_token + "." + token.code[:27],
         "refresh_token_expires_in": 86400,
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
