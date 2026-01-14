@@ -3,16 +3,15 @@ from django.db import models, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
 
-from connect.models import UserId
+from connect.models import UserId, DeviceToken
 from friends.models import FriendInvitation
 
 # Create your views here.
-def outbound(request, user_id):
+def outbound(request, device_id, user_id):
 
     # Look up for sent_invitations.
-    user = get_object_or_404(UserId, user_id=user_id)
+    user = get_object_or_404(DeviceToken, device_id=device_id).user
     entries = list()
 
     for invitation in user.sent_invitations.all():
@@ -33,24 +32,20 @@ def outbound(request, user_id):
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": len(entries),
+            "size": min(len(entries), 1),
             "offset": 0,
-            "totalSize": len(entries)
+            "totalSize": min(len(entries), 1)
         }
     }
 
     return JsonResponse(response)
 
 @csrf_exempt
-def outbound_sent(request, user_id, pid_id):
+def outbound_sent(request, device_id, from_user_id, to_user_id):
 
     # Get user sending invitation and receiving invitation.
-    from_user = get_object_or_404(UserId, user_id=user_id)
-    to_user = get_object_or_404(
-        UserId.objects.filter(
-            models.Q(pid_id=pid_id) | models.Q(user_id=pid_id)
-        )
-    )
+    from_user = get_object_or_404(DeviceToken, device_id=device_id).user
+    to_user = get_object_or_404(UserId, user_id=to_user_id)
 
     if request.method == "DELETE":
         try:
@@ -88,10 +83,10 @@ def outbound_sent(request, user_id, pid_id):
         return HttpResponseBadRequest("Failed to create invitation.")
 
 
-def inbound(request, user_id):
+def inbound(request, device_id, user_id):
 
     # Look up for received_invitations.
-    user = get_object_or_404(UserId, user_id=user_id)
+    user = get_object_or_404(DeviceToken, device_id=device_id).user
 
     entries = list()
     for invitation in user.received_invitations.all():
@@ -111,9 +106,9 @@ def inbound(request, user_id):
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": len(entries),
+            "size": min(len(entries), 1),
             "offset": 0,
-            "totalSize": len(entries)
+            "totalSize": min(len(entries), 1)
         }
     }
 
@@ -121,11 +116,11 @@ def inbound(request, user_id):
 
 
 @csrf_exempt
-def inbound_accept(request, to_user_id, from_user_id):
+def inbound_accept(request, device_id, to_user_id, from_user_id):
 
     # Get user sending invitation and receiving invitation.
     from_user = get_object_or_404(UserId, user_id=from_user_id)
-    to_user = get_object_or_404(UserId, user_id=to_user_id)
+    to_user = get_object_or_404(DeviceToken, device_id=device_id).user
 
     try:
         with transaction.atomic():
@@ -147,9 +142,9 @@ def inbound_accept(request, to_user_id, from_user_id):
             return HttpResponse("", status=204)
 
 
-def get_friends(request, user_id):
+def get_friends(request, device_id, user_id):
 
-    user = get_object_or_404(UserId, user_id=user_id)
+    user = get_object_or_404(DeviceToken, device_id=device_id).user
     entries = list()
 
     for friend in user.friends.all():
@@ -176,9 +171,9 @@ def get_friends(request, user_id):
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": len(entries),
+            "size": min(len(entries), 1),
             "offset": 0,
-            "totalSize": len(entries)
+            "totalSize": min(len(entries), 1)
         }
     }
 
@@ -186,8 +181,8 @@ def get_friends(request, user_id):
 
 
 @csrf_exempt
-def cancel_friendship(request, to_user_id, from_user_id):
-    from_user = get_object_or_404(UserId, user_id=from_user_id)
+def cancel_friendship(request, device_id, to_user_id, from_user_id):
+    from_user = get_object_or_404(DeviceToken, device_id=device_id).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
     from_user.friends.remove(to_user)
     to_user.friends.remove(from_user)

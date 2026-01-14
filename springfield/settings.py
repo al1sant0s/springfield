@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'user.apps.UserConfig',
     'proxy.apps.ProxyConfig',
     'friends.apps.FriendsConfig',
+    'avatar.apps.AvatarConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -23,7 +23,8 @@ urlpatterns = [
     path('synergy.user/', include('user.urls')),
     path('nexus.connect/', include('connect.urls')),
     path('nexus.proxy/', include('proxy.urls')),
-    path('friends/', include('friends.urls')),
+    path('antelope.friends.url/', include('friends.urls')),
+    path('avatar/', include('avatar.urls')),
     path('admin/', admin.site.urls),
     path('', include('events.urls')),
 ]

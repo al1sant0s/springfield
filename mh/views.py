@@ -1,6 +1,5 @@
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from django.core.cache import cache
 from django.db.models import F
 from django.views.decorators.csrf import csrf_exempt
@@ -35,7 +34,6 @@ def get_towns_dir():
 def save_proto(target, proto_data):
 
     proto_data = proto_data.SerializeToString()
-    print(target)
 
     with open(target, "wb") as f:
         f.write(proto_data)
@@ -57,7 +55,7 @@ def load_town(mayhem_id):
 
     user = UserId.objects.get(mayhem_id=mayhem_id)
 
-    town_file = Path(get_towns_dir(), f"{mayhem_id}.pb")
+    town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
     land_data = LandData_pb2.LandMessage()
 
     # Create a new fresh town if one does not exist already.
@@ -69,7 +67,8 @@ def load_town(mayhem_id):
         land_data.friendData.name = user.username
         land_data.friendData.rating = 0
         land_data.friendData.boardwalkTileCount = 0
-        save_proto(Path(get_towns_dir(), f"{mayhem_id}.pb"), land_data)
+        town_file.parent.mkdir(parents=True)
+        save_proto(town_file, land_data)
 
     else:
 
@@ -98,7 +97,7 @@ def load_town(mayhem_id):
             # Override Mayhem id.
             if land_data.HasField("id") and land_data.id != str(mayhem_id):
                 land_data.id = str(mayhem_id)
-                save_proto(Path(get_towns_dir(), f"{mayhem_id}.pb"), land_data)
+                save_proto(town_file, land_data)
 
 
     return land_data
@@ -174,9 +173,7 @@ def users(request):
         for subkey, subvalue in value.items():
             setattr(getattr(user_response, key), subkey, subvalue)
 
-    user_response = user_response.SerializeToString()
-
-    return HttpResponse(user_response, content_type = "application/x-protobuf")
+    return HttpResponse(user_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt
@@ -217,17 +214,26 @@ def protoClientConfig(request):
         with open(Path("mh/responses/protoClientConfig.json"), "r") as f:
             json_data = json.load(f)
 
-        clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()
-
-        for obj in json_data:
-            entry = clientconfig_response.items.add()
-            for key, value in obj.items():
-                setattr(entry, key, value)
-
-        clientconfig_response = clientconfig_response.SerializeToString()
-
         with open("config.json", "r") as f:
+
             config = json.load(f)
+            protocol = config["protocol"]
+            proxy = config["host"]
+            port = config["port"]
+
+            # Avatar change url.
+            for item in json_data:
+                if item["clientConfigId"] == 52:
+                    item["value"] = f"{protocol}://{proxy}:{port}"
+
+            clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()
+
+            for obj in json_data:
+                entry = clientconfig_response.items.add()
+                for key, value in obj.items():
+                    setattr(entry, key, value)
+
+            clientconfig_response = clientconfig_response.SerializeToString()
             cache.set("clientconfig", clientconfig_response, timeout = config["cache_minutes"])
 
 
@@ -288,9 +294,8 @@ def friendData(request):
 
     friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
     friend_data_response.friendData.extend(friend_data_pairs)
-    friend_data_response = friend_data_response.SerializeToString()
 
-    return HttpResponse(friend_data_response, content_type = "application/x-protobuf")
+    return HttpResponse(friend_data_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt
@@ -308,9 +313,7 @@ def protoWholeLandToken(request, mayhem_id):
     for key, value in response.items():
         setattr(proto_whole_land_token_response, key, value)
 
-    proto_whole_land_token_response = proto_whole_land_token_response.SerializeToString()
-
-    return HttpResponse(proto_whole_land_token_response, content_type = "application/x-protobuf")
+    return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt
@@ -318,8 +321,7 @@ def deleteToken(request, mayhem_id):
 
     delete_token_response = WholeLandTokenData_pb2.DeleteTokenResponse()
     delete_token_response.result = True
-    delete_token_response = delete_token_response.SerializeToString()
-    return HttpResponse(delete_token_response, content_type = "application/x-protobuf")
+    return HttpResponse(delete_token_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt
@@ -351,7 +353,7 @@ def protoland(request, mayhem_id):
 
             # Update town.
             protoland_response.ParseFromString(decompressed_data) # type: ignore
-            save_proto(Path(get_towns_dir(), f"{mayhem_id}.pb"), protoland_response)
+            save_proto(Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb"), protoland_response)
 
             root = ET.Element("WholeLandUpdateResponse")
             return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
@@ -373,8 +375,7 @@ def protocurrency(request, mayhem_id):
     protocurrency_response.vcBalance = user.donuts_balance                    # number of donuts
     protocurrency_response.createdAt = int(round(time.time() * 1000))
     protocurrency_response.updatedAt = int(round(time.time() * 1000))
-    protocurrency_response = protocurrency_response.SerializeToString()
-    return HttpResponse(protocurrency_response, content_type = "application/x-protobuf")
+    return HttpResponse(protocurrency_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 def checkToken(request, mayhem_id):
@@ -384,8 +385,7 @@ def checkToken(request, mayhem_id):
     checktoken_response = AuthData_pb2.TokenData()
     checktoken_response.sessionKey = user.session_key
     checktoken_response.expirationDate = 0
-    checktoken_response = checktoken_response.SerializeToString()
-    return HttpResponse(checktoken_response, content_type = "application/x-protobuf")
+    return HttpResponse(checktoken_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt
@@ -448,7 +448,7 @@ def event_user(request, mayhem_id):
         event_request.ParseFromString(request.body)
         event_request.id = str(uuid.uuid4())
         event_request.fromPlayerId = str(mayhem_id)
-        event_file = Path(get_towns_dir(), f"{event_request.toPlayerId}.events")
+        event_file = Path(get_towns_dir(), f"{event_request.toPlayerId}/{event_request.toPlayerId}.events")
         event_data = load_proto(event_file, LandData_pb2.EventsMessage())
         event_data.event.extend([event_request])
         save_proto(event_file, event_data)
@@ -459,7 +459,7 @@ def event_user(request, mayhem_id):
     elif request.method == "GET":
 
         event_response = LandData_pb2.EventsMessage()
-        event_file = Path(get_towns_dir(), f"{mayhem_id}.events")
+        event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
 
         if event_file.exists():
             event_response = load_proto(event_file, event_response)

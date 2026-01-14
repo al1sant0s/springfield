@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse, response
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.db import models
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -54,7 +54,7 @@ def me_personas(request, device_id, persona_id):
     response["persona"].update(
         {
             "personaId": user.persona_id,
-            "pidId": user.pid_id,
+            "pidId": user.user_id,
             "displayName": user.username,
             "name": user.username.lower(),
             "dateCreated": user.date_created.strftime('%Y-%m-%dT%H:%MZ'),
@@ -84,7 +84,7 @@ def user_id_personas(request, device_id, user_id):
                 "persona": [
                     {
                         "personaId": user.persona_id,
-                        "pidId": user.pid_id,
+                        "pidId": user.user_id,
                         "displayName": str(user.username),
                         "name": str(user.username),
                         "namespaceName": "gsp-redcrow-simpsons4",
@@ -125,7 +125,7 @@ def personas(request, device_id):
         friends.append(
             {
                 "personaId": user.persona_id,
-                "pidId": user.pid_id,
+                "pidId": user.user_id,
                 "displayName": str(user.username),
                 "name": str(user.username),
                 "namespaceName": request.GET.get("namespaceName", "gsp-redcrow-simpsons4"),
@@ -193,7 +193,7 @@ def links(request, device_id):
                     "personaId": token.user.persona_id,
                     "personaNamespace": request.GET.get("personaNamespace", "cem_ea_id"),
                     "pidGamePersonaMappingId": token.user.persona_id,
-                    "pidId": token.user.pid_id,
+                    "pidId": token.user.user_id,
                     "status":"ACTIVE"
                 }
             ]

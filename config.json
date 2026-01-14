@@ -3,5 +3,6 @@
   "host": "192.168.1.115",
   "port": "8081",
   "cache_minutes": 3600,
-  "towns_dir": "towns"
+  "towns_dir": "towns",
+  "avatar_location": "/static/avatar"
 }
