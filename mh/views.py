@@ -1,8 +1,9 @@
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 from django.core.cache import cache
 from django.db.models import F
+from django.views.decorators.csrf import csrf_exempt
 
 from connect.models import DeviceToken, UserId
 from pathlib import Path
@@ -13,6 +14,7 @@ import json
 import gzip
 import time
 import uuid
+import os
 
 
 def get_towns_dir():
@@ -437,7 +439,6 @@ def extraLandUpdate(request, mayhem_id):
         return HttpResponseBadRequest(f"Method '{request.method}' not supported!")
 
 
-
 @csrf_exempt
 def event_user(request, mayhem_id):
 
@@ -445,13 +446,12 @@ def event_user(request, mayhem_id):
 
         event_request = LandData_pb2.EventMessage()
         event_request.ParseFromString(request.body)
-
-        events_files = {str(event.toPlayerId): load_proto(Path(get_towns_dir(), f"{event.toPlayerId}.events"), LandData_pb2.EventsMessage()) for event in [event_request]}
-
-        events_files[event_request.toPlayerId].event.extend([event_request])
-
-        for event_file, event_data in events_files.items():
-            save_proto(Path(get_towns_dir(), f"{event_file}.events"), event_data)
+        event_request.id = str(uuid.uuid4())
+        event_request.fromPlayerId = str(mayhem_id)
+        event_file = Path(get_towns_dir(), f"{event_request.toPlayerId}.events")
+        event_data = load_proto(event_file, LandData_pb2.EventsMessage())
+        event_data.event.extend([event_request])
+        save_proto(event_file, event_data)
 
         root = ET.Element("Land")
         return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
@@ -459,7 +459,11 @@ def event_user(request, mayhem_id):
     elif request.method == "GET":
 
         event_response = LandData_pb2.EventsMessage()
-        event_response = load_proto(Path(get_towns_dir(), f"{mayhem_id}.events"), event_response)
+        event_file = Path(get_towns_dir(), f"{mayhem_id}.events")
+
+        if event_file.exists():
+            event_response = load_proto(event_file, event_response)
+            os.remove(event_file)
 
         return HttpResponse(event_response.SerializeToString(), content_type = "application/x-protobuf")
 
