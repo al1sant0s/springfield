@@ -355,6 +355,11 @@ def protoland(request, mayhem_id):
             protoland_response.ParseFromString(decompressed_data) # type: ignore
             save_proto(Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb"), protoland_response)
 
+            # Remove events file if it exists.
+            event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
+            if event_file.exists():
+                os.remove(event_file)
+
             root = ET.Element("WholeLandUpdateResponse")
             return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
@@ -463,7 +468,6 @@ def event_user(request, mayhem_id):
 
         if event_file.exists():
             event_response = load_proto(event_file, event_response)
-            os.remove(event_file)
 
         return HttpResponse(event_response.SerializeToString(), content_type = "application/x-protobuf")
 
