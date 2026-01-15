@@ -32,9 +32,9 @@ def outbound(request, device_id, user_id):
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": min(len(entries), 1),
+            "size": len(entries),
             "offset": 0,
-            "totalSize": min(len(entries), 1)
+            "totalSize": len(entries)
         }
     }
 
@@ -106,9 +106,9 @@ def inbound(request, device_id, user_id):
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": min(len(entries), 1),
+            "size": len(entries),
             "offset": 0,
-            "totalSize": min(len(entries), 1)
+            "totalSize": len(entries)
         }
     }
 
@@ -171,9 +171,9 @@ def get_friends(request, device_id, user_id):
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": min(len(entries), 1),
+            "size": len(entries),
             "offset": 0,
-            "totalSize": min(len(entries), 1)
+            "totalSize": len(entries)
         }
     }
 

@@ -12,6 +12,18 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 
+import json
+
+
+with open("config.json", "r") as f:
+    config = json.load(f)
+    protocol = config["protocol"]
+    host = config["host"]
+    port = config["port"]
+    server_url = f"{protocol}://{host}:{port}"
+
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,10 +37,11 @@ SECRET_KEY = 'django-insecure-us!8f=&5jt=ir2=ec)9(sr$26v-ijy)d-cwg58i=+_!jua@f5a
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = [host, 'localhost', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8080',
+    'http://127.0.0.1:8080'
 ]
 
 

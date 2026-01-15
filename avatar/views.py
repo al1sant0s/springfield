@@ -16,11 +16,11 @@ def get_avatar_url():
 
             config = json.load(f)
             protocol = config["protocol"]
-            proxy = config["host"]
+            host = config["host"]
             port = config["port"]
             avatar_location = config["avatar_location"].removeprefix("/")
 
-            avatar_url = f"{protocol}://{proxy}:{port}/{avatar_location}"
+            avatar_url = f"{protocol}://{host}:{port}/{avatar_location}"
             cache.set("avatar_url", avatar_url, timeout = config["cache_minutes"])
 
     return avatar_url

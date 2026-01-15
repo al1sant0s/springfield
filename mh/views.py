@@ -218,13 +218,13 @@ def protoClientConfig(request):
 
             config = json.load(f)
             protocol = config["protocol"]
-            proxy = config["host"]
+            host = config["host"]
             port = config["port"]
 
             # Avatar change url.
             for item in json_data:
                 if item["clientConfigId"] == 52:
-                    item["value"] = f"{protocol}://{proxy}:{port}"
+                    item["value"] = f"{protocol}://{host}:{port}"
 
             clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()
 

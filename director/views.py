@@ -28,12 +28,12 @@ def getDirectionByPackage(request, platform):
 
             config = json.load(f)
             protocol = config["protocol"]
-            proxy = config["host"]
+            host = config["host"]
             port = config["port"]
             services = {directions_android["serverData"][i]["key"]: i for i in range(len(directions_android["serverData"]))}
 
             for i in services.values():
-                directions_android["serverData"][i]["value"] = f"{protocol}://{proxy}:{port}"
+                directions_android["serverData"][i]["value"] = f"{protocol}://{host}:{port}"
 
             cache.set("directions_android", directions_android, timeout = config["cache_minutes"])
             cache.set("services", services, timeout = config["cache_minutes"])
