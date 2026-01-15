@@ -14,14 +14,12 @@ from pathlib import Path
 
 import json
 
-
+# Grab server url from config json and inject it into ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
 with open("config.json", "r") as f:
     config = json.load(f)
     protocol = config["protocol"]
     host = config["host"]
     port = config["port"]
-    server_url = f"{protocol}://{host}:{port}"
-
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -40,7 +38,8 @@ DEBUG = True
 ALLOWED_HOSTS = [host, 'localhost', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8080',
+    f"{protocol}://{host}:{port}",
+    f"{protocol}://localhost:{port}",
     'http://127.0.0.1:8080'
 ]
 
