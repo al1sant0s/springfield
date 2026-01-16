@@ -1,8 +1,7 @@
 from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
-from django.urls import reverse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from django.db.models import F
+from django.contrib.auth.models import BaseUserManager
 from django.views.decorators.csrf import csrf_exempt
 
 from proxy.models import ProgRegCode
@@ -17,6 +16,7 @@ import hashlib
 import uuid
 import time
 import datetime
+import random
 import secrets
 
 
@@ -162,7 +162,41 @@ def auth(request, device_id):
             return JsonResponse(response)
 
     else:
-        return JsonResponse({"code": hashlib.sha1(secrets.token_bytes(32)).hexdigest()})
+        #return JsonResponse({"code": hashlib.sha1(secrets.token_bytes(32)).hexdigest()})
+        #return JsonResponse({"error":"invalid_request","error_description": "REQUIRE_PASSWORD_OR_CODE", "error_number": 100119})
+
+        email = request.GET.get("email")
+
+        if email is None:
+            return HttpResponseBadRequest("Missing email parameter in URL.")
+
+        else:
+
+            # Same code as progreg_code view.
+            email = BaseUserManager.normalize_email(email)
+
+            token = get_object_or_404(DeviceToken, device_id=device_id)
+
+            # Search for current active code in database.
+            # If it cannot find one, create a new one.
+            try:
+                auth_code = ProgRegCode.objects.get(email=email)
+
+            except ProgRegCode.DoesNotExist:
+                ProgRegCode.objects.create(
+                    email=email,
+                    code=random.randint(100000, 999999),
+                    expiry_on=timezone.now() + datetime.timedelta(hours=2),
+                    token=token
+                )
+
+            else:
+                if auth_code.expiry_on < timezone.now():
+                    auth_code.delete()
+                    ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
+
+
+            return JsonResponse({"error_description": "REQUIRE_PASSWORD_OR_CODE"})
 
 
 @csrf_exempt
