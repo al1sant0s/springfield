@@ -48,6 +48,7 @@ def getDirectionByPackage(request, platform):
         "synergy.user",
         "antelope.friends.url", # For security reasons.
         "friends.url",
+        "river.pin",
     ]
 
     for service in update_services:

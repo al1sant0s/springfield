@@ -2,7 +2,9 @@ from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpRespo
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
 from django.db.models import F
+from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
 from connect.models import DeviceToken, UserId
 from pathlib import Path
@@ -200,6 +202,15 @@ def clienttelemetry(request):
 
 @csrf_exempt
 def trackinglog(request):
+
+    if request.method == "POST":
+        client_log_message = ClientLog_pb2.ClientLogMessage()
+        client_log_message.ParseFromString(request.body)
+
+        if settings.DEBUG:
+            print(client_log_message)
+
+
     root = ET.Element("Resources")
     ET.SubElement(root, "URI").text = "OK"
     return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
@@ -325,6 +336,7 @@ def deleteToken(request, mayhem_id):
 
 
 @csrf_exempt
+@require_http_methods(["GET", "POST"])
 def protoland(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
@@ -340,7 +352,7 @@ def protoland(request, mayhem_id):
 
         return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
 
-    elif request.method == "POST":
+    else:
 
         # Try to decompress.
         try:
@@ -362,10 +374,6 @@ def protoland(request, mayhem_id):
 
             root = ET.Element("WholeLandUpdateResponse")
             return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
-
-    else:
-        return HttpResponseBadRequest(f"Method '{request.method}' not supported!")
-
 
 
 def protocurrency(request, mayhem_id):
@@ -394,57 +402,53 @@ def checkToken(request, mayhem_id):
 
 
 @csrf_exempt
+@require_POST
 def extraLandUpdate(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
 
     # Update donuts balance.
-    if request.method == "POST":
+    # Try to decompress.
+    try:
+        decompressed_data = gzip.decompress(request.body)
 
-        # Try to decompress.
-        try:
-            decompressed_data = gzip.decompress(request.body)
+    except gzip.BadGzipFile:
+        decompressed_data = request.body
 
-        except gzip.BadGzipFile:
-            decompressed_data = request.body
+    finally:
 
-        finally:
+        # Get list of events to update donuts.
+        # Each event is a list with an amount to increase/decrease donuts balance.
+        extraland_update_request = LandData_pb2.ExtraLandMessage()
+        extraland_update_request.ParseFromString(decompressed_data) # type: ignore
 
-            # Get list of events to update donuts.
-            # Each event is a list with an amount to increase/decrease donuts balance.
-            extraland_update_request = LandData_pb2.ExtraLandMessage()
-            extraland_update_request.ParseFromString(decompressed_data) # type: ignore
-
-            # There's also other stuff here like "reason" but we don't care about that.
-            # Only update the donuts balance.
-            processed_currency_delta = list()
-            donuts_amount = 0
-            for currency_delta in extraland_update_request.currencyDelta:
-                donuts_amount += int(currency_delta.amount)
-                processed_currency_delta.append(
-                    LandData_pb2.ExtraLandMessage.CurrencyDelta(
-                        id=currency_delta.id,
-                        reason=currency_delta.reason,
-                        amount=currency_delta.amount
-                    )
+        # There's also other stuff here like "reason" but we don't care about that.
+        # Only update the donuts balance.
+        processed_currency_delta = list()
+        donuts_amount = 0
+        for currency_delta in extraland_update_request.currencyDelta:
+            donuts_amount += int(currency_delta.amount)
+            processed_currency_delta.append(
+                LandData_pb2.ExtraLandMessage.CurrencyDelta(
+                    id=currency_delta.id,
+                    reason=currency_delta.reason,
+                    amount=currency_delta.amount
                 )
+            )
 
-            # Update donuts balance in database.
-            user.donuts_balance = F("donuts_balance") + donuts_amount
-            user.save()
+        # Update donuts balance in database.
+        user.donuts_balance = F("donuts_balance") + donuts_amount
+        user.save()
 
-            # Note: you need to use extend() method if you define the response first and edit a repeated field later.
-            # extraland_update_response = LandData_pb2.ExtraLandResponse()
-            # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
-            extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
-            return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
-
-
-    else:
-        return HttpResponseBadRequest(f"Method '{request.method}' not supported!")
+        # Note: you need to use extend() method if you define the response first and edit a repeated field later.
+        # extraland_update_response = LandData_pb2.ExtraLandResponse()
+        # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
+        extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
+        return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt
+@require_http_methods(["GET", "POST"])
 def event_user(request, mayhem_id):
 
     if request.method == "POST":
@@ -461,7 +465,7 @@ def event_user(request, mayhem_id):
         root = ET.Element("Land")
         return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
-    elif request.method == "GET":
+    else:
 
         event_response = LandData_pb2.EventsMessage()
         event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
@@ -470,9 +474,6 @@ def event_user(request, mayhem_id):
             event_response = load_proto(event_file, event_response)
 
         return HttpResponse(event_response.SerializeToString(), content_type = "application/x-protobuf")
-
-    else:
-        return HttpResponseBadRequest(f"The {request.method} is not supported.")
 
 
 def event_fakefriend(request):

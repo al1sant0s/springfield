@@ -78,11 +78,6 @@ def auth(request, device_id):
                 if token.user.session_key != token.session_key:
                     pass
 
-                # Time ran out. Logout user.
-                elif token.timestamp < timestamp:
-                    token.login_status = False
-
-
 
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
@@ -264,14 +259,6 @@ def tokeninfo(request, device_id):
                 "authenticator_pid_id": token.user.pid_id
             }
         )
-
-    # Update token timestamp with 60 seconds from now. If auth gets called again, we only logout user if it
-    # if the future time is greater than the deadline specified in timestamp. This way we avoid user getting logged out
-    # everytime the game decides to call auth again during startup. If the user decides reinstall the app, they must wait
-    # at least 60 seconds since the last authentication to be able to login again.
-    token.timestamp = timezone.now() + datetime.timedelta(seconds=60)
-    token.save()
-
 
     return JsonResponse(response)
 
