@@ -28,7 +28,7 @@ def get_towns_dir():
             cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
 
         if not towns_dir.exists():
-            towns_dir.mkdir()
+            towns_dir.mkdir(parents=True, exist_ok=True)
 
     return towns_dir
 
@@ -69,7 +69,7 @@ def load_town(mayhem_id):
         land_data.friendData.name = user.username
         land_data.friendData.rating = 0
         land_data.friendData.boardwalkTileCount = 0
-        town_file.parent.mkdir(parents=True)
+        town_file.parent.mkdir(parents=True, exist_ok=True)
         save_proto(town_file, land_data)
 
     else:
@@ -268,7 +268,17 @@ def friendData(request):
         return HttpResponseBadRequest("Missing header currentClientSessionId.")
 
     else:
-        user = get_object_or_404(DeviceToken, current_client_session_id=uuid.UUID(current_client_session_id)).user
+        try:
+            session_uuid = uuid.UUID(current_client_session_id)
+
+        except ValueError:
+            raise Http404
+
+        tokens = DeviceToken.objects.filter(current_client_session_id=session_uuid)
+        if not tokens.exists():
+            raise Http404
+
+        user = tokens.first().user
 
         for friend in user.friends.exclude(pk=user.pk):
             mayhem_ids.append(friend.mayhem_id.int)
