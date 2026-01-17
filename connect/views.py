@@ -79,6 +79,11 @@ def auth(request, device_id):
                     pass
 
 
+                # Logout user if timeout.
+                if token.device_id != device_id and token.timestamp < timestamp:
+                    token.login_status = False
+
+
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
             token.user.save()
@@ -160,17 +165,23 @@ def auth(request, device_id):
         #return JsonResponse({"code": hashlib.sha1(secrets.token_bytes(32)).hexdigest()})
         #return JsonResponse({"error":"invalid_request","error_description": "REQUIRE_PASSWORD_OR_CODE", "error_number": 100119})
 
+        token = get_object_or_404(DeviceToken, device_id=device_id)
         email = request.GET.get("email")
 
         if email is None:
-            return HttpResponseBadRequest("Missing email parameter in URL.")
+
+            response = {
+                "code": token.code,
+                "lnglv_token": token.access_token
+            }
+
+            return JsonResponse(response)
 
         else:
 
             # Same code as progreg_code view.
             email = BaseUserManager.normalize_email(email)
 
-            token = get_object_or_404(DeviceToken, device_id=device_id)
 
             # Search for current active code in database.
             # If it cannot find one, create a new one.
@@ -215,7 +226,7 @@ def get_token(request, device_id):
     response = {
         "access_token": token.access_token,
         "token_type": "Bearer",
-        "expires_in": 720,
+        "expires_in": 40630,
         "refresh_token": token.refresh_token + "." + token.code[:27],
         "refresh_token_expires_in": 86400,
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
@@ -259,6 +270,9 @@ def tokeninfo(request, device_id):
                 "authenticator_pid_id": token.user.pid_id
             }
         )
+
+    token.timestamp = timezone.now() + datetime.timedelta(seconds=60)
+    token.save()
 
     return JsonResponse(response)
 

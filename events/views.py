@@ -24,15 +24,17 @@ def pinEvents(request, device_id):
         decompressed_data = request.body
 
     json_data = json.loads(decompressed_data)
+    pidm = json_data[0].get("contexts", [dict()])[0].get("pidm")
 
-    # No Date of Birth means the device must be logged out.
-    if json_data[0].get("contexts", [dict()])[0].get("pidm", dict()).get("nucleus") is not None:
+    if pidm is not None:
 
-        token = get_object_or_404(DeviceToken, device_id=device_id)
+        if pidm.get("nucleus") is not None:
+            token = get_object_or_404(DeviceToken, device_id=device_id)
 
-        if not token.login_status:
-            token.login_status = True
-            token.save()
+            if not token.login_status:
+                token.login_status = True
+                token.save()
+
 
     return JsonResponse({"status": "ok"})
 
