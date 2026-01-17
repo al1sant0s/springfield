@@ -271,9 +271,6 @@ def tokeninfo(request, device_id):
             }
         )
 
-    token.timestamp = timezone.now() + datetime.timedelta(seconds=60)
-    token.save()
-
     return JsonResponse(response)
 
 

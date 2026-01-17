@@ -38,11 +38,9 @@ DEBUG = True
 ALLOWED_HOSTS = [host, 'localhost', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS = [
-    f"{protocol}://{host}:{port}",
-    f"{protocol}://localhost:{port}",
-    f"{protocol}://{host}:{int(port)-1}",
-    f"{protocol}://localhost:{int(port)-1}",
-    'http://127.0.0.1:8080'
+    f'{protocol}://{host}:{port}',
+    f'{protocol}://localhost:{port}',
+    f'http://127.0.0.1:{port}'
 ]
 
 

@@ -1,7 +1,5 @@
 from django.http import HttpResponse, JsonResponse
 
-from connect.models import UserId, DeviceToken
-
 import json
 import hashlib
 
