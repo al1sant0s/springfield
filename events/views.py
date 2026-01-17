@@ -2,6 +2,11 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
+import json
+import uuid
+
+from connect.models import DeviceToken
+
 # Create your views here.
 
 @require_POST
@@ -12,7 +17,23 @@ def pinEvents(request, device_id):
 
 @require_POST
 @csrf_exempt
-def logEvent(request):
+def logEvent(request, device_id):
+
+    json_data = json.loads(request.body)
+    advertising_id = json_data[0].get("advertiserID")
+    telemetry_id = json_data[0].get("uid")
+
+    if advertising_id is not None and telemetry_id is not None:
+        try:
+            token = DeviceToken.objects.get(advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, advertising_id))
+
+        except DeviceToken.DoesNotExist:
+            pass
+
+        else:
+            if token.device_id != device_id and str(token.user.telemetry_id) != telemetry_id:
+                token.login_status = False
+                token.save()
 
     response = {
         "status": "ok"

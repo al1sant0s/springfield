@@ -201,15 +201,14 @@ def clienttelemetry(request):
 #######################################
 
 @csrf_exempt
+@require_POST
 def trackinglog(request):
 
-    if request.method == "POST":
-        client_log_message = ClientLog_pb2.ClientLogMessage()
-        client_log_message.ParseFromString(request.body)
+    client_log_message = ClientLog_pb2.ClientLogMessage()
+    client_log_message.ParseFromString(request.body)
 
-        if settings.DEBUG:
-            print(client_log_message)
-
+    if settings.DEBUG:
+        print(client_log_message.text)
 
     root = ET.Element("Resources")
     ET.SubElement(root, "URI").text = "OK"

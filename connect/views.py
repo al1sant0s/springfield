@@ -79,11 +79,6 @@ def auth(request, device_id):
                     pass
 
 
-                # Logout user if timeout.
-                if token.device_id != device_id and token.timestamp < timestamp:
-                    token.login_status = False
-
-
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
             token.user.save()
