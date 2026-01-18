@@ -45,8 +45,9 @@ class DeviceToken(models.Model):
     # When /connect/tokeninfo is requested we will receive /<uuid:device_id>/connect/tokeninfo
     # and be able to find the DeviceToken. We can also use it in other apps.
     device_id = models.UUIDField(unique=True)
+    device_id_cache = models.UUIDField(unique=True) # Fallback for tokeninfo when director is called again.
     # For mh endpoint POST method identification. Usable in friendData/origin
-    current_client_session_id = models.UUIDField(blank=True)
+    current_client_session_id = models.UUIDField(null=True, blank=True)
     code = models.CharField(max_length=64)
     access_token = models.TextField()
     refresh_token = models.TextField()

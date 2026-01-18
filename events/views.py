@@ -21,9 +21,8 @@ def logEvent(request, device_id):
 
     json_data = json.loads(request.body)
     advertising_id = json_data[0].get("advertiserID")
-    telemetry_id = json_data[0].get("uid")
 
-    if advertising_id is not None and telemetry_id is not None:
+    if advertising_id is not None:
         try:
             token = DeviceToken.objects.get(advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, advertising_id))
 
@@ -31,8 +30,16 @@ def logEvent(request, device_id):
             pass
 
         else:
-            if token.device_id != device_id and str(token.user.telemetry_id) != telemetry_id:
-                token.login_status = False
+            if token.device_id != device_id:
+
+                # Update device_id.
+                token.device_id_cache = token.device_id
+                token.device_id = device_id
+
+                # Logout user if this is a reinstall.
+                if json_data[0].get("persona") is None:
+                    token.login_status = False
+
                 token.save()
 
     response = {

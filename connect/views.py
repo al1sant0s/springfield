@@ -1,7 +1,9 @@
+from re import DEBUG
 from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import BaseUserManager
+from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 
 from proxy.models import ProgRegCode
@@ -71,12 +73,15 @@ def auth(request, device_id):
                 # Each new token creates a new user.
                 token = DeviceToken(advertising_id=advertising_id)
                 token.user = make_user(1001000000001)
+                token.device_id_cache = device_id
 
             else:
                 # Difference between UserID and DeviceToken session_keys means user is logging in another device.
                 # Do something about it.
                 if token.user.session_key != token.session_key:
                     pass
+
+                token.device_id_cache = token.device_id
 
 
             token.user.session_key = secrets.token_urlsafe(32)
@@ -115,7 +120,7 @@ def auth(request, device_id):
             return JsonResponse(response)
 
 
-        # Normal user registration. No need to refresh the token and the user, just reassociate them with each other.
+        # Normal user registration.
         else:
 
             auth_code = get_object_or_404(ProgRegCode, email=str(jsondata["email"]), code=int(str(jsondata["cred"])))
@@ -140,11 +145,13 @@ def auth(request, device_id):
 
             user.is_registered = True
             user.session_key = secrets.token_urlsafe(32)
+            user.last_authenticated = timestamp
             user.save()
 
             auth_code.token.user = user
             auth_code.token.session_key = user.session_key
             auth_code.token.timestamp = user.last_authenticated
+            auth_code.token.timestamp = timestamp
             auth_code.token.login_status = True
             auth_code.token.save()
 
@@ -210,12 +217,12 @@ def get_token(request, device_id):
         "aud":"simpsons4-android-client",
         "iss":"accounts.ea.com",
         "iat": int(round(time.time() * 1000)),
-        "exp": int(round(time.time() * 1000)) + 720,
+        "exp": int(round(time.time() * 1000)) + 40630,
         "pid_id": token.user.pid_id,
         "user_id": token.user.user_id,
         "persona_id": token.user.persona_id,
         "pid_type": pid_type[token.login_status],
-        "auth_time": 0
+        "auth_time": 1
     }
 
     response = {
@@ -223,7 +230,7 @@ def get_token(request, device_id):
         "token_type": "Bearer",
         "expires_in": 40630,
         "refresh_token": token.refresh_token + "." + token.code[:27],
-        "refresh_token_expires_in": 86400,
+        "refresh_token_expires_in": 40630,
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
 
@@ -236,12 +243,12 @@ def get_token(request, device_id):
 
 def tokeninfo(request, device_id):
 
-    token = get_object_or_404(DeviceToken, device_id=device_id)
+    token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
 
     response = {
         "client_id": "simpsons4-android-client",
         "scope": "offline basic.antelope.links.bulk openid signin antelope-rtm-readwrite search.identity basic.antelope basic.identity basic.persona antelope-inbox-readwrite",
-        "expires_in": 720,
+        "expires_in": 4084253,
         "pid_id": str(token.user.pid_id),
         "pid_type": "AUTHENTICATOR_ANONYMOUS",
         "user_id": str(token.user.user_id),
