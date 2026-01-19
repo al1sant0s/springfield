@@ -222,7 +222,7 @@ def get_token(request, device_id):
         "user_id": token.user.user_id,
         "persona_id": token.user.persona_id,
         "pid_type": pid_type[token.login_status],
-        "auth_time": 1
+        "auth_time": 0
     }
 
     response = {
@@ -243,7 +243,8 @@ def get_token(request, device_id):
 
 def tokeninfo(request, device_id):
 
-    token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
+    access_token = request.GET.get("access_token")
+    token = get_object_or_404(DeviceToken, Q(access_token=access_token) | Q(device_id=device_id) | Q(device_id_cache=device_id))
 
     response = {
         "client_id": "simpsons4-android-client",
@@ -272,6 +273,11 @@ def tokeninfo(request, device_id):
                 "authenticator_pid_id": token.user.pid_id
             }
         )
+
+    if token.device_id != device_id:
+        token.device_id_cache = token.device_id
+        token.device_id = device_id
+        token.save()
 
     return JsonResponse(response)
 

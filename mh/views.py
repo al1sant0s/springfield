@@ -1,7 +1,7 @@
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
-from django.db.models import F
+from django.db.models import F, Q
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
@@ -18,6 +18,20 @@ import uuid
 import os
 
 
+def starting_town(username):
+
+    land_data = LandData_pb2.LandMessage()
+    land_data.friendData.dataVersion = 72
+    land_data.friendData.hasLemonTree = False
+    land_data.friendData.language = 0
+    land_data.friendData.level = 0
+    land_data.friendData.name = username
+    land_data.friendData.rating = 0
+    land_data.friendData.boardwalkTileCount = 0
+
+    return land_data
+
+
 def get_towns_dir():
 
     towns_dir = cache.get("towns_dir")
@@ -27,13 +41,14 @@ def get_towns_dir():
             towns_dir = Path(config["towns_dir"])
             cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
 
-        if not towns_dir.exists():
-            towns_dir.mkdir(parents=True, exist_ok=True)
+    towns_dir.mkdir(parents=True, exist_ok=True)
 
     return towns_dir
 
 
 def save_proto(target, proto_data):
+
+    target.parent.mkdir(parents=True, exist_ok=True)
 
     proto_data = proto_data.SerializeToString()
 
@@ -53,53 +68,33 @@ def load_proto(target, proto_object):
         return proto_object
 
 
-def load_town(mayhem_id):
+def load_town(town_file, mayhem_id):
 
     user = UserId.objects.get(mayhem_id=mayhem_id)
 
-    town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
     land_data = LandData_pb2.LandMessage()
 
-    # Create a new fresh town if one does not exist already.
-    if not town_file.exists():
-        land_data.friendData.dataVersion = 72
-        land_data.friendData.hasLemonTree = False
-        land_data.friendData.language = 0
-        land_data.friendData.level = 0
-        land_data.friendData.name = user.username
-        land_data.friendData.rating = 0
-        land_data.friendData.boardwalkTileCount = 0
-        town_file.parent.mkdir(parents=True, exist_ok=True)
-        save_proto(town_file, land_data)
+    # Credits: Tjac python server.
+    with open(town_file, "rb") as f:
 
-    else:
+        try:
+            land_data.ParseFromString(f.read())
 
-        # Credits: Tjac python server.
-        with open(town_file, "rb") as f:
+        except:
 
             try:
+                f.seek(0x0c)      # see if this might be a teamtsto.org backup
                 land_data.ParseFromString(f.read())
 
+            # If everything fails just return an empty town response.
             except:
+                land_data = starting_town(user.username)
 
-                try:
-                    f.seek(0x0c)      # see if this might be a teamtsto.org backup
-                    land_data.ParseFromString(f.read())
 
-                # If everything fails just make a new town.
-                except:
-                    land_data.friendData.dataVersion = 72
-                    land_data.friendData.hasLemonTree = False
-                    land_data.friendData.language = 0
-                    land_data.friendData.level = 0
-                    land_data.friendData.name = user.username
-                    land_data.friendData.rating = 0
-                    land_data.friendData.boardwalkTileCount = 0
-
-            # Override Mayhem id.
-            if land_data.HasField("id") and land_data.id != str(mayhem_id):
-                land_data.id = str(mayhem_id)
-                save_proto(town_file, land_data)
+        # Override Mayhem id.
+        if land_data.HasField("id") and land_data.id != str(mayhem_id):
+            land_data.id = str(mayhem_id)
+            save_proto(town_file, land_data)
 
 
     return land_data
@@ -144,31 +139,42 @@ def gameplayconfig(request):
 @csrf_exempt
 def users(request):
 
+    if request.GET.get("application") == "nucleus":
+
+        try:
+            application_user_id = int(request.GET.get("applicationUserId"))
+
+        except ValueError:
+            return HttpResponseBadRequest("Invalid URL parameter: applicationUserId")
+
+        else:
+            user = get_object_or_404(UserId, user_id=application_user_id)
+
+    elif request.GET.get("application") == "tnt":
+
+        try:
+            session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
+
+        except ValueError:
+            return HttpResponseBadRequest("Invalid header: currentClientSessionId")
+
+        else:
+            user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
+
+
+    else:
+        return HttpResponseBadRequest("Unknown application")
+
+
     response = {
         "user": {
-            "userId": "123456789",
-            "telemetryId": "123456789"
+            "userId": str(user.mayhem_id.int),
+            "telemetryId": str(user.telemetry_id)
         },
         "token": {
-            "sessionKey": "123456789"
+            "sessionKey": user.session_key
         }
     }
-
-    application_user_id = request.GET.get("applicationUserId", "")
-    if application_user_id != "":
-
-        # Get a proper response.
-        user = get_object_or_404(UserId, user_id = application_user_id)
-
-        response = {
-            "user": {
-                "userId": str(user.mayhem_id.int),
-                "telemetryId": str(user.telemetry_id)
-            },
-            "token": {
-                "sessionKey": user.session_key
-            }
-        }
 
     user_response = AuthData_pb2.UsersResponseMessage()
     for key, value in response.items():
@@ -253,48 +259,41 @@ def protoClientConfig(request):
 @csrf_exempt
 def friendData(request):
 
-
     friend_data_pairs = list()
     mayhem_ids = list()
 
     debug_mayhem_id = request.GET.get("debug_mayhem_id")
-    current_client_session_id = request.headers.get("currentClientSessionId")
 
     # Find user friends.
     if debug_mayhem_id is not None:
         mayhem_ids.append(int(debug_mayhem_id))
 
-    elif current_client_session_id is None:
-        return HttpResponseBadRequest("Missing header currentClientSessionId.")
-
     else:
+
         try:
-            session_uuid = uuid.UUID(current_client_session_id)
+            session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
 
         except ValueError:
-            raise Http404
+            return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
 
-        tokens = DeviceToken.objects.filter(current_client_session_id=session_uuid)
-        if not tokens.exists():
-            raise Http404
+        else:
+            user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
 
-        user = tokens.first().user
-
-        for friend in user.friends.exclude(pk=user.pk):
-            mayhem_ids.append(friend.mayhem_id.int)
+            for friend in user.friends.exclude(pk=user.pk):
+                mayhem_ids.append(friend.mayhem_id.int)
 
 
     for mayhem_id in mayhem_ids:
 
         user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+        town_file = Path(get_towns_dir(), str(mayhem_id), f"{mayhem_id}.pb")
+        land_data = load_town(town_file, mayhem_id) if town_file.exists() else starting_town(user.username)
 
         friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
         friend_data_pair.friendData.name = user.username
         friend_data_pair.authService = 0
         friend_data_pair.externalId = str(user.user_id)
 
-        # Attempt to find more town info.
-        land_data = load_town(mayhem_id)
         friend_data_pair.friendData.dataVersion = land_data.friendData.dataVersion
         friend_data_pair.friendData.hasLemonTree = land_data.friendData.hasLemonTree
         friend_data_pair.friendData.language = land_data.friendData.language
@@ -345,21 +344,27 @@ def deleteToken(request, mayhem_id):
 
 
 @csrf_exempt
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET", "POST", "PUT"])
 def protoland(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
     protoland_response = LandData_pb2.LandMessage()
 
-    #town_file = Path(towns_dir, "mytown.pb") # For testing purposes.
-
+    town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
 
     # Load town.
     if request.method == "GET":
 
-        protoland_response = load_town(mayhem_id)
+        # Only load a town if a file actually exists.
+        if town_file.exists():
+            protoland_response = load_town(town_file, mayhem_id)
+            return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
 
-        return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
+        # The town is created in friendData/
+        # This forces the game to return the town.
+        else:
+            root = ET.Element("error", attrib={"code": "404", "type": "NO_SUCH_RESOURCE", "field": "LAND_NOT_FOUND"})
+            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml", status=404)
 
     else:
 
@@ -374,7 +379,7 @@ def protoland(request, mayhem_id):
 
             # Update town.
             protoland_response.ParseFromString(decompressed_data) # type: ignore
-            save_proto(Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb"), protoland_response)
+            save_proto(town_file, protoland_response)
 
             # Remove events file if it exists.
             event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
