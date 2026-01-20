@@ -109,12 +109,14 @@ def inbound(request, user_id):
             }
         )
 
+    n = len(entries)
+
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": len(entries),
+            "size": n,
             "offset": 0,
-            "totalSize": len(entries)
+            "totalSize": n
         }
     }
 
@@ -176,12 +178,14 @@ def get_friends(request, user_id):
             }
         )
 
+    n = len(entries)
+
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": len(entries),
+            "size": n,
             "offset": 0,
-            "totalSize": len(entries)
+            "totalSize": n
         }
     }
 
