@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from connect.models import UserId, DeviceToken
 from django.contrib.auth.models import BaseUserManager
@@ -16,7 +17,7 @@ import random
 
 # Create your views here.
 
-def geoagerequirements(request, device_id):
+def geoagerequirements(request):
 
     response = {
         "geoAgeRequirements": {
@@ -30,7 +31,7 @@ def geoagerequirements(request, device_id):
     return JsonResponse(response)
 
 
-def me_personas(request, device_id, persona_id):
+def me_personas(request, persona_id):
 
     response = {
         "persona": {
@@ -66,14 +67,14 @@ def me_personas(request, device_id, persona_id):
     return JsonResponse(response)
 
 
-def pids_personas(request, device_id):
+def pids_personas(request):
     return JsonResponse({"error":"not_found","error_description":"no mediator found"})
 
 
-def user_id_personas(request, device_id, user_id):
+def user_id_personas(request, user_id):
 
     try:
-        user = UserId.objects.get(user_id = user_id)
+        user = UserId.objects.get(user_id=user_id)
 
     except UserId.DoesNotExist:
         return JsonResponse({"personas": {"persona": list()}})
@@ -102,7 +103,7 @@ def user_id_personas(request, device_id, user_id):
         return JsonResponse(response)
 
 
-def personas(request, device_id):
+def personas(request):
 
     friends = list()
     username = request.GET.get("displayName")
@@ -118,7 +119,7 @@ def personas(request, device_id):
     ):
 
         # Do not show ourselves. Neither show non registered users and users that are already our friends
-        our_user = get_object_or_404(DeviceToken, device_id=device_id).user
+        our_user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
         if not user.is_registered or user == our_user or user.friends.contains(our_user):
             continue
 
@@ -142,7 +143,8 @@ def personas(request, device_id):
 
 
 @csrf_exempt
-def progreg_code(request, device_id):
+@require_POST
+def progreg_code(request):
 
     try:
         json_data = json.loads(request.body)
@@ -155,7 +157,7 @@ def progreg_code(request, device_id):
         if json_data["codeType"].lower() == "email":
             email = BaseUserManager.normalize_email(json_data["email"])
 
-            token = get_object_or_404(DeviceToken, device_id=device_id)
+            token = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1])
 
             # Search for current active code in database.
             # If it cannot find one, create a new one.
@@ -176,15 +178,15 @@ def progreg_code(request, device_id):
                     ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
 
 
-            return HttpResponse("")
+            return HttpResponse()
 
         else:
             return HttpResponseBadRequest("Only email login is supported.")
 
 
-def links(request, device_id):
+def links(request):
 
-    token = get_object_or_404(DeviceToken, device_id=device_id)
+    token = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1])
     response = {
         "pidGamePersonaMappings": {
             "pidGamePersonaMapping": [

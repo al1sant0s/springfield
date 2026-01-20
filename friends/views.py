@@ -1,17 +1,20 @@
+from operator import ge
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.db import models, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_GET, require_POST
 
 from connect.models import UserId, DeviceToken
 from friends.models import FriendInvitation
 
 # Create your views here.
-def outbound(request, device_id, user_id):
+@require_GET
+def outbound(request, user_id):
 
     # Look up for sent_invitations.
-    user = get_object_or_404(DeviceToken, device_id=device_id).user
+    user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     entries = list()
 
     for invitation in user.sent_invitations.all():
@@ -25,26 +28,28 @@ def outbound(request, device_id, user_id):
                 "displayName": invitation.to_user.username,
                 "personaId": invitation.to_user.persona_id,
                 "nickName": invitation.to_user.username,
-                "level": 45,
             }
         )
+
+    n = len(entries)
 
     response = {
         "entries": entries,
         "pagingInfo": {
-            "size": len(entries),
+            "size": n,
             "offset": 0,
-            "totalSize": len(entries)
+            "totalSize": n
         }
     }
 
     return JsonResponse(response)
 
 @csrf_exempt
-def outbound_sent(request, device_id, from_user_id, to_user_id):
+@require_http_methods(["POST", "DELETE"])
+def outbound_sent(request, from_user_id, to_user_id):
 
     # Get user sending invitation and receiving invitation.
-    from_user = get_object_or_404(DeviceToken, device_id=device_id).user
+    from_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
 
     if request.method == "DELETE":
@@ -59,7 +64,7 @@ def outbound_sent(request, device_id, from_user_id, to_user_id):
             return HttpResponseBadRequest("Failed to delete friend invitations.")
 
         else:
-            return HttpResponse("", status=204)
+            return HttpResponse(status=204)
 
 
     if from_user == to_user:
@@ -77,16 +82,17 @@ def outbound_sent(request, device_id, from_user_id, to_user_id):
                 return HttpResponseBadRequest("An invitation already exists between these users.")
 
             FriendInvitation.objects.create(from_user=from_user, to_user=to_user, invitation_date=timezone.now())
-            return HttpResponse("", status=204)
+            return HttpResponse(status=204)
 
     except Exception:
         return HttpResponseBadRequest("Failed to create invitation.")
 
 
-def inbound(request, device_id, user_id):
+@require_GET
+def inbound(request, user_id):
 
     # Look up for received_invitations.
-    user = get_object_or_404(DeviceToken, device_id=device_id).user
+    user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
 
     entries = list()
     for invitation in user.received_invitations.all():
@@ -116,11 +122,12 @@ def inbound(request, device_id, user_id):
 
 
 @csrf_exempt
-def inbound_accept(request, device_id, to_user_id, from_user_id):
+@require_POST
+def inbound_accept(request, to_user_id, from_user_id):
 
     # Get user sending invitation and receiving invitation.
     from_user = get_object_or_404(UserId, user_id=from_user_id)
-    to_user = get_object_or_404(DeviceToken, device_id=device_id).user
+    to_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
 
     try:
         with transaction.atomic():
@@ -139,12 +146,13 @@ def inbound_accept(request, device_id, to_user_id, from_user_id):
         else:
             to_user.friends.add(from_user)
             to_user.save()
-            return HttpResponse("", status=204)
+            return HttpResponse(status=204)
 
 
-def get_friends(request, device_id, user_id):
+@require_GET
+def get_friends(request, user_id):
 
-    user = get_object_or_404(DeviceToken, device_id=device_id).user
+    user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     entries = list()
 
     for friend in user.friends.all():
@@ -181,10 +189,11 @@ def get_friends(request, device_id, user_id):
 
 
 @csrf_exempt
-def cancel_friendship(request, device_id, to_user_id, from_user_id):
-    from_user = get_object_or_404(DeviceToken, device_id=device_id).user
+@require_http_methods(["DELETE"])
+def cancel_friendship(request, to_user_id, from_user_id):
+    from_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
     from_user.friends.remove(to_user)
     to_user.friends.remove(from_user)
 
-    return HttpResponse("", status=204)
+    return HttpResponse(status=204)

@@ -11,7 +11,7 @@ from connect.models import DeviceToken
 
 @require_POST
 @csrf_exempt
-def pinEvents(request, device_id):
+def pinEvents(request):
     return JsonResponse({"status": "ok"})
 
 

@@ -1,5 +1,4 @@
-from re import DEBUG
-from django.http import Http404, HttpResponse, HttpResponseRedirect, HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import BaseUserManager
@@ -283,4 +282,4 @@ def tokeninfo(request, device_id):
 
 
 def probe(request, device_id):
-    return HttpResponse("")
+    return HttpResponse()

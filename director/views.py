@@ -44,11 +44,6 @@ def getDirectionByPackage(request, platform):
 
     update_services = [
         "nexus.connect",
-        "nexus.proxy",
-        "synergy.user",
-        "antelope.friends.url", # For security reasons.
-        "friends.url",
-        "river.pin",
         "synergy.tracking",
     ]
 

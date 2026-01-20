@@ -5,7 +5,7 @@ import hashlib
 
 # Create your views here.
 
-def getDeviceID(request, device_id, platform):
+def getDeviceID(request, platform):
 
     response = {
         "deviceId": hashlib.sha256(json.dumps(request.GET, sort_keys=True).encode()).hexdigest(),
@@ -16,7 +16,7 @@ def getDeviceID(request, device_id, platform):
     return JsonResponse(response)
 
 
-def getAnonUid(request, device_id, platform):
+def getAnonUid(request, platform):
 
     response = {
         "uid": request.GET["eadeviceid"],
@@ -27,7 +27,7 @@ def getAnonUid(request, device_id, platform):
     return JsonResponse(response)
 
 
-def validateDeviceID(request, device_id, platform):
+def validateDeviceID(request, platform):
 
     response = {
         "deviceId": request.GET.get("eadeviceid", "NO-EADEVICEID-PROVIDED"),
