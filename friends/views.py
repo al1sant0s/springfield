@@ -174,7 +174,7 @@ def get_friends(request, user_id):
                 "displayName": friend.username,
                 "personaId": friend.persona_id,
                 "nickName": friend.username,
-                "_friendTyoe": "OLD",
+                "_friendType": "OLD",
             }
         )
 

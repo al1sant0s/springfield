@@ -185,16 +185,21 @@ def users(request):
 
 
 @csrf_exempt
+@require_POST
 def userstats(request):
-    telemetry_id = request.GET.get("synergy_id")
-    if telemetry_id is not None:
-        # Store currentClientSessionId in user's device token.
-        user = get_object_or_404(UserId, telemetry_id=int(telemetry_id))
-        token = user.devicetoken_set.first()
+
+    try:
+        device_id = uuid.UUID(request.GET.get("device_id"))
+
+    except ValueError:
+        return HttpResponseBadRequest("Missing or invalid URL paramater: device_id")
+
+    else:
+        token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
         token.current_client_session_id = uuid.UUID(request.headers.get("currentClientSessionId"))
         token.save()
 
-    return HttpResponse(status=409)
+        return HttpResponse(status=409)
 
 
 @csrf_exempt
@@ -286,7 +291,7 @@ def friendData(request):
     for mayhem_id in mayhem_ids:
 
         user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-        town_file = Path(get_towns_dir(), str(mayhem_id), f"{mayhem_id}.pb")
+        town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
         land_data = load_town(town_file, mayhem_id) if town_file.exists() else starting_town(user.username)
 
         friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
@@ -335,6 +340,16 @@ def protoWholeLandToken(request, mayhem_id):
     return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
+def checkToken(request, mayhem_id):
+
+    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
+
+    checktoken_response = AuthData_pb2.TokenData()
+    checktoken_response.sessionKey = user.session_key
+    checktoken_response.expirationDate = 0
+    return HttpResponse(checktoken_response.SerializeToString(), content_type = "application/x-protobuf")
+
+
 @csrf_exempt
 def deleteToken(request, mayhem_id):
 
@@ -347,9 +362,6 @@ def deleteToken(request, mayhem_id):
 @require_http_methods(["GET", "POST", "PUT"])
 def protoland(request, mayhem_id):
 
-    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-    protoland_response = LandData_pb2.LandMessage()
-
     town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
 
     # Load town.
@@ -357,6 +369,7 @@ def protoland(request, mayhem_id):
 
         # Only load a town if a file actually exists.
         if town_file.exists():
+            protoland_response = LandData_pb2.LandMessage()
             protoland_response = load_town(town_file, mayhem_id)
             return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
 
@@ -368,6 +381,89 @@ def protoland(request, mayhem_id):
 
     else:
 
+        try:
+            session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
+
+        except ValueError:
+            return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
+
+        else:
+
+            user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
+
+            # Avoid user tampering with other towns.
+            if mayhem_id != user.mayhem_id.int:
+                return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
+
+            # Try to decompress.
+            try:
+                decompressed_data = gzip.decompress(request.body)
+
+            except gzip.BadGzipFile:
+                decompressed_data = request.body
+
+            finally:
+
+                # Update town.
+                protoland_response = LandData_pb2.LandMessage()
+                protoland_response.ParseFromString(decompressed_data) # type: ignore
+                save_proto(town_file, protoland_response)
+
+                # Remove events file if it exists.
+                event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
+                if event_file.exists():
+                    os.remove(event_file)
+
+                root = ET.Element("WholeLandUpdateResponse")
+                return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+
+
+def protocurrency(request, mayhem_id):
+
+    try:
+        session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
+
+    except ValueError:
+        return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
+
+    else:
+
+        user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
+
+        # Avoid user tampering with other towns.
+        if mayhem_id != user.mayhem_id.int:
+            return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
+
+        # Initial currency setup.
+        protocurrency_response = PurchaseData_pb2.CurrencyData()
+        protocurrency_response.id = str(mayhem_id)
+        protocurrency_response.vcTotalPurchased = 0
+        protocurrency_response.vcTotalAwarded = 0
+        protocurrency_response.vcBalance = user.donuts_balance                    # number of donuts
+        protocurrency_response.createdAt = int(round(time.time() * 1000))
+        protocurrency_response.updatedAt = int(round(time.time() * 1000))
+        return HttpResponse(protocurrency_response.SerializeToString(), content_type = "application/x-protobuf")
+
+
+@csrf_exempt
+@require_POST
+def extraLandUpdate(request, mayhem_id):
+
+    try:
+        session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
+
+    except ValueError:
+        return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
+
+    else:
+
+        user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
+
+        # Avoid user tampering with other towns.
+        if mayhem_id != user.mayhem_id.int:
+            return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
+
+        # Update donuts balance.
         # Try to decompress.
         try:
             decompressed_data = gzip.decompress(request.body)
@@ -377,88 +473,34 @@ def protoland(request, mayhem_id):
 
         finally:
 
-            # Update town.
-            protoland_response.ParseFromString(decompressed_data) # type: ignore
-            save_proto(town_file, protoland_response)
+            # Get list of events to update donuts.
+            # Each event is a list with an amount to increase/decrease donuts balance.
+            extraland_update_request = LandData_pb2.ExtraLandMessage()
+            extraland_update_request.ParseFromString(decompressed_data) # type: ignore
 
-            # Remove events file if it exists.
-            event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
-            if event_file.exists():
-                os.remove(event_file)
-
-            root = ET.Element("WholeLandUpdateResponse")
-            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
-
-
-def protocurrency(request, mayhem_id):
-
-    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-
-    # Initial currency setup.
-    protocurrency_response = PurchaseData_pb2.CurrencyData()
-    protocurrency_response.id = str(mayhem_id)
-    protocurrency_response.vcTotalPurchased = 0
-    protocurrency_response.vcTotalAwarded = 0
-    protocurrency_response.vcBalance = user.donuts_balance                    # number of donuts
-    protocurrency_response.createdAt = int(round(time.time() * 1000))
-    protocurrency_response.updatedAt = int(round(time.time() * 1000))
-    return HttpResponse(protocurrency_response.SerializeToString(), content_type = "application/x-protobuf")
-
-
-def checkToken(request, mayhem_id):
-
-    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-
-    checktoken_response = AuthData_pb2.TokenData()
-    checktoken_response.sessionKey = user.session_key
-    checktoken_response.expirationDate = 0
-    return HttpResponse(checktoken_response.SerializeToString(), content_type = "application/x-protobuf")
-
-
-@csrf_exempt
-@require_POST
-def extraLandUpdate(request, mayhem_id):
-
-    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-
-    # Update donuts balance.
-    # Try to decompress.
-    try:
-        decompressed_data = gzip.decompress(request.body)
-
-    except gzip.BadGzipFile:
-        decompressed_data = request.body
-
-    finally:
-
-        # Get list of events to update donuts.
-        # Each event is a list with an amount to increase/decrease donuts balance.
-        extraland_update_request = LandData_pb2.ExtraLandMessage()
-        extraland_update_request.ParseFromString(decompressed_data) # type: ignore
-
-        # There's also other stuff here like "reason" but we don't care about that.
-        # Only update the donuts balance.
-        processed_currency_delta = list()
-        donuts_amount = 0
-        for currency_delta in extraland_update_request.currencyDelta:
-            donuts_amount += int(currency_delta.amount)
-            processed_currency_delta.append(
-                LandData_pb2.ExtraLandMessage.CurrencyDelta(
-                    id=currency_delta.id,
-                    reason=currency_delta.reason,
-                    amount=currency_delta.amount
+            # There's also other stuff here like "reason" but we don't care about that.
+            # Only update the donuts balance.
+            processed_currency_delta = list()
+            donuts_amount = 0
+            for currency_delta in extraland_update_request.currencyDelta:
+                donuts_amount += int(currency_delta.amount)
+                processed_currency_delta.append(
+                    LandData_pb2.ExtraLandMessage.CurrencyDelta(
+                        id=currency_delta.id,
+                        reason=currency_delta.reason,
+                        amount=currency_delta.amount
+                    )
                 )
-            )
 
-        # Update donuts balance in database.
-        user.donuts_balance = F("donuts_balance") + donuts_amount
-        user.save()
+            # Update donuts balance in database.
+            user.donuts_balance = F("donuts_balance") + donuts_amount
+            user.save()
 
-        # Note: you need to use extend() method if you define the response first and edit a repeated field later.
-        # extraland_update_response = LandData_pb2.ExtraLandResponse()
-        # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
-        extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
-        return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
+            # Note: you need to use extend() method if you define the response first and edit a repeated field later.
+            # extraland_update_response = LandData_pb2.ExtraLandResponse()
+            # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
+            extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
+            return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt

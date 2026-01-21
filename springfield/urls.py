@@ -20,7 +20,7 @@ from django.urls import include, path
 urlpatterns = [
     path('mh/', include('mh.urls')),
     path('director/', include('director.urls')),
-    path('user/', include('user.urls')),
+    path('synergy.user/', include('user.urls')),
     path('nexus.connect/', include('connect.urls')),
     path('proxy/', include('proxy.urls')),
     path('friends/', include('friends.urls')),
