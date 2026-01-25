@@ -25,10 +25,6 @@ class UserId(AbstractBaseUser):
     friends = models.ManyToManyField("self")
 
 
-    def normalize_email(self):
-        self.email = BaseUserManager.normalize_email(self.email)
-
-
     def reset_password(self, pwd = None):
         # If password is not specified, generate a random one.
         if pwd is None:

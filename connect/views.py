@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 
 from proxy.models import ProgRegCode
+from proxy.views import get_auth_code
 
 from .models import UserId, DeviceToken
 
@@ -16,15 +17,13 @@ import base64
 import hashlib
 import uuid
 import time
-import datetime
-import random
 import secrets
 
 
 def make_user(base_persona_id):
 
     try:
-        last_user = UserId.objects.latest("id")
+        last_user = UserId.objects.latest("persona_id")
     except UserId.DoesNotExist:
         user = UserId(persona_id = base_persona_id)
     else:
@@ -38,6 +37,7 @@ def make_user(base_persona_id):
     user.user_id = user.persona_id + 20000000000
     user.pid_id = user.user_id + 200000
     user.telemetry_id = user.pid_id + 20000000000
+    user.session_key = secrets.token_urlsafe(32)
 
     return user
 
@@ -68,28 +68,29 @@ def auth(request, device_id):
             try:
                 token = DeviceToken.objects.get(advertising_id=advertising_id)
 
+            # Each new token creates a new user.
             except DeviceToken.DoesNotExist:
-                # Each new token creates a new user.
-                token = DeviceToken(advertising_id=advertising_id)
-                token.user = make_user(1001000000001)
-                token.device_id_cache = device_id
+                token = DeviceToken(
+                    advertising_id=advertising_id,
+                    user = make_user(1001000000001),
+                    device_id = device_id,
+                    device_id_cache = device_id,
+                    session_key = secrets.token_urlsafe(32),
+                    timestamp = timestamp
+                )
 
             else:
-                # Difference between UserID and DeviceToken session_keys means user is logging in another device.
-                # Do something about it.
-                if token.user.session_key != token.session_key:
-                    pass
+                if token.device_id != device_id:
+                    token.device_id_cache = token.device_id
+                    token.device_id = device_id
 
-                token.device_id_cache = token.device_id
+                token.timestamp = timestamp
+                token.session_key = secrets.token_urlsafe(32)
 
 
-            token.user.session_key = secrets.token_urlsafe(32)
+            token.user.session_key = token.session_key
             token.user.last_authenticated = timestamp
             token.user.save()
-
-            token.device_id = device_id
-            token.session_key = token.user.session_key
-            token.timestamp = timestamp
 
             # Generate new code and new access token.
             token.code = hashlib.sha1(secrets.token_bytes(32)).hexdigest()
@@ -122,34 +123,31 @@ def auth(request, device_id):
         # Normal user registration.
         else:
 
-            auth_code = get_object_or_404(ProgRegCode, email=str(jsondata["email"]), code=int(str(jsondata["cred"])))
+            auth_code = get_object_or_404(
+                ProgRegCode,
+                email=BaseUserManager.normalize_email(jsondata["email"]),
+                code=jsondata["cred"],
+                token=get_object_or_404(DeviceToken, device_id=device_id)
+            )
 
             # Found the auth_code?! Great, now look for user with this email.
             try:
-                user = UserId.objects.get(email=jsondata["email"])
+                auth_code.token.user = UserId.objects.get(email=auth_code.email)
 
             # If a user with this email does not exist, it means we have to update the current user email associated with the token.
             # However, if our user is already registered, then we need to create a new user.
             except UserId.DoesNotExist:
                 if auth_code.token.user.is_registered:
-                    user = make_user(1001000000001)
-                    user.email = jsondata["email"]
-                    user.normalize_email()
-
-                else:
-                    user = auth_code.token.user
-                    user.email = jsondata["email"]
-                    user.normalize_email()
+                    auth_code.token.user = make_user(1001000000001)
 
 
-            user.is_registered = True
-            user.session_key = secrets.token_urlsafe(32)
-            user.last_authenticated = timestamp
-            user.save()
+            auth_code.token.user.email = auth_code.email
+            auth_code.token.user.is_registered = True
+            auth_code.token.user.session_key = secrets.token_urlsafe(32)
+            auth_code.token.user.last_authenticated = timestamp
+            auth_code.token.user.save()
 
-            auth_code.token.user = user
-            auth_code.token.session_key = user.session_key
-            auth_code.token.timestamp = user.last_authenticated
+            auth_code.token.session_key = auth_code.token.user.session_key
             auth_code.token.timestamp = timestamp
             auth_code.token.login_status = True
             auth_code.token.save()
@@ -163,8 +161,6 @@ def auth(request, device_id):
             return JsonResponse(response)
 
     else:
-        #return JsonResponse({"code": hashlib.sha1(secrets.token_bytes(32)).hexdigest()})
-        #return JsonResponse({"error":"invalid_request","error_description": "REQUIRE_PASSWORD_OR_CODE", "error_number": 100119})
 
         token = get_object_or_404(DeviceToken, device_id=device_id)
         email = request.GET.get("email")
@@ -181,27 +177,10 @@ def auth(request, device_id):
         else:
 
             # Same code as progreg_code view.
-            email = BaseUserManager.normalize_email(email)
-
-
-            # Search for current active code in database.
-            # If it cannot find one, create a new one.
-            try:
-                auth_code = ProgRegCode.objects.get(email=email)
-
-            except ProgRegCode.DoesNotExist:
-                ProgRegCode.objects.create(
-                    email=email,
-                    code=random.randint(100000, 999999),
-                    expiry_on=timezone.now() + datetime.timedelta(hours=2),
-                    token=token
-                )
-
-            else:
-                if auth_code.expiry_on < timezone.now():
-                    auth_code.delete()
-                    ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
-
+            get_auth_code(
+                BaseUserManager.normalize_email(email),
+                token,
+            )
 
             return JsonResponse({"error_description": "REQUIRE_PASSWORD_OR_CODE"})
 

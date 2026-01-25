@@ -2,6 +2,7 @@ from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonRespo
 from django.db import models
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
@@ -13,7 +14,26 @@ import base64
 import hashlib
 import json
 import datetime
-import random
+
+
+def get_auth_code(email, token):
+
+    # Search for current active code in database.
+    # # If it cannot find one, create a new one.
+    auth_code, created = ProgRegCode.objects.get_or_create(
+        email=email,
+        token=token,
+        defaults={
+            "code": get_random_string(6, allowed_chars="0123456789"),
+            "expiry_on": timezone.now() + datetime.timedelta(hours=2),
+        }
+    )
+
+    if not created and auth_code.expiry_on < timezone.now():
+        auth_code.code = get_random_string(6, allowed_chars="0123456789")
+        auth_code.expiry_on = timezone.now() + datetime.timedelta(hours=2)
+        auth_code.save()
+
 
 # Create your views here.
 
@@ -110,16 +130,20 @@ def personas(request):
 
     if username is None:
         return HttpResponseBadRequest("Missing displayName in URL!")
+    elif len(username) < 6:
+        return HttpResponseBadRequest("DisplayName is too short!")
     elif username.endswith("*"):
         username = username[:-1]
+
+
+    # Do not show ourselves. Neither show non registered users and users that are already our friends.
+    our_user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
 
     for user in UserId.objects.filter(
         models.Q(username__icontains=username) |
         models.Q(email__icontains=username)
     ):
 
-        # Do not show ourselves. Neither show non registered users and users that are already our friends
-        our_user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
         if not user.is_registered or user == our_user or user.friends.contains(our_user):
             continue
 
@@ -155,29 +179,10 @@ def progreg_code(request):
     else:
 
         if json_data["codeType"].lower() == "email":
-            email = BaseUserManager.normalize_email(json_data["email"])
-
-            token = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1])
-
-            # Search for current active code in database.
-            # If it cannot find one, create a new one.
-            try:
-                auth_code = ProgRegCode.objects.get(email=email)
-
-            except ProgRegCode.DoesNotExist:
-                ProgRegCode.objects.create(
-                    email=email,
-                    code=random.randint(100000, 999999),
-                    expiry_on=timezone.now() + datetime.timedelta(hours=2),
-                    token=token
-                )
-
-            else:
-                if auth_code.expiry_on < timezone.now():
-                    auth_code.delete()
-                    ProgRegCode.objects.create(email=email, expiry_on=timezone.now() + datetime.timedelta(hours=2), token=token)
-
-
+            get_auth_code(
+                BaseUserManager.normalize_email(json_data["email"]),
+                get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1])
+            )
             return HttpResponse()
 
         else:
