@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>User dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+  </head>
+  <body>
+
+    <header>
+      <h1>User Dashboard Login</h1>
+    </header>
+
+    <main>
+      <section>
+        <h2>Login details</h2>
+        <hr>
+        <form action="{% url 'dashboard:login' %}" method="post">
+          {% csrf_token %}
+          {{ form }}
+          <p>
+            <button class="submit">Login!</button>
+          </p>
+        </form>
+      </section>
+    </main>
+
+  </body>
+</html>

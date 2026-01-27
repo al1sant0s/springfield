@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'proxy.apps.ProxyConfig',
     'friends.apps.FriendsConfig',
     'avatar.apps.AvatarConfig',
+    'dashboard.apps.DashboardConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -146,3 +147,5 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 STATIC_ROOT = "/data/static/"
+
+AUTH_USER_MODEL = 'connect.UserId'

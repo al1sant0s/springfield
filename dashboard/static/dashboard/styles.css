@@ -1,0 +1,78 @@
+body {
+  background:
+    radial-gradient(100px circle at 10% 10%,
+      yellow, 40px, yellow 40%,
+      transparent 100%
+    ),
+    linear-gradient(#206cb0, #009aff, deepskyblue, 60%, #eaeaea);
+  min-height: 100vh;
+  margin: 0;
+}
+
+section {
+  margin: 200px auto;
+  width: fit-content;
+  min-width: 200px;
+  background:
+    linear-gradient(to right, yellow, 5%, coral, tomato);
+  border-top: 1px solid orange;
+  border-left: 1px solid gold;
+  border-right: 5px solid #c96464;
+  border-bottom: 2px solid #c96464;
+  padding: 30px;
+  border-radius: 20px;
+}
+
+form label {
+  color: maroon;
+  font-weight: bold;
+  min-width: 80px;
+  text-align: right;
+  padding: 5px;
+}
+
+form input {
+  color: #232647;
+  background: #f19b76;
+  border: 2px solid #535ba9;
+  border-radius: 10px;
+  padding: 5px;
+  width: 24em;
+}
+
+form div {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.errorlist.nonfield {
+  color: blue;
+  max-width: 400px;
+}
+
+h1 {
+  color: beige;
+  margin: 40px auto 0 auto;
+  width: fit-content;
+}
+
+section h2 {
+  color: #870c25;
+  margin: 0 0 0 auto;
+  padding: 5px 10px 0px 10px;
+}
+
+section hr {
+  color: firebrick;
+  margin-bottom: 20px;
+}
+
+.submit {
+  color: aliceblue;
+  background: linear-gradient(#87397c, 45%, tomato);
+  padding: 5px 10px;
+  border: 3px inset #535ba9;
+  border-radius: 8px;
+  font-weight: bold;
+}

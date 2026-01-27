@@ -1,37 +1,70 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
+from django.utils.crypto import get_random_string
 
 import uuid
 import secrets
 
 # Create your models here.
 
-class UserId(AbstractBaseUser):
-    USERNAME_FIELD = "username"
-    username = models.CharField(max_length=12)
+class UserId(AbstractUser):
+    username = models.CharField(max_length=12, unique=False)
     email = models.EmailField(unique=True)
     is_registered = models.BooleanField(default=False)
-    pid_id = models.BigIntegerField(unique=True)
-    user_id = models.BigIntegerField(unique=True)
-    persona_id = models.BigIntegerField(unique=True)
-    telemetry_id = models.BigIntegerField(unique=True)
+    persona_id = models.BigIntegerField(unique=True, blank=True, null=True)
+    user_id = models.BigIntegerField(unique=True, blank=True, null=True)
+    pid_id = models.BigIntegerField(unique=True, blank=True, null=True)
+    telemetry_id = models.BigIntegerField(unique=True, blank=True, null=True)
     mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
     session_key = models.CharField(max_length=44, unique=True)
     land_token = models.UUIDField(default=uuid.uuid4, unique=True)
     donuts_balance = models.PositiveIntegerField(default=50)
-    date_created = models.DateTimeField("User Date Created", default=timezone.now)
-    last_authenticated = models.DateTimeField("Last Auth Date", default=timezone.now)
-    friends = models.ManyToManyField("self")
+    last_authenticated = models.DateTimeField(default=timezone.now)
+    friends = models.ManyToManyField("self", symmetrical=True)
+ 
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username"]
 
-
-    def reset_password(self, pwd = None):
-        # If password is not specified, generate a random one.
+    def reset_password(self, pwd=None):
         if pwd is None:
             self.set_password(secrets.token_urlsafe(32))
-
         else:
             self.set_password(pwd)
+
+
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+
+        # Fill rest of the fields uppon user creation.
+        if self.pk is None:
+
+            try:
+                last_user = UserId.objects.latest("persona_id")
+            except UserId.DoesNotExist:
+                persona_id = 1001000000001
+            else:
+                persona_id = last_user.persona_id + 1
+
+            # Set each entry in the database accordingly except mayhem_id and land_token which
+            # Django will produce values by itself with the default argument specified in models.
+            self.persona_id = persona_id
+            self.user_id = persona_id + 20000000000
+            self.pid_id = self.user_id + 200000
+            self.telemetry_id = self.pid_id + 20000000000
+            self.session_key = secrets.token_urlsafe(32)
+
+            if self.is_superuser:
+                self.is_registered = True
+
+            else:
+                # Placeholder for email.
+                self.email = f"user_{persona_id}@{get_random_string(length=12)}.{get_random_string(length=9)}"
+                self.reset_password()
+
+
+
+        super().save(*args, **kwargs)
 
 
 class DeviceToken(models.Model):

@@ -22,10 +22,10 @@ def get_auth_code(email, token):
     # # If it cannot find one, create a new one.
     auth_code, created = ProgRegCode.objects.get_or_create(
         email=email,
-        token=token,
         defaults={
             "code": get_random_string(6, allowed_chars="0123456789"),
             "expiry_on": timezone.now() + datetime.timedelta(hours=2),
+            "token": token,
         }
     )
 
@@ -78,7 +78,7 @@ def me_personas(request, persona_id):
             "pidId": user.user_id,
             "displayName": user.username,
             "name": user.username.lower(),
-            "dateCreated": user.date_created.strftime('%Y-%m-%dT%H:%MZ'),
+            "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
             "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
             "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
         }
@@ -106,14 +106,14 @@ def user_id_personas(request, user_id):
                     {
                         "personaId": user.persona_id,
                         "pidId": user.user_id,
-                        "displayName": str(user.username),
-                        "name": str(user.username),
+                        "displayName": user.username,
+                        "name": user.username,
                         "namespaceName": "gsp-redcrow-simpsons4",
                         "isVisible": True,
                         "status": "ACTIVE",
                         "statusReasonCode": "",
                         "showPersona": "FRIENDS",
-                        "dateCreated": user.date_created.strftime('%Y-%m-%dT%H:%MZ'),
+                        "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
                         "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
                     }
                 ]
@@ -136,13 +136,20 @@ def personas(request):
         username = username[:-1]
 
 
-    # Do not show ourselves. Neither show non registered users and users that are already our friends.
     our_user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
 
-    for user in UserId.objects.filter(
-        models.Q(username__icontains=username) |
-        models.Q(email__icontains=username)
-    ):
+    # Do not show ourselves. Neither show non registered users and users that are already our friends.
+    # Also hide superusers.
+    users = UserId.objects.filter(
+        (
+            models.Q(username__icontains=username) |
+            models.Q(email__icontains=username)
+        ) &
+        models.Q(is_registered=True) &
+        models.Q(is_superuser=False)
+    ).exclude(id=our_user.id).exclude(friends__in=[our_user])
+
+    for user in users:
 
         if not user.is_registered or user == our_user or user.friends.contains(our_user):
             continue
@@ -151,14 +158,14 @@ def personas(request):
             {
                 "personaId": user.persona_id,
                 "pidId": user.user_id,
-                "displayName": str(user.username),
-                "name": str(user.username),
+                "displayName": user.username,
+                "name": user.username,
                 "namespaceName": request.GET.get("namespaceName", "gsp-redcrow-simpsons4"),
                 "isVisible": True,
                 "status": "ACTIVE",
                 "statusReasonCode": "",
                 "showPersona": "NO_ONE",
-                "dateCreated": user.date_created.strftime('%Y-%m-%dT%H:%MZ'),
+                "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
                 "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
             }
         )

@@ -25,6 +25,7 @@ urlpatterns = [
     path('proxy/', include('proxy.urls')),
     path('friends/', include('friends.urls')),
     path('avatar/', include('avatar.urls')),
+    path('dashboard/', include('dashboard.urls')),
     path('admin/', admin.site.urls),
     path('', include('events.urls')),
 ]

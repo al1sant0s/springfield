@@ -20,28 +20,6 @@ import time
 import secrets
 
 
-def make_user(base_persona_id):
-
-    try:
-        last_user = UserId.objects.latest("persona_id")
-    except UserId.DoesNotExist:
-        user = UserId(persona_id = base_persona_id)
-    else:
-        user = UserId(persona_id = last_user.persona_id + 1)
-
-    # Set each entry in the database accordingly except mayhem_id and land_token which
-    # Django will produce values by itself with the default argument specified in models.
-    user.username = f"anon{str(user.persona_id)[-5:]}"
-    user.reset_password() # Random password.
-    user.email = f"user_{str(user.mayhem_id.int)}@tsto.app"
-    user.user_id = user.persona_id + 20000000000
-    user.pid_id = user.user_id + 200000
-    user.telemetry_id = user.pid_id + 20000000000
-    user.session_key = secrets.token_urlsafe(32)
-
-    return user
-
-
 # Create your views here.
 def auth(request, device_id):
 
@@ -72,7 +50,7 @@ def auth(request, device_id):
             except DeviceToken.DoesNotExist:
                 token = DeviceToken(
                     advertising_id=advertising_id,
-                    user = make_user(1001000000001),
+                    user = UserId(),
                     device_id = device_id,
                     device_id_cache = device_id,
                     session_key = secrets.token_urlsafe(32),
@@ -138,10 +116,11 @@ def auth(request, device_id):
             # However, if our user is already registered, then we need to create a new user.
             except UserId.DoesNotExist:
                 if auth_code.token.user.is_registered:
-                    auth_code.token.user = make_user(1001000000001)
+                    auth_code.token.user = UserId()
 
 
             auth_code.token.user.email = auth_code.email
+            auth_code.token.user.username = auth_code.email.split("@")[0]
             auth_code.token.user.is_registered = True
             auth_code.token.user.session_key = secrets.token_urlsafe(32)
             auth_code.token.user.last_authenticated = timestamp
