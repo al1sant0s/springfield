@@ -20,10 +20,17 @@
         <form action="{% url 'dashboard:login' %}" method="post">
           {% csrf_token %}
           {{ form }}
+          <p id="reset-password" class="links">
+            <a href="">Forgot password?</a>
+          </p>
           <p>
-            <button class="submit">Login!</button>
+            <button class="submit">Log in</button>
           </p>
         </form>
+        <hr>
+        <p id="register" class="links">
+          <a href="">Register an account</a>
+        </p>
       </section>
     </main>
 

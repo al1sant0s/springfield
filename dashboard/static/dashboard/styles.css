@@ -1,26 +1,23 @@
 body {
-  background:
-    radial-gradient(100px circle at 10% 10%,
-      yellow, 40px, yellow 40%,
-      transparent 100%
-    ),
-    linear-gradient(#206cb0, #009aff, deepskyblue, 60%, #eaeaea);
+  /* background: linear-gradient(#37032d, 37%, #d9bc25, #ae575b); */
+  background: url("background_login.png");
+  background-size: cover;
   min-height: 100vh;
   margin: 0;
 }
 
 section {
-  margin: 200px auto;
-  width: fit-content;
-  min-width: 200px;
-  background:
-    linear-gradient(to right, yellow, 5%, coral, tomato);
   border-top: 1px solid orange;
   border-left: 1px solid gold;
-  border-right: 5px solid #c96464;
+  border-right: 6px solid #c96464;
   border-bottom: 2px solid #c96464;
-  padding: 30px;
   border-radius: 20px;
+  padding: 30px;
+  margin: 10% 0 200px 65%;
+  min-width: 200px;
+  width: fit-content;
+  background:
+    linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
 form label {
@@ -41,9 +38,10 @@ form input {
 }
 
 form div {
-  display: flex;
+  text-align: right;
   align-items: center;
   margin-bottom: 1rem;
+  min-width: 0;
 }
 
 .errorlist.nonfield {
@@ -52,7 +50,8 @@ form div {
 }
 
 h1 {
-  color: beige;
+  color: gold;
+  background: darkgray;
   margin: 40px auto 0 auto;
   width: fit-content;
 }
@@ -64,15 +63,37 @@ section h2 {
 }
 
 section hr {
-  color: firebrick;
+  border-color: firebrick;
   margin-bottom: 20px;
 }
 
-.submit {
+p:has(button.submit) {
+  text-align: right;
+}
+
+button.submit {
   color: aliceblue;
-  background: linear-gradient(#87397c, 45%, tomato);
-  padding: 5px 10px;
-  border: 3px inset #535ba9;
-  border-radius: 8px;
+  background: linear-gradient(#87397c, 45%, coral);
+  padding: 7px 20px;
+  border: 2px solid indianred;
+  border-radius: 3px;
   font-weight: bold;
+  margin-top: 15px;
+}
+
+p#reset-password {
+  text-align: right;
+  font-size: 0.85rem;
+}
+
+p#register {
+  text-align: center;
+}
+
+p.links a {
+  color: darkslateblue;
+}
+
+p.links a:hover {
+  color: white;
 }
