@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>User dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+  </head>
+  <body>
+
+    <header>
+      <h1>User Dashboard</h1>
+    </header>
+
+    <nav>
+      <ul>
+        <li>
+          <a class="links" href="">Town</a>
+        </li>
+        <li>
+          <a class="links" href="">User Profile</a>
+        </li>
+      </ul>
+    </nav>
+
+
+    <main>
+      <article>
+        <section>
+          <h2>Upload town file</h2>
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+          <hr>
+          <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
+            {% csrf_token %}
+            {{ form }}
+            <div>
+              <button class="submit">Upload</button>
+            </div>
+          </form>
+        </section
+      </article>
+    </main>
+
+    <footer>
+      <p>
+        Server created by <a target="blank" href="https://github.com/al1sant0s">@al1sant0s</a>
+      </p>
+    </footer>
+
+  </body>
+</html>

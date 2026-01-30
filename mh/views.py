@@ -68,33 +68,37 @@ def load_proto(target, proto_object):
         return proto_object
 
 
-def load_town(town_file, mayhem_id):
-
-    user = UserId.objects.get(mayhem_id=mayhem_id)
+def load_town(user):
 
     land_data = LandData_pb2.LandMessage()
+    mayhem_id = str(user.mayhem_id.int)
+    town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
 
-    # Credits: Tjac python server.
-    with open(town_file, "rb") as f:
+    if town_file.exists():
 
-        try:
-            land_data.ParseFromString(f.read())
-
-        except:
+        # Credits: Tjac python server.
+        with open(town_file, "rb") as f:
 
             try:
-                f.seek(0x0c)      # see if this might be a teamtsto.org backup
                 land_data.ParseFromString(f.read())
 
-            # If everything fails just return an empty town response.
             except:
-                land_data = starting_town(user.username)
+
+                try:
+                    f.seek(0x0c)      # see if this might be a teamtsto.org backup
+                    land_data.ParseFromString(f.read())
+
+                # If everything fails just return an empty town response.
+                except:
+                    land_data = starting_town(user.username)
 
 
-        # Override Mayhem id.
-        if land_data.HasField("id") and land_data.id != str(mayhem_id):
-            land_data.id = str(mayhem_id)
-            save_proto(town_file, land_data)
+            # Override Mayhem id.
+            if land_data.HasField("id") and land_data.id != mayhem_id:
+                land_data.id = mayhem_id
+
+    else:
+        land_data = starting_town(user.username)
 
 
     return land_data
@@ -291,8 +295,7 @@ def friendData(request):
     for mayhem_id in mayhem_ids:
 
         user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-        town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
-        land_data = load_town(town_file, mayhem_id) if town_file.exists() else starting_town(user.username)
+        land_data = load_town(user)
 
         friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
         friend_data_pair.friendData.name = user.username
@@ -366,18 +369,8 @@ def protoland(request, mayhem_id):
 
     # Load town.
     if request.method == "GET":
-
-        # Only load a town if a file actually exists.
-        if town_file.exists():
-            protoland_response = LandData_pb2.LandMessage()
-            protoland_response = load_town(town_file, mayhem_id)
-            return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
-
-        # The town is created in friendData/
-        # This forces the game to return the town.
-        else:
-            root = ET.Element("error", attrib={"code": "404", "type": "NO_SUCH_RESOURCE", "field": "LAND_NOT_FOUND"})
-            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml", status=404)
+        protoland_response = load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id)))
+        return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
 
     else:
 

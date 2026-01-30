@@ -1,59 +1,81 @@
 body {
-  /* background: linear-gradient(#37032d, 37%, #d9bc25, #ae575b); */
-  background: url("background_login.png");
-  background-size: cover;
+  font: 1.2em / 1.5 sans-serif;
   min-height: 100vh;
-  margin: 0;
+  margin: 0 auto;
 }
+
+/* Header and navigation menu */
+
+header {
+  background: linear-gradient(cornflowerblue, royalblue);
+  color: white;
+}
+
+header h1 {
+  width: fit-content;
+  padding: 20px 0;
+  margin: 0 auto;
+}
+
+nav {
+  background-color: cornflowerblue;
+  color: white;
+  font-weight: bold;
+}
+
+nav ul {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  margin: 0 10%;
+}
+
+nav li {
+  list-style: none;
+  font-size: 1.5rem;
+  background-color: #4f8cc2;
+  border: 5px outset whitesmoke;
+}
+
+nav a {
+  text-decoration: none;
+  color: white;
+  display: inline-block;
+  padding: 20px 70px;
+}
+
+nav a:hover {
+  color: yellow;
+  background-color: #4682ee;
+}
+
+/* Main content - general style */
+
+main {
+  background: url("background.svg");
+  background-size: cover;
+  padding-top: 50px;
+  min-height: 100vh;
+}
+
+main > article {
+  width: 80%;
+  margin: 0 auto;
+}
+
+/* Forms styles */
 
 section {
-  border-top: 1px solid orange;
+  border-top: 3px outset coral;
   border-left: 1px solid gold;
-  border-right: 6px solid #c96464;
-  border-bottom: 2px solid #c96464;
-  border-radius: 20px;
+  border-right: 6px inset #c96464;
+  border-bottom: 5px inset #c96464;
+  border-radius: 0px;
   padding: 30px;
-  margin: 10% 0 200px 65%;
+  margin: 5% auto 200px auto;
   min-width: 200px;
   width: fit-content;
-  background:
-    linear-gradient(to right, yellow, 5%, coral, tomato);
-}
-
-form label {
-  color: maroon;
-  font-weight: bold;
-  min-width: 80px;
-  text-align: right;
-  padding: 5px;
-}
-
-form input {
-  color: #232647;
-  background: #f19b76;
-  border: 2px solid #535ba9;
-  border-radius: 10px;
-  padding: 5px;
-  width: 24em;
-}
-
-form div {
-  text-align: right;
-  align-items: center;
-  margin-bottom: 1rem;
-  min-width: 0;
-}
-
-.errorlist.nonfield {
-  color: blue;
-  max-width: 400px;
-}
-
-h1 {
-  color: gold;
-  background: darkgray;
-  margin: 40px auto 0 auto;
-  width: fit-content;
+  background: linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
 section h2 {
@@ -67,33 +89,89 @@ section hr {
   margin-bottom: 20px;
 }
 
-p:has(button.submit) {
+form > div {
   text-align: right;
+  margin-bottom: 1rem;
+}
+
+form > div label, fieldset {
+  color: maroon;
+  border-color: firebrick;
+}
+
+form label {
+  font-weight: bold;
+  min-width: 80px;
+  text-align: right;
+  padding: 5px;
+}
+
+form input {
+  background: #f19b76;
+  border: 2px solid #535ba9;
+  border-radius: 10px;
+  padding: 5px;
+  width: 24em;
 }
 
 button.submit {
   color: aliceblue;
   background: linear-gradient(#87397c, 45%, coral);
-  padding: 7px 20px;
+  padding: 7px 30px;
   border: 2px solid indianred;
   border-radius: 3px;
+  font-size: 0.97rem;
   font-weight: bold;
   margin-top: 15px;
 }
 
-p#reset-password {
+div:has(button.submit) {
   text-align: right;
-  font-size: 0.85rem;
 }
 
-p#register {
+div#reset-password {
+  text-align: right;
+  font-size: 0.95rem;
+}
+
+div#register {
   text-align: center;
 }
 
-p.links a {
+section a {
   color: darkslateblue;
 }
 
-p.links a:hover {
+section a:hover {
   color: white;
+}
+
+div > ul {
+  color: blue;
+  border: 3px inset black;
+  padding: 10px 30px;
+  background: aliceblue;
+  font-size: 1.1em;
+  max-width: 350px;
+}
+
+/* Messages and alerts */
+
+li.success {
+  color: green;
+}
+
+li.error {
+  color: red;
+}
+
+/* Footer */
+
+footer {
+  padding: 1px;
+  background-color: cornflowerblue;
+}
+
+footer p {
+  text-align: center;
 }

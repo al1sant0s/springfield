@@ -9,6 +9,9 @@ from connect.models import DeviceToken
 
 # Create your views here.
 
+def index(request):
+    return HttpResponse("<h1>Hello, World!</h1>")
+
 @require_POST
 @csrf_exempt
 def pinEvents(request):

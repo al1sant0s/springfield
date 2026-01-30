@@ -14,25 +14,33 @@
     </header>
 
     <main>
-      <section>
-        <h2>Login details</h2>
-        <hr>
-        <form action="{% url 'dashboard:login' %}" method="post">
-          {% csrf_token %}
-          {{ form }}
-          <p id="reset-password" class="links">
-            <a href="">Forgot password?</a>
-          </p>
-          <p>
-            <button class="submit">Log in</button>
-          </p>
-        </form>
-        <hr>
-        <p id="register" class="links">
-          <a href="">Register an account</a>
-        </p>
-      </section>
+      <article>
+        <section>
+          <h2>Login details</h2>
+          <hr>
+          <form action="{% url 'dashboard:login' %}" method="post">
+            {% csrf_token %}
+            {{ form }}
+            <div id="reset-password" class="links">
+              <a href="">Forgot password?</a>
+            </div>
+            <div>
+              <button class="submit">Log in</button>
+            </div>
+          </form>
+          <hr>
+          <div id="register">
+            <a href="">Register an account</a>
+          </div>
+        </section>
+      </article>
     </main>
+
+    <footer>
+      <p>
+        Server created by <a target="blank" href="https://github.com/al1sant0s">@al1sant0s</a>
+      </p>
+    </footer>
 
   </body>
 </html>
