@@ -7,5 +7,12 @@ class LoginForm(forms.Form):
 
 
 
-class DashForm(forms.Form):
+class UploadTownForm(forms.Form):
+    prefix = "town"
     town_file = forms.FileField(label="Town file")
+
+
+class EditCurrenciesForm(forms.Form):
+    prefix = "currency"
+    money = forms.IntegerField(min_value=0)
+    donuts = forms.IntegerField(min_value=0)

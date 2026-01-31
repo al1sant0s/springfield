@@ -1,26 +1,60 @@
+/* General setup */
+
 body {
-  font: 1.2em / 1.5 sans-serif;
+  font-family: "Sriracha", cursive;
+  font-weight: 400;
+  font-style: normal;
   min-height: 100vh;
   margin: 0 auto;
 }
 
+.corben-regular {
+  font-family: "Corben", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.corben-bold {
+  font-family: "Corben", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.exo-2-generic {
+  font-family: "Exo 2", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.bungee-inline-regular, button {
+  font-family: "Bungee Inline", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+
 /* Header and navigation menu */
 
 header {
-  background: linear-gradient(cornflowerblue, royalblue);
   color: white;
+  background: linear-gradient(navy, royalblue);
+  border-bottom: 5px ridge black;
 }
 
 header h1 {
   width: fit-content;
   padding: 20px 0;
   margin: 0 auto;
+  text-shadow: 2px 2px 25px cyan;
 }
 
 nav {
-  background-color: cornflowerblue;
+  background: royalblue;
   color: white;
   font-weight: bold;
+  border-bottom: 10px ridge cornflowerblue;
+  text-shadow: 2px 2px 7px black;
 }
 
 nav ul {
@@ -46,13 +80,15 @@ nav a {
 
 nav a:hover {
   color: yellow;
-  background-color: #4682ee;
+  background-color: #3f688c;
 }
 
 /* Main content - general style */
 
 main {
-  background: url("background.svg");
+  background: 
+    radial-gradient(70px circle at 5% 8%, yellow, 35px, yellow 40%, transparent 100%),
+    url("background.svg");
   background-size: cover;
   padding-top: 50px;
   min-height: 100vh;
@@ -65,14 +101,23 @@ main > article {
 
 /* Forms styles */
 
+.section-forms {
+  display: flex;
+}
+
+.section-forms li {
+  list-style: none;
+  margin: 0 auto 0 100px;
+}
+
 section {
   border-top: 3px outset coral;
-  border-left: 1px solid gold;
-  border-right: 6px inset #c96464;
+  border-left: 2px outset gold;
+  border-right: 7px inset #c96464;
   border-bottom: 5px inset #c96464;
   border-radius: 0px;
   padding: 30px;
-  margin: 5% auto 200px auto;
+  margin: 5% auto 20px auto;
   min-width: 200px;
   width: fit-content;
   background: linear-gradient(to right, yellow, 5%, coral, tomato);
@@ -120,8 +165,6 @@ button.submit {
   padding: 7px 30px;
   border: 2px solid indianred;
   border-radius: 3px;
-  font-size: 0.97rem;
-  font-weight: bold;
   margin-top: 15px;
 }
 
@@ -168,8 +211,8 @@ li.error {
 /* Footer */
 
 footer {
+  background-color: #4ea642;
   padding: 1px;
-  background-color: cornflowerblue;
 }
 
 footer p {

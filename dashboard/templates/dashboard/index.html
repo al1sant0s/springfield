@@ -6,20 +6,29 @@
     <meta name="viewport" content="width=device-width">
     <title>User dashboard</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
   </head>
   <body>
 
     <header>
-      <h1>User Dashboard</h1>
+      <h1 class="corben-bold">User Dashboard</h1>
     </header>
 
-    <nav>
+    <nav class="exo-2-generic">
       <ul>
         <li>
           <a class="links" href="">Town</a>
         </li>
         <li>
           <a class="links" href="">User Profile</a>
+        </li>
+        <li>
+          <a class="links" href="">Friends</a>
+        </li>
+        <li>
+          <a class="links" href="">Manage Devices</a>
         </li>
       </ul>
     </nav>
@@ -39,12 +48,28 @@
           <hr>
           <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
             {% csrf_token %}
-            {{ form }}
+            {{ town_form }}
             <div>
               <button class="submit">Upload</button>
             </div>
           </form>
-        </section
+          <h2>Edit currencies</h2>
+            {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+          <hr>
+          <form action="{% url 'dashboard:index' %}" method="post">
+            {% csrf_token %}
+            {{ currency_form }}
+            <div>
+              <button class="submit">Save</button>
+            </div>
+          </form>
+        </section>
       </article>
     </main>
 

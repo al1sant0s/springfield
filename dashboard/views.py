@@ -4,7 +4,7 @@ from django.shortcuts import render
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib import messages
 
-from .forms import DashForm
+from .forms import UploadTownForm, EditCurrenciesForm
 
 from mh.views import get_towns_dir, save_proto, starting_town
 from protofiles import LandData_pb2
@@ -13,9 +13,9 @@ import google.protobuf
 
 # Create your views here.
 
-def handle_town_file(user, f):
+def handle_town_file(request, f):
 
-    mayhem_id = user.mayhem_id.int
+    mayhem_id = request.user.mayhem_id.int
     town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
     town_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -26,11 +26,11 @@ def handle_town_file(user, f):
 
     # Reject file
     except google.protobuf.message.DecodeError:
-        return False
+        messages.error(request, "Invalid town file!")
 
     else:
         save_proto(town_file, land_data)
-        return True
+        messages.success(request, "Uploaded town successfuly!")
 
 
 def check_login(request):
@@ -46,21 +46,16 @@ def check_login(request):
 def index(request):
  
     if request.method == "POST":
-        form = DashForm(request.POST, request.FILES)
+        town_form = UploadTownForm(request.POST, request.FILES, prefix="town")
+        currency_form = EditCurrenciesForm(request.POST, prefix="currency_form")
 
-        if form.is_valid():
-
-            if handle_town_file(request.user, request.FILES["town_file"]):
-                messages.success(request, "Uploaded town successfuly!")
-
-            else:
-                messages.error(request, "Invalid town file!")
-
-
-            return HttpResponseRedirect(reverse("dashboard:index"))
+        # Town file.
+        if town_form.is_valid():
+            handle_town_file(request, town_form.cleaned_data["town_file"])
 
     else:
-        form = DashForm()
+        town_form = UploadTownForm()
+        currency_form = EditCurrenciesForm()
 
 
-    return render(request, "dashboard/index.html", {"form": form})
+    return render(request, "dashboard/index.html", {"town_form": town_form, "currency_form": currency_form})
