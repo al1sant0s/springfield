@@ -16,19 +16,25 @@
       <h1 class="corben-bold">User Dashboard</h1>
     </header>
 
-    <nav class="exo-2-generic">
+    <nav>
       <ul>
         <li>
-          <a class="links" href="">Town</a>
+          <a class="nav-item exo-2-generic" href="">Town</a>
         </li>
         <li>
-          <a class="links" href="">User Profile</a>
+          <a class="nav-item exo-2-generic" href="">User Profile</a>
         </li>
         <li>
-          <a class="links" href="">Friends</a>
+          <a class="nav-item exo-2-generic" href="">Friends</a>
         </li>
         <li>
-          <a class="links" href="">Manage Devices</a>
+          <a class="nav-item exo-2-generic" href="">Manage Devices</a>
+        </li>
+        <li>
+          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+            {% csrf_token %}
+              <button class="nav-item exo-2-generic">Logout 🚪</button>
+          </form>
         </li>
       </ul>
     </nav>
@@ -38,35 +44,39 @@
       <article>
         <section>
           <h2>Upload town file</h2>
-            {% if messages %}
+          {% if messages %}
             <ul class="messages">
-                {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-                {% endfor %}
+              {% for message in messages %}
+                {% if "town" in message.tags %}
+                  <li class="{{ message.tags }}">{{ message }}</li>
+                {% endif %}
+              {% endfor %}
             </ul>
-            {% endif %}
+          {% endif %}
           <hr>
           <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
             {% csrf_token %}
             {{ town_form }}
             <div>
-              <button class="submit">Upload</button>
+              <button class="submit" name="town-form">Upload</button>
             </div>
           </form>
-          <h2>Edit currencies</h2>
+          <h2>- Edit currencies +</h2>
             {% if messages %}
-            <ul class="messages">
+              <ul class="messages">
                 {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+                  {% if "currency" in message.tags %}
+                    <li class="{{ message.tags }}">{{ message }}</li>
+                  {% endif %}
                 {% endfor %}
-            </ul>
+              </ul>
             {% endif %}
           <hr>
           <form action="{% url 'dashboard:index' %}" method="post">
             {% csrf_token %}
             {{ currency_form }}
             <div>
-              <button class="submit">Save</button>
+              <button class="submit" name="currency-form">Save</button>
             </div>
           </form>
         </section>

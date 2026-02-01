@@ -32,7 +32,7 @@ def starting_town(username):
     return land_data
 
 
-def get_towns_dir():
+def get_user_file(mayhem_id, extension="pb"):
 
     towns_dir = cache.get("towns_dir")
     if towns_dir is None:
@@ -41,9 +41,10 @@ def get_towns_dir():
             towns_dir = Path(config["towns_dir"])
             cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
 
-    towns_dir.mkdir(parents=True, exist_ok=True)
+    user_file = Path(towns_dir, f"{mayhem_id}/{mayhem_id}.{extension}")
+    user_file.parent.mkdir(parents=True, exist_ok=True)
 
-    return towns_dir
+    return user_file
 
 
 def save_proto(target, proto_data):
@@ -72,7 +73,7 @@ def load_town(user):
 
     land_data = LandData_pb2.LandMessage()
     mayhem_id = str(user.mayhem_id.int)
-    town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
+    town_file = get_user_file(mayhem_id, "pb")
 
     if town_file.exists():
 
@@ -99,6 +100,7 @@ def load_town(user):
 
     else:
         land_data = starting_town(user.username)
+        save_proto(town_file, land_data)
 
 
     return land_data
@@ -365,7 +367,7 @@ def deleteToken(request, mayhem_id):
 @require_http_methods(["GET", "POST", "PUT"])
 def protoland(request, mayhem_id):
 
-    town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
+    town_file = get_user_file(mayhem_id, "pb")
 
     # Load town.
     if request.method == "GET":
@@ -403,7 +405,7 @@ def protoland(request, mayhem_id):
                 save_proto(town_file, protoland_response)
 
                 # Remove events file if it exists.
-                event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
+                event_file = get_user_file(mayhem_id, "events")
                 if event_file.exists():
                     os.remove(event_file)
 
@@ -506,7 +508,7 @@ def event_user(request, mayhem_id):
         event_request.ParseFromString(request.body)
         event_request.id = str(uuid.uuid4())
         event_request.fromPlayerId = str(mayhem_id)
-        event_file = Path(get_towns_dir(), f"{event_request.toPlayerId}/{event_request.toPlayerId}.events")
+        event_file = get_user_file(event_request.toPlayerId, "events")
         event_data = load_proto(event_file, LandData_pb2.EventsMessage())
         event_data.event.extend([event_request])
         save_proto(event_file, event_data)
@@ -517,7 +519,7 @@ def event_user(request, mayhem_id):
     else:
 
         event_response = LandData_pb2.EventsMessage()
-        event_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.events")
+        event_file = get_user_file(mayhem_id, "events")
 
         if event_file.exists():
             event_response = load_proto(event_file, event_response)

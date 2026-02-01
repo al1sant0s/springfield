@@ -6,7 +6,7 @@ from django.contrib import messages
 
 from .forms import UploadTownForm, EditCurrenciesForm
 
-from mh.views import get_towns_dir, save_proto, starting_town
+from mh.views import get_user_file, save_proto, load_town
 from protofiles import LandData_pb2
 from pathlib import Path
 import google.protobuf
@@ -16,8 +16,7 @@ import google.protobuf
 def handle_town_file(request, f):
 
     mayhem_id = request.user.mayhem_id.int
-    town_file = Path(get_towns_dir(), f"{mayhem_id}/{mayhem_id}.pb")
-    town_file.parent.mkdir(parents=True, exist_ok=True)
+    town_file = get_user_file(mayhem_id, "pb")
 
     # Validate town file.
     try:
@@ -26,11 +25,25 @@ def handle_town_file(request, f):
 
     # Reject file
     except google.protobuf.message.DecodeError:
-        messages.error(request, "Invalid town file!")
+        messages.error(request, "Invalid town file!", extra_tags="town")
 
     else:
         save_proto(town_file, land_data)
-        messages.success(request, "Uploaded town successfuly!")
+        messages.success(request, "Uploaded town successfuly!", extra_tags="town")
+
+
+def handle_currency(request, currencies):
+
+    # Update town file currencies.
+    land_data = load_town(request.user)
+    land_data.userData.money = currencies["money"]
+    save_proto(get_user_file(request.user.mayhem_id.int, "pb"), land_data)
+
+    # Update donuts.
+    request.user.donuts_balance = currencies["donuts"]
+    request.user.save()
+
+    messages.success(request, "Currencies updated!", extra_tags="currency")
 
 
 def check_login(request):
@@ -44,18 +57,36 @@ def check_login(request):
 
 @login_required(login_url="dashboard:login")
 def index(request):
+
+    # Pre-load forms with user data.
+    town_form = UploadTownForm()
+
+    # Pre-load currencies.
+    land_data = load_town(request.user)
+    currency_form = EditCurrenciesForm(
+        initial = {
+            "money": land_data.userData.money,
+            "donuts": request.user.donuts_balance
+        }
+    )
  
     if request.method == "POST":
-        town_form = UploadTownForm(request.POST, request.FILES, prefix="town")
-        currency_form = EditCurrenciesForm(request.POST, prefix="currency_form")
 
-        # Town file.
-        if town_form.is_valid():
-            handle_town_file(request, town_form.cleaned_data["town_file"])
+        if "town-form" in request.POST:
 
-    else:
-        town_form = UploadTownForm()
-        currency_form = EditCurrenciesForm()
+            town_form = UploadTownForm(request.POST, request.FILES, prefix="town")
+
+            if town_form.is_valid():
+                handle_town_file(request, town_form.cleaned_data["town_file"])
+                return HttpResponseRedirect(reverse("dashboard:index"))
+
+        elif "currency-form" in request.POST:
+
+            currency_form = EditCurrenciesForm(request.POST, prefix="currency")
+
+            if currency_form.is_valid():
+                handle_currency(request, currency_form.cleaned_data)
+                return HttpResponseRedirect(reverse("dashboard:index"))
 
 
     return render(request, "dashboard/index.html", {"town_form": town_form, "currency_form": currency_form})

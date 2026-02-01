@@ -14,5 +14,5 @@ class UploadTownForm(forms.Form):
 
 class EditCurrenciesForm(forms.Form):
     prefix = "currency"
-    money = forms.IntegerField(min_value=0)
-    donuts = forms.IntegerField(min_value=0)
+    money = forms.IntegerField(initial=0, min_value=0)
+    donuts = forms.IntegerField(initial=0, min_value=0)

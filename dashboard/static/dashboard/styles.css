@@ -25,12 +25,17 @@ body {
   font-optical-sizing: auto;
   font-weight: 500;
   font-style: normal;
+  font-size: 1.5rem;
 }
 
-.bungee-inline-regular, button {
+.bungee-inline-regular, section button {
   font-family: "Bungee Inline", sans-serif;
   font-weight: 400;
   font-style: normal;
+}
+
+button {
+  cursor: pointer;
 }
 
 
@@ -44,7 +49,7 @@ header {
 
 header h1 {
   width: fit-content;
-  padding: 20px 0;
+  padding: 10px 0;
   margin: 0 auto;
   text-shadow: 2px 2px 25px cyan;
 }
@@ -62,26 +67,55 @@ nav ul {
   padding: 0;
   display: flex;
   margin: 0 10%;
+  min-height: 80px;
 }
 
 nav li {
   list-style: none;
-  font-size: 1.5rem;
-  background-color: #4f8cc2;
   border: 5px outset whitesmoke;
 }
 
-nav a {
-  text-decoration: none;
-  color: white;
+.nav-item {
+  box-sizing: border-box;
   display: inline-block;
+  height: 100%;
   padding: 20px 70px;
 }
 
-nav a:hover {
-  color: yellow;
-  background-color: #3f688c;
+nav a {
+  background-color: #4f8cc2;
+  color: white;
+  text-decoration: none;
 }
+
+nav a:hover {
+  background-color: #3f688c;
+  color: yellow;
+}
+
+.nav-item:active {
+  background-color: deepskyblue;
+}
+
+#logout, #logout button {
+  border: none;
+}
+
+#logout button {
+  background-color: #ff1717;
+  color: white;
+}
+
+#logout button:hover {
+  color: yellow;
+  background-color: firebrick;
+}
+
+#logout button:active {
+  background-color: red;
+}
+
+
 
 /* Main content - general style */
 
@@ -168,6 +202,15 @@ button.submit {
   margin-top: 15px;
 }
 
+button.submit:hover {
+  color: gold;
+  background: linear-gradient(#87397c, 45%, coral);
+}
+
+button.submit:active {
+  background: linear-gradient(#6f005f, 45%, #fd5353);
+}
+
 div:has(button.submit) {
   text-align: right;
 }
@@ -189,13 +232,12 @@ section a:hover {
   color: white;
 }
 
-div > ul {
+
+form > ul {
   color: blue;
-  border: 3px inset black;
-  padding: 10px 30px;
-  background: aliceblue;
   font-size: 1.1em;
   max-width: 350px;
+  display: block;
 }
 
 /* Messages and alerts */
@@ -212,9 +254,10 @@ li.error {
 
 footer {
   background-color: #4ea642;
-  padding: 1px;
+  padding: 0.5vh 1px;
 }
 
 footer p {
+  font-size: 1.2rem;
   text-align: center;
 }
