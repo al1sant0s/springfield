@@ -158,7 +158,7 @@ def auth(request, device_id):
             # Same code as progreg_code view.
             get_auth_code(
                 BaseUserManager.normalize_email(email),
-                token,
+                token
             )
 
             return JsonResponse({"error_description": "REQUIRE_PASSWORD_OR_CODE"})

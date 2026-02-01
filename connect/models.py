@@ -58,10 +58,9 @@ class UserId(AbstractUser):
                 self.is_registered = True
 
             else:
-                # Placeholder for email.
-                self.email = f"user_{persona_id}@{get_random_string(length=12)}.{get_random_string(length=9)}"
+                self.username = get_random_string(length=12)
+                self.email = f"user_{persona_id}@{self.username}.{self.username}" if self.email is None else self.email
                 self.reset_password()
-
 
 
         super().save(*args, **kwargs)

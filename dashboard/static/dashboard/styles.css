@@ -34,6 +34,15 @@ body {
   font-style: normal;
 }
 
+.highlight {
+  display: block;
+  color: blue;
+  font-weight: 500;
+  font-size: 1.19em;
+  text-align: center;
+  text-decoration: underline;
+}
+
 button {
   cursor: pointer;
 }
@@ -152,12 +161,19 @@ section {
   border-radius: 0px;
   padding: 30px;
   margin: 5% auto 20px auto;
-  min-width: 200px;
+  min-width: 450px;
   width: fit-content;
+  max-width: 500px;
   background: linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
 section h2 {
+  color: #870c25;
+  margin: 0 0 0 auto;
+  padding: 5px 10px 0px 10px;
+}
+
+section p {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
@@ -193,6 +209,10 @@ form input {
   width: 24em;
 }
 
+form > div:has(fieldset input[type="file"]) {
+  text-align: center;
+}
+
 button.submit {
   color: aliceblue;
   background: linear-gradient(#87397c, 45%, coral);
@@ -220,7 +240,7 @@ div#reset-password {
   font-size: 0.95rem;
 }
 
-div#register {
+div.bottom-link {
   text-align: center;
 }
 
@@ -233,14 +253,19 @@ section a:hover {
 }
 
 
-form > ul {
+/* Messages and alerts */
+
+.errorlist {
+  list-style: none;
   color: blue;
   font-size: 1.1em;
-  max-width: 350px;
-  display: block;
+  width: 350px;
 }
 
-/* Messages and alerts */
+.errorlist li {
+  box-sizing: border-box;
+}
+
 
 li.success {
   color: green;
