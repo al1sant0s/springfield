@@ -2,6 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
+from django.core.cache import cache
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
@@ -10,9 +11,18 @@ from connect.models import UserId, DeviceToken
 from proxy.models import ProgRegCode
 from proxy.views import get_auth_code
 from mh.views import get_user_file, save_proto, load_town
-from .forms import UploadTownForm, EditCurrenciesForm, RequestUserForm, AuthCodeForm, ResetPasswordForm
+from avatar.views import get_avatar_url
+
+from .forms import UploadTownForm
+from .forms import EditCurrenciesForm
+from .forms import RequestUserForm
+from .forms import AuthCodeForm
+from .forms import ResetPasswordForm
+from .forms import UserProfileForm
 
 from protofiles import LandData_pb2
+from pathlib import Path
+
 import google.protobuf
 
 # Create your views here.
@@ -156,6 +166,7 @@ def reset_password(request):
 
     return render(request, "dashboard/reset-password.html", {"password_form": password_form})
 
+
 @login_required(login_url="dashboard:login")
 def index(request):
 
@@ -221,3 +232,45 @@ def index(request):
 
 
     return render(request, "dashboard/index.html", {"town_form": town_form, "currency_form": currency_form})
+
+
+@login_required(login_url="dashboard:login")
+def user_profile(request):
+
+    avatar_url = f"{get_avatar_url()}/{request.user.user_id}.png"
+
+    if request.method == "POST":
+        profile_form = UserProfileForm(request.POST, request.FILES)
+
+        if profile_form.is_valid():
+
+            if profile_form.cleaned_data.get("profile_avatar", False):
+
+                avatar_img = profile_form.cleaned_data["profile_avatar"].image
+
+                if avatar_img.format.lower() != "png":
+                    messages.error(request, "Image must be png.")
+
+                elif avatar_img.width > 416 or avatar_img.height > 416:
+                    messages.error(request, "Image dimensions cannot exceed 416x416 pixels.")
+
+                else:
+
+                    with open(Path(cache.get("avatar_dir"), f"{request.user.user_id}.png"), "wb") as f:
+                        for chunk in request.FILES["profile_avatar"].chunks():
+                            f.write(chunk)
+
+                    messages.success(request, "Avatar image updated.")
+
+
+
+            if profile_form.cleaned_data["profile_username"] not in (".null", request.user.username):
+                request.user.username = profile_form.cleaned_data["profile_username"]
+                request.user.save()
+                messages.success(request, "Username updated.")
+
+
+    else:
+        profile_form = UserProfileForm(initial={"profile_username": request.user.username})
+
+    return render(request, "dashboard/user-profile.html", {"profile_form": profile_form, "avatar_url": avatar_url})

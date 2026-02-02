@@ -4,5 +4,6 @@
   "port": "8080",
   "cache_minutes": 3600,
   "towns_dir": "towns",
-  "avatar_location": "/static/avatar"
+  "avatar_dir": "/data/static/avatar/",
+  "avatar_location": "/static/avatar/"
 }

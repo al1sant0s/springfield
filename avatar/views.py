@@ -8,6 +8,7 @@ import json
 
 from connect.models import UserId, DeviceToken
 
+
 def get_avatar_url():
 
     avatar_url = cache.get("avatar_url")
@@ -18,10 +19,12 @@ def get_avatar_url():
             protocol = config["protocol"]
             host = config["host"]
             port = config["port"]
-            avatar_location = config["avatar_location"].removeprefix("/")
+            avatar_location = config["avatar_location"].removeprefix("/").removesuffix("/")
 
             avatar_url = f"{protocol}://{host}:{port}/{avatar_location}"
             cache.set("avatar_url", avatar_url, timeout = config["cache_minutes"])
+            cache.set("avatar_dir", config["avatar_dir"])
+
 
     return avatar_url
 

@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>User dashboard</title>
+    <title>User profile | User dashboard</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,7 @@
   <body>
 
     <header>
-      <h1 class="corben-bold">User Dashboard</h1>
+      <h1 class="corben-bold">User Profile</h1>
     </header>
 
     <nav>
@@ -39,44 +39,31 @@
       </ul>
     </nav>
 
-
     <main>
       <article>
         <section>
-          <h2>Upload town file</h2>
+          <h2>Edit user profile</h2>
+          <p>Change your avatar picture and username.</p>
           {% if messages %}
             <ul class="messages">
               {% for message in messages %}
-                {% if "town" in message.tags %}
-                  <li class="{{ message.tags }}">{{ message }}</li>
-                {% endif %}
+                <li class="{{ message.tags }}">{{ message }}</li>
               {% endfor %}
             </ul>
           {% endif %}
           <hr>
-          <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
+          <form enctype="multipart/form-data" action="{% url 'dashboard:user_profile' %}" method="post">
             {% csrf_token %}
-            {{ town_form }}
+            <figure class="avatar">
+              <figcaption>
+                Avatar Picture
+              </figcaption>
+              <img src={{ avatar_url }} alt="" width=100 height=100>
+            </figure>
+            <p class="caption-paragraph">Requirements: PNG - 416x416 (or less) pixels.</p>
+            {{ profile_form }}
             <div>
-              <button class="submit" name="town-form">Upload</button>
-            </div>
-          </form>
-          <h2>- Edit currencies +</h2>
-            {% if messages %}
-              <ul class="messages">
-                {% for message in messages %}
-                  {% if "currency" in message.tags %}
-                    <li class="{{ message.tags }}">{{ message }}</li>
-                  {% endif %}
-                {% endfor %}
-              </ul>
-            {% endif %}
-          <hr>
-          <form action="{% url 'dashboard:index' %}" method="post">
-            {% csrf_token %}
-            {{ currency_form }}
-            <div>
-              <button class="submit" name="currency-form">Save</button>
+              <button class="submit" name="profile-form">Upload</button>
             </div>
           </form>
         </section>
@@ -91,3 +78,4 @@
 
   </body>
 </html>
+

@@ -1,4 +1,18 @@
-/* General setup */
+/* Summary
+ *
+ * General-setup
+ * Fonts
+ * Header-and-navigation-menu
+ * Main-content-general-style
+ * Messages-and-alerts
+ * Footer
+ * User-profile
+ *
+ */
+
+
+
+/* General-setup */
 
 body {
   font-family: "Sriracha", cursive;
@@ -7,6 +21,8 @@ body {
   min-height: 100vh;
   margin: 0 auto;
 }
+
+/* Fonts */
 
 .corben-regular {
   font-family: "Corben", serif;
@@ -48,7 +64,7 @@ button {
 }
 
 
-/* Header and navigation menu */
+/* Header-and-navigation-menu */
 
 header {
   color: white;
@@ -84,13 +100,6 @@ nav li {
   border: 5px outset whitesmoke;
 }
 
-.nav-item {
-  box-sizing: border-box;
-  display: inline-block;
-  height: 100%;
-  padding: 20px 70px;
-}
-
 nav a {
   background-color: #4f8cc2;
   color: white;
@@ -100,6 +109,13 @@ nav a {
 nav a:hover {
   background-color: #3f688c;
   color: yellow;
+}
+
+.nav-item {
+  box-sizing: border-box;
+  display: inline-block;
+  height: 100%;
+  padding: 20px 70px;
 }
 
 .nav-item:active {
@@ -113,6 +129,7 @@ nav a:hover {
 #logout button {
   background-color: #ff1717;
   color: white;
+  text-shadow: 2px 2px 7px black;
 }
 
 #logout button:hover {
@@ -124,12 +141,10 @@ nav a:hover {
   background-color: red;
 }
 
-
-
-/* Main content - general style */
+/* Main-content-general-style */
 
 main {
-  background: 
+  background:
     radial-gradient(70px circle at 5% 8%, yellow, 35px, yellow 40%, transparent 100%),
     url("background.svg");
   background-size: cover;
@@ -144,6 +159,7 @@ main > article {
 
 /* Forms styles */
 
+/*
 .section-forms {
   display: flex;
 }
@@ -152,6 +168,7 @@ main > article {
   list-style: none;
   margin: 0 auto 0 100px;
 }
+*/
 
 section {
   border-top: 3px outset coral;
@@ -167,7 +184,7 @@ section {
   background: linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
-section h2 {
+section h2, h3 {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
@@ -184,36 +201,38 @@ section hr {
   margin-bottom: 20px;
 }
 
-form > div {
+section form > div {
   text-align: right;
   margin-bottom: 1rem;
 }
 
-form > div label, fieldset {
+section form > div label, fieldset {
   color: maroon;
   border-color: firebrick;
 }
 
-form label {
+section form label {
   font-weight: bold;
   min-width: 80px;
   text-align: right;
   padding: 5px;
 }
 
-form input {
+section form input {
   background: #f19b76;
   border: 2px solid #535ba9;
   border-radius: 10px;
   padding: 5px;
   width: 24em;
+  color: maroon;
+  font-weight: 500;
 }
 
-form > div:has(fieldset input[type="file"]) {
+section form > div:has(fieldset input[type="file"]) {
   text-align: center;
 }
 
-button.submit {
+section button.submit {
   color: aliceblue;
   background: linear-gradient(#87397c, 45%, coral);
   padding: 7px 30px;
@@ -222,25 +241,25 @@ button.submit {
   margin-top: 15px;
 }
 
-button.submit:hover {
+section button.submit:hover {
   color: gold;
   background: linear-gradient(#87397c, 45%, coral);
 }
 
-button.submit:active {
+section button.submit:active {
   background: linear-gradient(#6f005f, 45%, #fd5353);
 }
 
-div:has(button.submit) {
+section div:has(button.submit) {
   text-align: right;
 }
 
-div#reset-password {
+section div#reset-password {
   text-align: right;
   font-size: 0.95rem;
 }
 
-div.bottom-link {
+section div.bottom-link {
   text-align: center;
 }
 
@@ -252,8 +271,7 @@ section a:hover {
   color: white;
 }
 
-
-/* Messages and alerts */
+/* Messages-and-alerts */
 
 .errorlist {
   list-style: none;
@@ -285,4 +303,45 @@ footer {
 footer p {
   font-size: 1.2rem;
   text-align: center;
+}
+
+/* User-profile */
+
+legend[for="id_profile_avatar"] {
+  display: none;
+}
+
+fieldset:has(legend[for="id_profile_avatar"]) {
+  border: none;
+  text-align: center;
+}
+
+label[for="id_profile_username"] {
+  display: block;
+  text-align: center;
+}
+
+section form > div:has(input#id_profile_username) {
+  text-align: center;
+}
+
+.avatar {
+  text-align: center;
+}
+
+.avatar figcaption {
+  color: maroon;
+}
+
+.avatar img {
+  background: url("default-avatar.png") no-repeat center;
+  background-size: 100px 100px;
+  border: 5px solid rebeccapurple;
+  border-radius: 15px;
+}
+
+.caption-paragraph {
+  text-align: center;
+  color: rebeccapurple;
+  font-style: bold;
 }

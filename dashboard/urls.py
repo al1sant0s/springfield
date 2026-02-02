@@ -6,6 +6,7 @@ from . import views
 app_name = "dashboard"
 urlpatterns = [
     path("", views.index, name="index"),
+    path("user/profile/", views.user_profile, name="user_profile"),
     path("login/", views.login, name="login"),
     path("logout/", LogoutView.as_view(next_page="dashboard:login"), name="logout"),
     path("auth/", views.auth, name="auth"),

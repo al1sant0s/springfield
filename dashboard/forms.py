@@ -2,8 +2,8 @@ from django import forms
 
 
 class LoginForm(forms.Form):
-    email = forms.EmailField(label="Email:")
-    password = forms.CharField(label="Password:", widget=forms.PasswordInput)
+    email = forms.EmailField(label="Email")
+    password = forms.CharField(label="Password", widget=forms.PasswordInput)
 
 
 
@@ -29,5 +29,16 @@ class AuthCodeForm(forms.Form):
 
 class ResetPasswordForm(forms.Form):
     username = forms.CharField(min_length=5, max_length=12, empty_value=".null")
-    password = forms.CharField(label="Password:", widget=forms.PasswordInput, min_length=8)
-    same_password = forms.CharField(label="Password:", widget=forms.PasswordInput, min_length=8)
+    password = forms.CharField(label="Password", widget=forms.PasswordInput, min_length=8)
+    same_password = forms.CharField(label="Password", widget=forms.PasswordInput, min_length=8)
+
+
+class UserProfileForm(forms.Form):
+    profile_avatar = forms.ImageField(label="Avatar Picture", required=False)
+    profile_username = forms.CharField(
+        label="Username",
+        label_suffix="",
+        min_length=5,
+        max_length=12,
+        empty_value=".null",
+    )
