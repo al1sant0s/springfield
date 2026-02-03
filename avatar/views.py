@@ -1,7 +1,7 @@
+from asyncio import timeout
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.core.cache import cache
-
 
 import xml.etree.ElementTree as ET
 import json
@@ -9,10 +9,28 @@ import json
 from connect.models import UserId, DeviceToken
 
 
+def get_avatar_dir():
+
+    avatar_dir = cache.get("avatar_dir")
+
+    if avatar_dir is None:
+
+        with open("config.json", "r") as f:
+
+            config = json.load(f)
+            avatar_dir = config["avatar_dir"]
+            cache.set("avatar_dir", avatar_dir, timeout = config["cache_minutes"])
+
+
+    return avatar_dir
+
+
 def get_avatar_url():
 
     avatar_url = cache.get("avatar_url")
+
     if avatar_url is None:
+
         with open("config.json", "r") as f:
 
             config = json.load(f)
@@ -23,7 +41,6 @@ def get_avatar_url():
 
             avatar_url = f"{protocol}://{host}:{port}/{avatar_location}"
             cache.set("avatar_url", avatar_url, timeout = config["cache_minutes"])
-            cache.set("avatar_dir", config["avatar_dir"])
 
 
     return avatar_url

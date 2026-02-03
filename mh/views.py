@@ -367,8 +367,6 @@ def deleteToken(request, mayhem_id):
 @require_http_methods(["GET", "POST", "PUT"])
 def protoland(request, mayhem_id):
 
-    town_file = get_user_file(mayhem_id, "pb")
-
     # Load town.
     if request.method == "GET":
         protoland_response = load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id)))
@@ -402,7 +400,7 @@ def protoland(request, mayhem_id):
                 # Update town.
                 protoland_response = LandData_pb2.LandMessage()
                 protoland_response.ParseFromString(decompressed_data) # type: ignore
-                save_proto(town_file, protoland_response)
+                save_proto(get_user_file(mayhem_id, "pb"), protoland_response)
 
                 # Remove events file if it exists.
                 event_file = get_user_file(mayhem_id, "events")

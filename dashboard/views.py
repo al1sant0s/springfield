@@ -2,7 +2,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
-from django.core.cache import cache
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
@@ -11,7 +10,7 @@ from connect.models import UserId, DeviceToken
 from proxy.models import ProgRegCode
 from proxy.views import get_auth_code
 from mh.views import get_user_file, save_proto, load_town
-from avatar.views import get_avatar_url
+from avatar.views import get_avatar_url, get_avatar_dir
 
 from .forms import UploadTownForm
 from .forms import EditCurrenciesForm
@@ -206,7 +205,6 @@ def index(request):
                     save_proto(town_file, land_data)
                     messages.success(request, "Uploaded town successfuly!", extra_tags="town")
 
-
                 return HttpResponseRedirect(reverse("dashboard:index"))
 
 
@@ -231,12 +229,22 @@ def index(request):
                 return HttpResponseRedirect(reverse("dashboard:index"))
 
 
-    return render(request, "dashboard/index.html", {"town_form": town_form, "currency_form": currency_form})
+    context = {
+        "town_form": town_form,
+        "town_url": reverse("mh:download_protoland", args=(request.user.mayhem_id.int,)),
+        "currency_form": currency_form,
+        "avatar_url": f"{get_avatar_url()}/{request.user.user_id}.png",
+        "avatar_exists": Path(get_avatar_dir(), f"{request.user.user_id}.png").exists(),
+        "username": request.user.username
+    }
+
+    return render(request, "dashboard/index.html", context)
 
 
 @login_required(login_url="dashboard:login")
 def user_profile(request):
 
+    avatar_dir = get_avatar_dir()
     avatar_url = f"{get_avatar_url()}/{request.user.user_id}.png"
 
     if request.method == "POST":
@@ -244,33 +252,51 @@ def user_profile(request):
 
         if profile_form.is_valid():
 
+            success = True
+
+            # Update avatar picture if any was uploaded.
             if profile_form.cleaned_data.get("profile_avatar", False):
 
                 avatar_img = profile_form.cleaned_data["profile_avatar"].image
 
                 if avatar_img.format.lower() != "png":
                     messages.error(request, "Image must be png.")
+                    success = False
 
                 elif avatar_img.width > 416 or avatar_img.height > 416:
                     messages.error(request, "Image dimensions cannot exceed 416x416 pixels.")
+                    success = False
 
                 else:
 
-                    with open(Path(cache.get("avatar_dir"), f"{request.user.user_id}.png"), "wb") as f:
+                    with open(Path(avatar_dir, f"{request.user.user_id}.png"), "wb") as f:
                         for chunk in request.FILES["profile_avatar"].chunks():
                             f.write(chunk)
 
                     messages.success(request, "Avatar image updated.")
 
 
-
+            # Update username if it was edited.
             if profile_form.cleaned_data["profile_username"] not in (".null", request.user.username):
                 request.user.username = profile_form.cleaned_data["profile_username"]
                 request.user.save()
                 messages.success(request, "Username updated.")
 
 
+            # No errors. Reset the page.
+            if success:
+                return HttpResponseRedirect(reverse("dashboard:user_profile"))
+
+
     else:
         profile_form = UserProfileForm(initial={"profile_username": request.user.username})
 
-    return render(request, "dashboard/user-profile.html", {"profile_form": profile_form, "avatar_url": avatar_url})
+
+    context = {
+        "profile_form": profile_form,
+        "avatar_url": avatar_url,
+        "avatar_exists": Path(avatar_dir, f"{request.user.user_id}.png").exists(),
+        "username": request.user.username
+    }
+
+    return render(request, "dashboard/user-profile.html", context)

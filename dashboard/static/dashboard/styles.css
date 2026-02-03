@@ -22,6 +22,19 @@ body {
   margin: 0 auto;
 }
 
+button {
+  cursor: pointer;
+}
+
+.highlight {
+  display: block;
+  color: blue;
+  font-weight: 500;
+  font-size: 1.19em;
+  text-align: center;
+  text-decoration: underline;
+}
+
 /* Fonts */
 
 .corben-regular {
@@ -48,19 +61,6 @@ body {
   font-family: "Bungee Inline", sans-serif;
   font-weight: 400;
   font-style: normal;
-}
-
-.highlight {
-  display: block;
-  color: blue;
-  font-weight: 500;
-  font-size: 1.19em;
-  text-align: center;
-  text-decoration: underline;
-}
-
-button {
-  cursor: pointer;
 }
 
 
@@ -91,7 +91,7 @@ nav ul {
   margin: 0;
   padding: 0;
   display: flex;
-  margin: 0 10%;
+  margin: 0 0 0 10%;
   min-height: 80px;
 }
 
@@ -124,10 +124,11 @@ nav a:hover {
 
 #logout, #logout button {
   border: none;
+  background-color: #ff1717;
+  height: 100%;
 }
 
 #logout button {
-  background-color: #ff1717;
   color: white;
   text-shadow: 2px 2px 7px black;
 }
@@ -139,6 +140,19 @@ nav a:hover {
 
 #logout button:active {
   background-color: red;
+}
+
+.nav-profile-pic {
+  background-size: cover;
+  display: inline;
+  padding: 35px;
+}
+
+.nav-username {
+  color: gold;
+  border: none;
+  margin: auto auto;
+  font-size: 1.2em;
 }
 
 /* Main-content-general-style */

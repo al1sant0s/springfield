@@ -13,7 +13,7 @@
   <body>
 
     <header>
-      <h1 class="corben-bold">User Dashboard</h1>
+      <h1 class="corben-bold">User Town</h1>
     </header>
 
     <nav>
@@ -36,6 +36,14 @@
               <button class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
+        {% if avatar_exists %}
+          <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
+        {% else %}
+          <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
+        {% endif %}
+        <li class="nav-username">
+          <p>Welcome, {{ username }}!</p>
+        </li>
       </ul>
     </nav>
 
@@ -57,6 +65,9 @@
           <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
             {% csrf_token %}
             {{ town_form }}
+            <div class="bottom-link">
+              <a href="{{ town_url }}">Download your town file</a>
+            </div>
             <div>
               <button class="submit" name="town-form">Upload</button>
             </div>
