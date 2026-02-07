@@ -1,4 +1,3 @@
-from operator import ge
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.db import models, transaction
 from django.utils import timezone

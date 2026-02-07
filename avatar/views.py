@@ -1,15 +1,17 @@
-from asyncio import timeout
-from django.http import Http404, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404
 from django.core.cache import cache
 
+from connect.models import DeviceToken
+
+from pathlib import Path
 import xml.etree.ElementTree as ET
 import json
 
-from connect.models import UserId, DeviceToken
 
 
-def get_avatar_dir():
+
+def get_avatar_filename(user_id):
 
     avatar_dir = cache.get("avatar_dir")
 
@@ -22,10 +24,10 @@ def get_avatar_dir():
             cache.set("avatar_dir", avatar_dir, timeout = config["cache_minutes"])
 
 
-    return avatar_dir
+    return Path(avatar_dir, f"{user_id}.png")
 
 
-def get_avatar_url():
+def get_avatar_url(user_id):
 
     avatar_url = cache.get("avatar_url")
 
@@ -43,7 +45,7 @@ def get_avatar_url():
             cache.set("avatar_url", avatar_url, timeout = config["cache_minutes"])
 
 
-    return avatar_url
+    return f"{avatar_url}/{user_id}.png"
 
 
 # Create your views here.
@@ -71,7 +73,7 @@ def get_avatars(request, users_ids):
 
         avatar = ET.SubElement(user, "avatar")
         ET.SubElement(avatar, "avatarId").text = user_id
-        ET.SubElement(avatar, "link").text = f"{get_avatar_url()}/{user_id}.png"
+        ET.SubElement(avatar, "link").text = get_avatar_url(user_id)
 
 
     return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")

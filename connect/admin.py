@@ -65,3 +65,4 @@ class UserIdAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserId, UserIdAdmin)
+admin.site.register(DeviceToken)

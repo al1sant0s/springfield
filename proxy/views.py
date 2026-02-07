@@ -151,9 +151,6 @@ def personas(request):
 
     for user in users:
 
-        if not user.is_registered or user == our_user or user.friends.contains(our_user):
-            continue
-
         friends.append(
             {
                 "personaId": user.persona_id,

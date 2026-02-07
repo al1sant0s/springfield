@@ -22,13 +22,13 @@
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:user_profile' %}">User Profile</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">User Profile</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="">Friends</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="">Manage Devices</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Manage Devices</a>
         </li>
         <li>
           <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
@@ -60,7 +60,7 @@
             </ul>
           {% endif %}
           <hr>
-          <form enctype="multipart/form-data" action="{% url 'dashboard:user_profile' %}" method="post">
+          <form class="profile-form" enctype="multipart/form-data" action="{% url 'dashboard:profile' %}" method="post">
             {% csrf_token %}
             <figure class="avatar">
               <figcaption>

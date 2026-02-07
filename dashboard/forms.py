@@ -42,3 +42,12 @@ class UserProfileForm(forms.Form):
         max_length=12,
         empty_value=".null",
     )
+
+
+class SearchUserForm(forms.Form):
+    search_text = forms.CharField(label="Search user")
+
+
+
+class CheckBoxForm(forms.Form):
+    checkbox = forms.BooleanField(label="")

@@ -1,16 +1,16 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
-from django.shortcuts import get_object_or_404, render, redirect
-from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, render
+from django.db import models
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
 
 from connect.models import UserId, DeviceToken
 from proxy.models import ProgRegCode
-from proxy.views import get_auth_code
+from proxy.views import get_auth_code, personas
 from mh.views import get_user_file, save_proto, load_town
-from avatar.views import get_avatar_url, get_avatar_dir
+from avatar.views import get_avatar_url, get_avatar_filename
 
 from .forms import UploadTownForm
 from .forms import EditCurrenciesForm
@@ -18,6 +18,8 @@ from .forms import RequestUserForm
 from .forms import AuthCodeForm
 from .forms import ResetPasswordForm
 from .forms import UserProfileForm
+from .forms import SearchUserForm
+from .forms import CheckBoxForm
 
 from protofiles import LandData_pb2
 from pathlib import Path
@@ -233,8 +235,8 @@ def index(request):
         "town_form": town_form,
         "town_url": reverse("mh:download_protoland", args=(request.user.mayhem_id.int,)),
         "currency_form": currency_form,
-        "avatar_url": f"{get_avatar_url()}/{request.user.user_id}.png",
-        "avatar_exists": Path(get_avatar_dir(), f"{request.user.user_id}.png").exists(),
+        "avatar_url":  get_avatar_url(request.user.user_id),
+        "avatar_exists": get_avatar_filename(request.user.user_id).exists(),
         "username": request.user.username
     }
 
@@ -242,10 +244,9 @@ def index(request):
 
 
 @login_required(login_url="dashboard:login")
-def user_profile(request):
+def profile(request):
 
-    avatar_dir = get_avatar_dir()
-    avatar_url = f"{get_avatar_url()}/{request.user.user_id}.png"
+    avatar = get_avatar_filename(request.user.user_id)
 
     if request.method == "POST":
         profile_form = UserProfileForm(request.POST, request.FILES)
@@ -269,7 +270,7 @@ def user_profile(request):
 
                 else:
 
-                    with open(Path(avatar_dir, f"{request.user.user_id}.png"), "wb") as f:
+                    with open(avatar, "wb") as f:
                         for chunk in request.FILES["profile_avatar"].chunks():
                             f.write(chunk)
 
@@ -285,7 +286,7 @@ def user_profile(request):
 
             # No errors. Reset the page.
             if success:
-                return HttpResponseRedirect(reverse("dashboard:user_profile"))
+                return HttpResponseRedirect(reverse("dashboard:profile"))
 
 
     else:
@@ -294,9 +295,64 @@ def user_profile(request):
 
     context = {
         "profile_form": profile_form,
-        "avatar_url": avatar_url,
-        "avatar_exists": Path(avatar_dir, f"{request.user.user_id}.png").exists(),
+        "avatar_url": get_avatar_url(request.user.user_id),
+        "avatar_exists": avatar.exists(),
         "username": request.user.username
     }
 
     return render(request, "dashboard/user-profile.html", context)
+
+
+
+@login_required(login_url="dashboard:login")
+def friends(request):
+
+    search_matches = list()
+
+    if request.method == "POST":
+
+        search_form = SearchUserForm(request.POST)
+
+        if search_form.is_valid():
+
+            username = search_form.cleaned_data["search_text"]
+
+            users = UserId.objects.filter(
+                (
+                    models.Q(username__icontains=username) |
+                    models.Q(email__icontains=username)
+                ) &
+                models.Q(is_registered=True) &
+                models.Q(is_superuser=False)
+            ).exclude(id=request.user.id).exclude(friends__in=[request.user])
+
+            search_matches = [
+                {
+                    "avatar_url": get_avatar_url(user.user_id),
+                    "username": user.username,
+                    "form": CheckBoxForm()
+                } for user in users
+            ]
+
+
+
+
+
+    else:
+        search_form = SearchUserForm()
+
+
+    context = {
+        "search_form": search_form,
+        "avatar_url":  get_avatar_url(request.user.user_id),
+        "avatar_exists": get_avatar_filename(request.user.user_id).exists(),
+        "username": request.user.username,
+        "search_matches": search_matches
+    }
+
+    return render(request, "dashboard/friends.html", context)
+
+
+@login_required(login_url="dashboard:login")
+def devices(request):
+    return HttpResponse("<h1>Hello, world!</h1>")

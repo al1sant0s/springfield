@@ -6,8 +6,9 @@
  * Main-content-general-style
  * Messages-and-alerts
  * Footer
+ * User-town
  * User-profile
- *
+ * Friends
  */
 
 
@@ -171,19 +172,6 @@ main > article {
   margin: 0 auto;
 }
 
-/* Forms styles */
-
-/*
-.section-forms {
-  display: flex;
-}
-
-.section-forms li {
-  list-style: none;
-  margin: 0 auto 0 100px;
-}
-*/
-
 section {
   border-top: 3px outset coral;
   border-left: 2px outset gold;
@@ -215,7 +203,7 @@ section hr {
   margin-bottom: 20px;
 }
 
-section form > div {
+section form div {
   text-align: right;
   margin-bottom: 1rem;
 }
@@ -228,7 +216,6 @@ section form > div label, fieldset {
 section form label {
   font-weight: bold;
   min-width: 80px;
-  text-align: right;
   padding: 5px;
 }
 
@@ -240,10 +227,6 @@ section form input {
   width: 24em;
   color: maroon;
   font-weight: 500;
-}
-
-section form > div:has(fieldset input[type="file"]) {
-  text-align: center;
 }
 
 section button.submit {
@@ -264,12 +247,7 @@ section button.submit:active {
   background: linear-gradient(#6f005f, 45%, #fd5353);
 }
 
-section div:has(button.submit) {
-  text-align: right;
-}
-
 section div#reset-password {
-  text-align: right;
   font-size: 0.95rem;
 }
 
@@ -283,6 +261,10 @@ section a {
 
 section a:hover {
   color: white;
+}
+
+fieldset {
+  text-align: center;
 }
 
 /* Messages-and-alerts */
@@ -319,24 +301,24 @@ footer p {
   text-align: center;
 }
 
+/* User-town */
+
 /* User-profile */
+
+.profile-form fieldset {
+  border: none;
+}
+
+.profile-form div {
+  text-align: center;
+}
+
+.profile-form label {
+  display: block;
+}
 
 legend[for="id_profile_avatar"] {
   display: none;
-}
-
-fieldset:has(legend[for="id_profile_avatar"]) {
-  border: none;
-  text-align: center;
-}
-
-label[for="id_profile_username"] {
-  display: block;
-  text-align: center;
-}
-
-section form > div:has(input#id_profile_username) {
-  text-align: center;
 }
 
 .avatar {
@@ -358,4 +340,52 @@ section form > div:has(input#id_profile_username) {
   text-align: center;
   color: rebeccapurple;
   font-style: bold;
+}
+
+/* Friends */
+
+.wide-section {
+  width: 100%;
+  max-width: 750px;
+}
+
+.wide-section input {
+  width: 100%;
+}
+
+.wide-section form div {
+  text-align: left;
+}
+
+table {
+  border-collapse: collapse;
+  border: 2px solid rgb(200,200,200);
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  margin: 0 auto;
+}
+
+td, th {
+  border: 1px solid rgb(190,190,190);
+  padding: 10px 20px;
+}
+
+th {
+  background-color: rgb(235,235,235);
+}
+
+td {
+  text-align: center;
+}
+
+tr:nth-child(even) td {
+  background-color: rgb(250,250,250);
+}
+
+tr:nth-child(odd) td {
+  background-color: rgb(245,245,245);
+}
+
+caption {
+  padding: 10px;
 }

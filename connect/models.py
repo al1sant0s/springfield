@@ -10,7 +10,7 @@ import secrets
 
 class UserId(AbstractUser):
     username = models.CharField(max_length=12, unique=False)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, blank=True, null=True)
     is_registered = models.BooleanField(default=False)
     persona_id = models.BigIntegerField(unique=True, blank=True, null=True)
     user_id = models.BigIntegerField(unique=True, blank=True, null=True)
