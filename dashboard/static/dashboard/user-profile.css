@@ -1,0 +1,16 @@
+
+.profile-form fieldset {
+  border: none;
+}
+
+.profile-form div {
+  text-align: center;
+}
+
+.profile-form label {
+  display: block;
+}
+
+legend[for="id_profile_avatar"] {
+  display: none;
+}

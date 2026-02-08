@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width">
     <title>Friends | User dashboard</title>
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/friends.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
@@ -67,11 +68,9 @@
               <button class="submit" name="search-form">Search</button>
             </div>
           </form>
-        </section>
-        <section class="wide-section">
-          <h2>Search results</h2>
-          <hr>
-          <form action="{% url 'dashboard:friends' %}" method="post">
+          {% if search_matches %}
+            <h2>Search results</h2>
+            <hr>
             <table>
               <colgroup>
               <col class="column-avatar"> 
@@ -79,28 +78,117 @@
               <col class="column-checkbox"> 
               </colgroup>
               <tr>
-                <th>Add as a friend?</th>
                 <th>Avatar</th>
                 <th>Username</th>
+                <th>Add as a friend?</th>
               </tr>
               {% for match in search_matches %}
                 <tr>
-                  <td>
-                    {{ match.form }}
-                  </td>
                   <td class="avatar">
-                    <img src={{ match.avatar_url }} alt="" width=100 height=100>
+                    <img src={{ match.avatar_url }} alt="" width="100" height="100">
                   </td>
                   <td>
                     {{ match.username }}
                   </td>
+                  <td>
+                    <a class="send-request" href="{{ match.invite_url }}">Add!</a>
+                  </td>
                 </tr>
               {% endfor %}
             </table>
-            <div>
-              <button class="submit" name="friend-form">Submit</button>
-            </div>
-          </form>
+          {% endif %}
+          {% if received_requests %}
+            <h2>Pending incoming requests</h2>
+            <hr>
+            <table>
+              <colgroup>
+              <col class="column-avatar">
+              <col class="column-username">
+              <col class="column-checkbox">
+              </colgroup>
+              <tr>
+                <th>Avatar</th>
+                <th>Username</th>
+                <th>Add as a friend?</th>
+              </tr>
+              {% for match in received_requests %}
+                <tr>
+                  <td class="avatar">
+                    <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                  </td>
+                  <td>
+                    {{ match.username }}
+                  </td>
+                  <td>
+                    <a class="accept-request" href="{{ match.accept_url }}">Accept</a>
+                    <a class="reject-request" href="{{ match.reject_url }}">Reject</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% endif %}
+          {% if sent_requests %}
+            <h2>Pending outgoing requests</h2>
+            <hr>
+            <table>
+              <colgroup>
+              <col class="column-avatar">
+              <col class="column-username">
+              <col class="column-checkbox">
+              </colgroup>
+              <tr>
+                <th>Avatar</th>
+                <th>Username</th>
+                <th>Add as a friend?</th>
+              </tr>
+              {% for match in sent_requests %}
+                <tr>
+                  <td class="avatar">
+                    <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                  </td>
+                  <td>
+                    {{ match.username }}
+                  </td>
+                  <td>
+                    <a class="cancel-request" href="{{ match.cancel_url }}">Cancel</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% endif %}
+          {% if friends %}
+            <h2>Friends</h2>
+            <hr>
+            <table>
+              <colgroup>
+              <col class="column-avatar">
+              <col class="column-username">
+              <col class="column-checkbox">
+              </colgroup>
+              <tr>
+                <th>Avatar</th>
+                <th>Username</th>
+                <th>Last active</th>
+                <th>Remove friend?</th>
+              </tr>
+              {% for match in friends %}
+                <tr>
+                  <td class="avatar">
+                    <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                  </td>
+                  <td>
+                    {{ match.username }}
+                  </td>
+                  <td>
+                    {{ match.last_active }}
+                  </td>
+                  <td>
+                    <a class="cancel-request" href="{{ match.remove_url }}">Cancel</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+          {% endif %}
         </section>
       </article>
     </main>

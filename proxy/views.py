@@ -8,12 +8,40 @@ from django.views.decorators.http import require_POST
 
 from connect.models import UserId, DeviceToken
 from django.contrib.auth.models import BaseUserManager
+from friends.models import FriendInvitation
 from .models import ProgRegCode
 
 import base64
 import hashlib
 import json
 import datetime
+
+
+def search_friends(user, search_username):
+    # Do not show ourselves. Neither show non registered users and users that are already our friends.
+    # Also hide superusers. Finally, do not show users whose have sent or received a friend request from us.
+    friend_query_set = FriendInvitation.objects.filter(
+        models.Q(from_user__in=[user]) | models.Q(to_user__in=[user])
+    )
+
+    users = UserId.objects.filter(
+        (
+            models.Q(username__icontains=search_username) |
+            models.Q(email__icontains=search_username)
+        ) &
+        models.Q(is_registered=True) &
+        models.Q(is_superuser=False)
+    ).exclude(
+        id=user.id
+    ).exclude(
+        friends__in=[user]
+    ).exclude(
+        sent_invitations__in=friend_query_set
+    ).exclude(
+        received_invitations__in=friend_query_set
+    )
+
+    return users
 
 
 def get_auth_code(email, token):
@@ -138,18 +166,7 @@ def personas(request):
 
     our_user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
 
-    # Do not show ourselves. Neither show non registered users and users that are already our friends.
-    # Also hide superusers.
-    users = UserId.objects.filter(
-        (
-            models.Q(username__icontains=username) |
-            models.Q(email__icontains=username)
-        ) &
-        models.Q(is_registered=True) &
-        models.Q(is_superuser=False)
-    ).exclude(id=our_user.id).exclude(friends__in=[our_user])
-
-    for user in users:
+    for user in search_friends(our_user, username):
 
         friends.append(
             {

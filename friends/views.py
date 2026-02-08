@@ -8,7 +8,74 @@ from django.views.decorators.http import require_http_methods, require_GET, requ
 from connect.models import UserId, DeviceToken
 from friends.models import FriendInvitation
 
-# Create your views here.
+
+def send_friend_request(from_user, to_user, success_response):
+
+    if from_user == to_user:
+        return HttpResponseBadRequest("Cannot befriend yourself!")
+
+    try:
+        with transaction.atomic():
+            # Lock and check for existing invitations.
+            exists = FriendInvitation.objects.select_for_update().filter(
+                models.Q(from_user=to_user, to_user=from_user) |
+                models.Q(from_user=from_user, to_user=to_user)
+            ).exists()
+
+            if exists:
+                return HttpResponseBadRequest("An invitation already exists between these users.")
+
+            FriendInvitation.objects.create(from_user=from_user, to_user=to_user, invitation_date=timezone.now())
+            return success_response
+
+    except Exception:
+        return HttpResponseBadRequest("Failed to create invitation.")
+
+
+def cancel_friend_request(from_user, to_user, success_response):
+
+    try:
+        with transaction.atomic():
+            FriendInvitation.objects.filter(
+                models.Q(from_user=to_user, to_user=from_user) |
+                models.Q(from_user=from_user, to_user=to_user)
+            ).delete()
+
+    except Exception:
+        return HttpResponseBadRequest("Failed to delete friend invitations.")
+
+    else:
+        return success_response
+
+
+def accept_friend_request(from_user, to_user, success_response):
+
+    try:
+        with transaction.atomic():
+            FriendInvitation.objects.filter(
+                models.Q(from_user=to_user, to_user=from_user) |
+                models.Q(from_user=from_user, to_user=to_user)
+            ).delete()
+
+    except Exception:
+        return HttpResponseBadRequest("Failed to delete friend invitations.")
+
+    else:
+        if from_user == to_user:
+            return HttpResponseBadRequest("Cannot befriend yourself!")
+
+        else:
+            to_user.friends.add(from_user)
+            to_user.save()
+            return success_response
+
+
+def remove_friend(from_user, to_user, success_response):
+    from_user.friends.remove(to_user)
+    to_user.friends.remove(from_user)
+    return success_response
+
+
 @require_GET
 def outbound(request, user_id):
 
@@ -52,39 +119,10 @@ def outbound_sent(request, from_user_id, to_user_id):
     to_user = get_object_or_404(UserId, user_id=to_user_id)
 
     if request.method == "DELETE":
-        try:
-            with transaction.atomic():
-                FriendInvitation.objects.filter(
-                    models.Q(from_user=to_user, to_user=from_user) |
-                    models.Q(from_user=from_user, to_user=to_user)
-                ).delete()
+        return cancel_friend_request(from_user, to_user, HttpResponse(status=204))
 
-        except Exception:
-            return HttpResponseBadRequest("Failed to delete friend invitations.")
-
-        else:
-            return HttpResponse(status=204)
-
-
-    if from_user == to_user:
-        return HttpResponseBadRequest("Cannot befriend yourself!")
-
-    try:
-        with transaction.atomic():
-            # Lock and check for existing invitations.
-            exists = FriendInvitation.objects.select_for_update().filter(
-                models.Q(from_user=to_user, to_user=from_user) |
-                models.Q(from_user=from_user, to_user=to_user)
-            ).exists()
-
-            if exists:
-                return HttpResponseBadRequest("An invitation already exists between these users.")
-
-            FriendInvitation.objects.create(from_user=from_user, to_user=to_user, invitation_date=timezone.now())
-            return HttpResponse(status=204)
-
-    except Exception:
-        return HttpResponseBadRequest("Failed to create invitation.")
+    else:
+        return send_friend_request(from_user, to_user, HttpResponse(status=204))
 
 
 @require_GET
@@ -130,24 +168,7 @@ def inbound_accept(request, to_user_id, from_user_id):
     from_user = get_object_or_404(UserId, user_id=from_user_id)
     to_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
 
-    try:
-        with transaction.atomic():
-            FriendInvitation.objects.filter(
-                models.Q(from_user=to_user, to_user=from_user) |
-                models.Q(from_user=from_user, to_user=to_user)
-            ).delete()
-
-    except Exception:
-        return HttpResponseBadRequest("Failed to delete friend invitations.")
-
-    else:
-        if from_user == to_user:
-            return HttpResponseBadRequest("Cannot befriend yourself!")
-
-        else:
-            to_user.friends.add(from_user)
-            to_user.save()
-            return HttpResponse(status=204)
+    return accept_friend_request(from_user, to_user, HttpResponse(status=204))
 
 
 @require_GET
@@ -196,7 +217,4 @@ def get_friends(request, user_id):
 def cancel_friendship(request, to_user_id, from_user_id):
     from_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
-    from_user.friends.remove(to_user)
-    to_user.friends.remove(from_user)
-
-    return HttpResponse(status=204)
+    return remove_friend(from_user, to_user, HttpResponse(status=204))

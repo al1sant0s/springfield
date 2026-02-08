@@ -1,0 +1,69 @@
+.wide-section {
+  width: 100%;
+  max-width: 800px;
+}
+
+.wide-section label {
+  font-size: 1.25rem;
+}
+
+.wide-section input {
+  box-sizing: border-box;
+  width: 100%;
+  font-size: 1.05rem;
+  padding: 12px 0 12px 25px;
+}
+
+.wide-section form div {
+  text-align: left;
+}
+
+.wide-section form div:has(button) {
+  text-align: right;
+}
+
+table {
+  border-collapse: collapse;
+  border: 2px solid rgb(200,200,200);
+  letter-spacing: 1px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid rgb(190,190,190);
+  padding: 10px 20px;
+  color: navy;
+}
+
+td.avatar img {
+  border: 5px outset whitesmoke;
+  border-radius: 5px;
+}
+
+th {
+  background-color: rgb(235,235,235);
+}
+
+td {
+  text-align: center;
+}
+
+tr:nth-child(even) td {
+  background: linear-gradient(purple, pink);
+}
+
+tr:nth-child(odd) td {
+  background: linear-gradient(deepskyblue, blue);
+}
+
+caption {
+  padding: 10px;
+}
+
+
+table div input {
+  display: block;
+  width: 250px;
+  background-color: red;
+}

@@ -5,12 +5,14 @@ from django.db import models
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
+from django.forms import formset_factory
 
 from connect.models import UserId, DeviceToken
 from proxy.models import ProgRegCode
-from proxy.views import get_auth_code, personas
+from proxy.views import get_auth_code, personas, search_friends
 from mh.views import get_user_file, save_proto, load_town
 from avatar.views import get_avatar_url, get_avatar_filename
+from friends.views import send_friend_request, cancel_friend_request, accept_friend_request, remove_friend
 
 from .forms import UploadTownForm
 from .forms import EditCurrenciesForm
@@ -19,12 +21,13 @@ from .forms import AuthCodeForm
 from .forms import ResetPasswordForm
 from .forms import UserProfileForm
 from .forms import SearchUserForm
-from .forms import CheckBoxForm
 
 from protofiles import LandData_pb2
+from operator import itemgetter
 from pathlib import Path
 
 import google.protobuf
+import os
 
 # Create your views here.
 
@@ -205,6 +208,13 @@ def index(request):
 
                 else:
                     save_proto(town_file, land_data)
+
+                    # Remove user' events file since we are loading a new town.
+                    events_file = get_user_file(mayhem_id, "events")
+
+                    if events_file.exists():
+                        os.remove(events_file)
+
                     messages.success(request, "Uploaded town successfuly!", extra_tags="town")
 
                 return HttpResponseRedirect(reverse("dashboard:index"))
@@ -307,39 +317,72 @@ def profile(request):
 @login_required(login_url="dashboard:login")
 def friends(request):
 
+    search_form = SearchUserForm()
     search_matches = list()
 
     if request.method == "POST":
 
         search_form = SearchUserForm(request.POST)
+        search_matches = list()
 
         if search_form.is_valid():
 
             username = search_form.cleaned_data["search_text"]
 
-            users = UserId.objects.filter(
-                (
-                    models.Q(username__icontains=username) |
-                    models.Q(email__icontains=username)
-                ) &
-                models.Q(is_registered=True) &
-                models.Q(is_superuser=False)
-            ).exclude(id=request.user.id).exclude(friends__in=[request.user])
+            # Sort by alphabetical order.
+            search_matches = sorted(
+                [
+                    {
+                        "avatar_url": get_avatar_url(user.user_id),
+                        "username": user.username,
+                        "invite_url": reverse("dashboard:friends_send_request", args=(user.user_id,))
 
-            search_matches = [
-                {
-                    "avatar_url": get_avatar_url(user.user_id),
-                    "username": user.username,
-                    "form": CheckBoxForm()
-                } for user in users
-            ]
+                    } for user in search_friends(request.user, username)
+                ],
+                key=itemgetter("username")
+            )
 
 
+    # Get pending requests.
+    received_requests = sorted(
+        [
+            {
+                "avatar_url": get_avatar_url(invitation.from_user.user_id),
+                "username": invitation.from_user.username,
+                "accept_url": reverse("dashboard:friends_accept_request", args=(invitation.from_user.user_id,)),
+                "reject_url": reverse("dashboard:friends_cancel_request", args=(invitation.from_user.user_id,))
+
+            } for invitation in request.user.received_invitations.all()
+        ],
+        key=itemgetter("username")
+    )
 
 
+    sent_requests = sorted(
+        [
+            {
+                "avatar_url": get_avatar_url(invitation.to_user.user_id),
+                "username": invitation.to_user.username,
+                "cancel_url": reverse("dashboard:friends_cancel_request", args=(invitation.to_user.user_id,))
 
-    else:
-        search_form = SearchUserForm()
+            } for invitation in request.user.sent_invitations.all()
+        ],
+        key=itemgetter("username")
+    )
+
+    friends = sorted(
+        [
+            {
+                "avatar_url": get_avatar_url(user.user_id),
+                "username": user.username,
+                "last_active": user.last_authenticated,
+                "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,))
+
+            } for user in request.user.friends.all()
+        ],
+        key=itemgetter("username")
+    )
+
 
 
     context = {
@@ -347,10 +390,48 @@ def friends(request):
         "avatar_url":  get_avatar_url(request.user.user_id),
         "avatar_exists": get_avatar_filename(request.user.user_id).exists(),
         "username": request.user.username,
-        "search_matches": search_matches
+        "search_matches": search_matches,
+        "received_requests": received_requests,
+        "sent_requests": sent_requests,
+        "friends": friends
     }
 
     return render(request, "dashboard/friends.html", context)
+
+
+@login_required(login_url="dashboard:login")
+def friends_send_request(request, to_user_id):
+    from_user = request.user
+    to_user = get_object_or_404(UserId, user_id=to_user_id)
+    return send_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+
+
+@login_required(login_url="dashboard:login")
+def friends_cancel_request(request, to_user_id):
+    from_user = request.user
+    to_user = get_object_or_404(UserId, user_id=to_user_id)
+    return cancel_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+
+
+@login_required(login_url="dashboard:login")
+def friends_accept_request(request, from_user_id):
+    from_user = get_object_or_404(UserId, user_id=from_user_id)
+    to_user = request.user
+    return accept_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+
+
+@login_required(login_url="dashboard:login")
+def friends_reject_request(request, from_user_id):
+    from_user = get_object_or_404(UserId, user_id=from_user_id)
+    to_user = request.user
+    return cancel_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+
+
+@login_required(login_url="dashboard:login")
+def friends_remove(request, to_user_id):
+    from_user = request.user
+    to_user = get_object_or_404(UserId, user_id=to_user_id)
+    return remove_friend(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
 
 
 @login_required(login_url="dashboard:login")

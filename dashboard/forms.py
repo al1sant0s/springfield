@@ -50,4 +50,4 @@ class SearchUserForm(forms.Form):
 
 
 class CheckBoxForm(forms.Form):
-    checkbox = forms.BooleanField(label="")
+    checkbox = forms.BooleanField(label=".", label_suffix="")
