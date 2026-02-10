@@ -69,13 +69,17 @@ class UserId(AbstractUser):
 class DeviceToken(models.Model):
     user = models.ForeignKey(UserId, on_delete=models.CASCADE)
     advertising_id = models.UUIDField(primary_key=True)
+
     # This field exists to circuvent issues with headers with underscores like "access_token".
     # When /connect/tokeninfo is requested we will receive /<uuid:device_id>/connect/tokeninfo
     # and be able to find the DeviceToken. We can also use it in other apps.
     device_id = models.UUIDField(unique=True)
     device_id_cache = models.UUIDField(unique=True) # Fallback for tokeninfo when director is called again.
+
     # For mh endpoint POST method identification. Usable in friendData/origin
     current_client_session_id = models.UUIDField(null=True, blank=True)
+    manufacturer = models.CharField(max_length=64, default="unknown")
+    device_model = models.CharField(max_length=64, default="unknown")
     code = models.CharField(max_length=64)
     access_token = models.TextField()
     refresh_token = models.TextField()

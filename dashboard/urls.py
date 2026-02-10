@@ -14,6 +14,7 @@ urlpatterns = [
     path("friends/reject/request/<int:from_user_id>", views.friends_reject_request, name="friends_reject_request"),
     path("friends/remove/<int:to_user_id>", views.friends_remove, name="friends_remove"),
     path("devices/", views.devices, name="devices"),
+    path("devices/remove/<uuid:advertising_id>/", views.remove_device, name="remove_device"),
     path("login/", views.login, name="login"),
     path("logout/", LogoutView.as_view(next_page="dashboard:login"), name="logout"),
     path("auth/", views.auth, name="auth"),

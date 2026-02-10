@@ -33,7 +33,6 @@ table {
 td, th {
   border: 1px solid rgb(190,190,190);
   padding: 10px 20px;
-  color: navy;
 }
 
 td.avatar img {
@@ -42,19 +41,26 @@ td.avatar img {
 }
 
 th {
+  font-size: 1.075em;
+  font-weight: 700;
   background-color: rgb(235,235,235);
 }
 
 td {
+  color: #5e4a10;
   text-align: center;
 }
 
+tr {
+   background: linear-gradient(#70b4ce, white);
+}
+
 tr:nth-child(even) td {
-  background: linear-gradient(purple, pink);
+  background-color: #f0eba7;
 }
 
 tr:nth-child(odd) td {
-  background: linear-gradient(deepskyblue, blue);
+  background-color: #f3ffbb;
 }
 
 caption {

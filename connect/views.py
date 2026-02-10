@@ -193,7 +193,7 @@ def get_token(request, device_id):
 
     if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
         token.login_status = False
-        token.save()
+        token.save(update_fields=["login_status"])
 
     return JsonResponse(response)
 
@@ -234,7 +234,7 @@ def tokeninfo(request, device_id):
     if token.device_id != device_id:
         token.device_id_cache = token.device_id
         token.device_id = device_id
-        token.save()
+        token.save(update_fields=["device_id_cache", "device_id"])
 
     return JsonResponse(response)
 

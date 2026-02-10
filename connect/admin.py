@@ -13,7 +13,8 @@ class DeviceTokenInLine(admin.TabularInline):
             {
                 "fields":
                     [
-                        "advertising_id",
+                        "manufacturer",
+                        "device_model",
                     ]
             }
         ),

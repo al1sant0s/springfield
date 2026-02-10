@@ -203,7 +203,7 @@ def userstats(request):
     else:
         token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
         token.current_client_session_id = uuid.UUID(request.headers.get("currentClientSessionId"))
-        token.save()
+        token.save(update_fields=["current_client_session_id"])
 
         return HttpResponse(status=409)
 
@@ -395,20 +395,19 @@ def protoland(request, mayhem_id):
             except gzip.BadGzipFile:
                 decompressed_data = request.body
 
-            finally:
 
-                # Update town.
-                protoland_response = LandData_pb2.LandMessage()
-                protoland_response.ParseFromString(decompressed_data) # type: ignore
-                save_proto(get_user_file(mayhem_id, "pb"), protoland_response)
+            # Update town.
+            protoland_response = LandData_pb2.LandMessage()
+            protoland_response.ParseFromString(decompressed_data) # type: ignore
+            save_proto(get_user_file(mayhem_id, "pb"), protoland_response)
 
-                # Remove events file if it exists.
-                event_file = get_user_file(mayhem_id, "events")
-                if event_file.exists():
-                    os.remove(event_file)
+            # Remove events file if it exists.
+            event_file = get_user_file(mayhem_id, "events")
+            if event_file.exists():
+                os.remove(event_file)
 
-                root = ET.Element("WholeLandUpdateResponse")
-                return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+            root = ET.Element("WholeLandUpdateResponse")
+            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
 
 def protocurrency(request, mayhem_id):
@@ -464,36 +463,35 @@ def extraLandUpdate(request, mayhem_id):
         except gzip.BadGzipFile:
             decompressed_data = request.body
 
-        finally:
 
-            # Get list of events to update donuts.
-            # Each event is a list with an amount to increase/decrease donuts balance.
-            extraland_update_request = LandData_pb2.ExtraLandMessage()
-            extraland_update_request.ParseFromString(decompressed_data) # type: ignore
+        # Get list of events to update donuts.
+        # Each event is a list with an amount to increase/decrease donuts balance.
+        extraland_update_request = LandData_pb2.ExtraLandMessage()
+        extraland_update_request.ParseFromString(decompressed_data) # type: ignore
 
-            # There's also other stuff here like "reason" but we don't care about that.
-            # Only update the donuts balance.
-            processed_currency_delta = list()
-            donuts_amount = 0
-            for currency_delta in extraland_update_request.currencyDelta:
-                donuts_amount += int(currency_delta.amount)
-                processed_currency_delta.append(
-                    LandData_pb2.ExtraLandMessage.CurrencyDelta(
-                        id=currency_delta.id,
-                        reason=currency_delta.reason,
-                        amount=currency_delta.amount
-                    )
+        # There's also other stuff here like "reason" but we don't care about that.
+        # Only update the donuts balance.
+        processed_currency_delta = list()
+        donuts_amount = 0
+        for currency_delta in extraland_update_request.currencyDelta:
+            donuts_amount += int(currency_delta.amount)
+            processed_currency_delta.append(
+                LandData_pb2.ExtraLandMessage.CurrencyDelta(
+                    id=currency_delta.id,
+                    reason=currency_delta.reason,
+                    amount=currency_delta.amount
                 )
+            )
 
-            # Update donuts balance in database.
-            user.donuts_balance = F("donuts_balance") + donuts_amount
-            user.save()
+        # Update donuts balance in database.
+        user.donuts_balance = F("donuts_balance") + donuts_amount
+        user.save(update_fields=["donuts_balance"])
 
-            # Note: you need to use extend() method if you define the response first and edit a repeated field later.
-            # extraland_update_response = LandData_pb2.ExtraLandResponse()
-            # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
-            extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
-            return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
+        # Note: you need to use extend() method if you define the response first and edit a repeated field later.
+        # extraland_update_response = LandData_pb2.ExtraLandResponse()
+        # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
+        extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
+        return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
 
 
 @csrf_exempt

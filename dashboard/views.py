@@ -156,7 +156,7 @@ def reset_password(request):
                     user.username = password_form.cleaned_data["username"]
 
                 user.set_password(password_form.cleaned_data["password"])
-                user.save()
+                user.save(update_fields=["username", "password"])
 
                 # User will have to request a new auth code to be able to revisit the reset password view.
                 request.session["auth_email"] = False
@@ -235,7 +235,7 @@ def index(request):
 
                 # Update donuts.
                 request.user.donuts_balance = currencies["donuts"]
-                request.user.save()
+                request.user.save(update_fields=["donuts_balance"])
 
                 messages.success(request, "Currencies updated!", extra_tags="currency")
                 return HttpResponseRedirect(reverse("dashboard:index"))
@@ -290,7 +290,7 @@ def profile(request):
             # Update username if it was edited.
             if profile_form.cleaned_data["profile_username"] not in (".null", request.user.username):
                 request.user.username = profile_form.cleaned_data["profile_username"]
-                request.user.save()
+                request.user.save(update_fields=["username"])
                 messages.success(request, "Username updated.")
 
 
@@ -436,4 +436,27 @@ def friends_remove(request, to_user_id):
 
 @login_required(login_url="dashboard:login")
 def devices(request):
-    return HttpResponse("<h1>Hello, world!</h1>")
+
+    user_devices = [
+        {
+            "manufacturer": token.manufacturer,
+            "model": token.device_model,
+            "last_active": token.timestamp,
+            "remove_url": reverse("dashboard:remove_device", args=(token.advertising_id,))
+        } for token in request.user.devicetoken_set.all()
+    ]
+
+    context = {
+        "avatar_url":  get_avatar_url(request.user.user_id),
+        "avatar_exists": get_avatar_filename(request.user.user_id).exists(),
+        "username": request.user.username,
+        "devices": user_devices
+    }
+
+    return render(request, "dashboard/devices.html", context)
+
+
+@login_required(login_url="dashboard:login")
+def remove_device(request, advertising_id):
+    get_object_or_404(DeviceToken, advertising_id=advertising_id).delete()
+    return HttpResponseRedirect(reverse("dashboard:devices"))

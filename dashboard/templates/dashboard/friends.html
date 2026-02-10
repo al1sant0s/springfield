@@ -51,8 +51,8 @@
     <main>
       <article>
         <section class="wide-section">
-          <h2>Search for friends</h2>
-          <p>Change your avatar picture and username.</p>
+          <h2>Friends hub</h2>
+          <p>Send, accept or reject friend requests here.</p>
           {% if messages %}
             <ul class="messages">
               {% for message in messages %}
@@ -183,7 +183,7 @@
                     {{ match.last_active }}
                   </td>
                   <td>
-                    <a class="cancel-request" href="{{ match.remove_url }}">Cancel</a>
+                    <a class="remove-request" href="{{ match.remove_url }}">Remove</a>
                   </td>
                 </tr>
               {% endfor %}

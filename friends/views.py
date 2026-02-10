@@ -66,7 +66,6 @@ def accept_friend_request(from_user, to_user, success_response):
 
         else:
             to_user.friends.add(from_user)
-            to_user.save()
             return success_response
 
 

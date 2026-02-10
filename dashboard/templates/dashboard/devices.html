@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Devices | User dashboard</title>
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/friends.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
+  </head>
+  <body>
+
+    <header>
+      <h1 class="corben-bold">User Friends</h1>
+    </header>
+
+    <nav>
+      <ul>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town</a>
+        </li>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">User Profile</a>
+        </li>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends</a>
+        </li>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Manage Devices</a>
+        </li>
+        <li>
+          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+            {% csrf_token %}
+              <button class="nav-item exo-2-generic">Logout 🚪</button>
+          </form>
+        </li>
+        {% if avatar_exists %}
+          <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
+        {% else %}
+          <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
+        {% endif %}
+        <li class="nav-username">
+          <p>Welcome, {{ username }}!</p>
+        </li>
+      </ul>
+    </nav>
+
+    <main>
+      <article>
+        <section class="wide-section">
+            <h2>Connected devices</h2>
+            <p>If you do not recognize a device here, remove it!</p>
+            <hr>
+            <table>
+              <colgroup>
+              <col class="column-avatar"> 
+              <col class="column-username"> 
+              <col class="column-checkbox"> 
+              </colgroup>
+              <tr>
+                <th>Brand</th>
+                <th>Model</th>
+                <th>Last active</th>
+                <th>Remove device?</th>
+              </tr>
+              {% for device in devices %}
+                <tr>
+                  <td>
+                    {{ device.manufacturer }}
+                  </td>
+                  <td>
+                    {{ device.model }}
+                  </td>
+                  <td>
+                    {{ device.last_active }}
+                  </td>
+                  <td>
+                    <a class="send-request" href="{{ device.remove_url }}">Remove!</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </table>
+        </section>
+      </article>
+    </main>
+
+    <footer>
+      <p>
+        Server created by <a target="blank" href="https://github.com/al1sant0s">@al1sant0s</a>
+      </p>
+    </footer>
+
+  </body>
+</html>
+

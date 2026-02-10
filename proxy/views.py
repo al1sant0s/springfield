@@ -1,5 +1,5 @@
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
-from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
@@ -21,16 +21,16 @@ def search_friends(user, search_username):
     # Do not show ourselves. Neither show non registered users and users that are already our friends.
     # Also hide superusers. Finally, do not show users whose have sent or received a friend request from us.
     friend_query_set = FriendInvitation.objects.filter(
-        models.Q(from_user__in=[user]) | models.Q(to_user__in=[user])
+        Q(from_user__in=[user]) | Q(to_user__in=[user])
     )
 
     users = UserId.objects.filter(
         (
-            models.Q(username__icontains=search_username) |
-            models.Q(email__icontains=search_username)
+            Q(username__icontains=search_username) |
+            Q(email__icontains=search_username)
         ) &
-        models.Q(is_registered=True) &
-        models.Q(is_superuser=False)
+        Q(is_registered=True) &
+        Q(is_superuser=False)
     ).exclude(
         id=user.id
     ).exclude(

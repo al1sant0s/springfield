@@ -1,8 +1,11 @@
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
 import json
+import gzip
 import uuid
 
 from connect.models import DeviceToken
@@ -15,6 +18,35 @@ def index(request):
 @require_POST
 @csrf_exempt
 def pinEvents(request):
+
+
+    # Try to decompress.
+    try:
+        decompressed_data = gzip.decompress(request.body)
+
+    except gzip.BadGzipFile:
+        decompressed_data = request.body
+
+
+    json_data = json.loads(decompressed_data)
+
+    if "didm" in json_data[0]:
+
+        device_id = uuid.UUID(json_data[0]["didm"].get("eadeviceid"))
+        print(device_id)
+        token = get_object_or_404(
+            DeviceToken,
+            Q(device_id=device_id) |
+            Q(device_id_cache=device_id)
+        )
+
+        if "custom" in json_data[0]:
+
+            token.manufacturer = json_data[0]["custom"].get("deviceBrand", "unknown")
+            token.device_model = json_data[0]["custom"].get("deviceModel", "unknown")
+            token.save(update_fields=["manufacturer", "device_model"])
+
+
     return JsonResponse({"status": "ok"})
 
 
@@ -43,7 +75,7 @@ def logEvent(request, device_id):
                 if json_data[0].get("persona") is None:
                     token.login_status = False
 
-                token.save()
+                token.save(update_fields=["device_id_cache", "device_id", "login_status"])
 
     response = {
         "status": "ok"
