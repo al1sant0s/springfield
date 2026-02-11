@@ -4,9 +4,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>User profile | User dashboard</title>
+    <title>Profile | User dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👤</text></svg>">
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'dashboard/user-profile.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/profile.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
@@ -20,16 +21,16 @@
     <nav>
       <ul>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">User Profile</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">Profile 👤</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends 👥</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Manage Devices</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
           <form id="logout" action="{% url 'dashboard:logout' %}" method="post">

@@ -51,10 +51,6 @@ td {
   text-align: center;
 }
 
-tr {
-   background: linear-gradient(#70b4ce, white);
-}
-
 tr:nth-child(even) td {
   background-color: #f0eba7;
 }

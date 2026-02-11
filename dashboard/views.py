@@ -83,7 +83,7 @@ def auth(request):
                 auth_code = ProgRegCode.objects.get(email=request.session["auth_email"])
 
             except ProgRegCode.DoesNotExist:
-                return HttpResponseRedirect(reverse("dashboard:register"))
+                return HttpResponseRedirect(reverse("dashboard:login"))
 
             else:
 
@@ -310,7 +310,7 @@ def profile(request):
         "username": request.user.username
     }
 
-    return render(request, "dashboard/user-profile.html", context)
+    return render(request, "dashboard/profile.html", context)
 
 
 

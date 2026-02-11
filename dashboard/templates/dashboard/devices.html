@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
     <title>Devices | User dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📱</text></svg>">
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
     <link rel="stylesheet" href="{% static 'dashboard/friends.css' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,22 +15,22 @@
   <body>
 
     <header>
-      <h1 class="corben-bold">User Friends</h1>
+      <h1 class="corben-bold">User Devices</h1>
     </header>
 
     <nav>
       <ul>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">User Profile</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">Profile 👤</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends 👥</a>
         </li>
         <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Manage Devices</a>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
           <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
@@ -54,35 +55,44 @@
             <h2>Connected devices</h2>
             <p>If you do not recognize a device here, remove it!</p>
             <hr>
-            <table>
-              <colgroup>
-              <col class="column-avatar"> 
-              <col class="column-username"> 
-              <col class="column-checkbox"> 
-              </colgroup>
-              <tr>
-                <th>Brand</th>
-                <th>Model</th>
-                <th>Last active</th>
-                <th>Remove device?</th>
-              </tr>
-              {% for device in devices %}
-                <tr>
-                  <td>
-                    {{ device.manufacturer }}
-                  </td>
-                  <td>
-                    {{ device.model }}
-                  </td>
-                  <td>
-                    {{ device.last_active }}
-                  </td>
-                  <td>
-                    <a class="send-request" href="{{ device.remove_url }}">Remove!</a>
-                  </td>
-                </tr>
-              {% endfor %}
-            </table>
+            {% if devices %}
+              <table>
+                <colgroup>
+                <col class="column-brand"> 
+                <col class="column-model"> 
+                <col class="column-activy"> 
+                <col class="column-action"> 
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Brand</th>
+                    <th>Model</th>
+                    <th>Last active</th>
+                    <th>Remove device?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for device in devices %}
+                    <tr>
+                      <td>
+                        {{ device.manufacturer }}
+                      </td>
+                      <td>
+                        {{ device.model }}
+                      </td>
+                      <td>
+                        {{ device.last_active }}
+                      </td>
+                      <td>
+                        <a class="send-request" href="{{ device.remove_url }}">Remove!</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% else %}
+              <p class="highlight">There a currently no devices connected to this account.</p>
+            {% endif %}
         </section>
       </article>
     </main>

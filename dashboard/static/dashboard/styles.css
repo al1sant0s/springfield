@@ -26,11 +26,12 @@ button {
 
 .highlight {
   display: block;
-  color: blue;
-  font-weight: 500;
-  font-size: 1.19em;
+  color: #9d1616;
+  font-size: 1.19rem;
   text-align: center;
-  text-decoration: underline;
+  border: 2px dashed #80570a;
+  border-radius: 10px;
+  background-color: #ffb777;
 }
 
 /* Fonts */
@@ -193,6 +194,7 @@ section p {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
+  font-size: 1.09rem;
 }
 
 section hr {
