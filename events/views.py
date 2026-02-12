@@ -33,7 +33,6 @@ def pinEvents(request):
     if "didm" in json_data[0]:
 
         device_id = uuid.UUID(json_data[0]["didm"].get("eadeviceid"))
-        print(device_id)
         token = get_object_or_404(
             DeviceToken,
             Q(device_id=device_id) |

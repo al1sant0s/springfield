@@ -120,7 +120,6 @@ def auth(request, device_id):
 
 
             auth_code.token.user.email = auth_code.email
-            auth_code.token.user.username = auth_code.email.split("@")[0]
             auth_code.token.user.is_registered = True
             auth_code.token.user.session_key = secrets.token_urlsafe(32)
             auth_code.token.user.last_authenticated = timestamp

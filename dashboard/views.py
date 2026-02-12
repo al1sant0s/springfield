@@ -207,6 +207,8 @@ def index(request):
                     messages.error(request, "Invalid town file!", extra_tags="town")
 
                 else:
+                    land_data.id = str(request.user.mayhem_id.int)
+                    land_data.friendData.name = request.user.username
                     save_proto(town_file, land_data)
 
                     # Remove user' events file since we are loading a new town.

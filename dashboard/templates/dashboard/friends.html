@@ -160,35 +160,41 @@
           {% if friends %}
             <h2>Friends</h2>
             <hr>
+            <div class="tableFixHead">
             <table>
               <colgroup>
               <col class="column-avatar">
               <col class="column-username">
               <col class="column-checkbox">
               </colgroup>
-              <tr>
-                <th>Avatar</th>
-                <th>Username</th>
-                <th>Last active</th>
-                <th>Remove friend?</th>
-              </tr>
-              {% for match in friends %}
+              <thead>
                 <tr>
-                  <td class="avatar">
-                    <img src={{ match.avatar_url }} alt="" width="100" height="100">
-                  </td>
-                  <td>
-                    {{ match.username }}
-                  </td>
-                  <td>
-                    {{ match.last_active }}
-                  </td>
-                  <td>
-                    <a class="remove-request" href="{{ match.remove_url }}">Remove</a>
-                  </td>
+                  <th>Avatar</th>
+                  <th>Username</th>
+                  <th>Last active</th>
+                  <th>Remove friend?</th>
                 </tr>
-              {% endfor %}
+              </thead>
+              <tbody>
+                {% for match in friends %}
+                  <tr>
+                    <td class="avatar">
+                      <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                    </td>
+                    <td>
+                      {{ match.username }}
+                    </td>
+                    <td>
+                      {{ match.last_active }}
+                    </td>
+                    <td>
+                      <a class="remove-request" href="{{ match.remove_url }}">Remove</a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
             </table>
+            </div>
           {% endif %}
         </section>
       </article>

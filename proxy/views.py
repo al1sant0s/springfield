@@ -105,7 +105,7 @@ def me_personas(request, persona_id):
             "personaId": user.persona_id,
             "pidId": user.user_id,
             "displayName": user.username,
-            "name": user.username.lower(),
+            "name": user.username,
             "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
             "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
             "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
