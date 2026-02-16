@@ -9,8 +9,6 @@ import xml.etree.ElementTree as ET
 import json
 
 
-
-
 def get_avatar_filename(user_id):
 
     avatar_dir = cache.get("avatar_dir")

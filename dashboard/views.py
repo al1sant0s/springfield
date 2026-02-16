@@ -211,7 +211,7 @@ def index(request):
                     land_data.friendData.name = request.user.username
                     save_proto(town_file, land_data)
 
-                    # Remove user' events file since we are loading a new town.
+                    # Remove user's events file since we are loading a new town.
                     events_file = get_user_file(mayhem_id, "events")
 
                     if events_file.exists():

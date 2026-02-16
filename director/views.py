@@ -6,7 +6,7 @@ from pathlib import Path
 
 import json
 import uuid
-# Create your views here.
+
 
 def getDirectionByPackage(request, platform):
 

@@ -14,8 +14,8 @@ class UploadTownForm(forms.Form):
 
 class EditCurrenciesForm(forms.Form):
     prefix = "currency"
-    money = forms.IntegerField(initial=0, min_value=0)
-    donuts = forms.IntegerField(initial=0, min_value=0)
+    money = forms.IntegerField(initial=0, min_value=0, max_value=4294967295)
+    donuts = forms.IntegerField(initial=0, min_value=0, max_value=99999)
 
 
 class RequestUserForm(forms.Form):
@@ -46,8 +46,3 @@ class UserProfileForm(forms.Form):
 
 class SearchUserForm(forms.Form):
     search_text = forms.CharField(label="Search user")
-
-
-
-class CheckBoxForm(forms.Form):
-    checkbox = forms.BooleanField(label=".", label_suffix="")
