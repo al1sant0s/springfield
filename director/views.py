@@ -46,6 +46,7 @@ def getDirectionByPackage(request, platform):
         "nexus.connect",
         "synergy.tracking",
         "synergy.user",
+        "river.pin",
     ]
 
     for service in update_services:

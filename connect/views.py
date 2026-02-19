@@ -229,12 +229,6 @@ def tokeninfo(request, device_id):
             }
         )
 
-    # If access_token is present in URL, then we update the device_id.
-    if token.device_id != device_id:
-        token.device_id_cache = token.device_id
-        token.device_id = device_id
-        token.save(update_fields=["device_id_cache", "device_id"])
-
     return JsonResponse(response)
 
 

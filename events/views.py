@@ -17,7 +17,7 @@ def index(request):
 
 @require_POST
 @csrf_exempt
-def pinEvents(request):
+def pinEvents(request, device_id):
 
     # Try to decompress.
     try:
@@ -33,11 +33,18 @@ def pinEvents(request):
 
         token = get_object_or_404(DeviceToken, advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, json_data[0]["didm"].get("gaid")))
 
+        # Update device_id.
+        if token.device_id != device_id:
+            token.device_id_cache = token.device_id
+            token.device_id = device_id
+
         if "custom" in json_data[0]:
 
             token.manufacturer = json_data[0]["custom"].get("deviceBrand", "unknown")
             token.device_model = json_data[0]["custom"].get("deviceModel", "unknown")
-            token.save(update_fields=["manufacturer", "device_model"])
+
+
+        token.save(update_fields=["device_id", "device_id_cache", "manufacturer", "device_model"])
 
 
     return JsonResponse({"status": "ok"})
@@ -58,17 +65,16 @@ def logEvent(request, device_id):
             pass
 
         else:
+            # Update device_id.
             if token.device_id != device_id:
-
-                # Update device_id.
                 token.device_id_cache = token.device_id
                 token.device_id = device_id
 
-                # Logout user if this is a reinstall.
-                if json_data[0].get("persona") is None:
-                    token.login_status = False
+            # Logout user if this is a reinstall.
+            if json_data[0].get("persona") is None:
+                token.login_status = False
 
-                token.save(update_fields=["device_id_cache", "device_id", "login_status"])
+            token.save(update_fields=["device_id", "device_id_cache", "login_status"])
 
     response = {
         "status": "ok"
