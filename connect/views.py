@@ -108,7 +108,7 @@ def auth(request, device_id):
                 expiry_on__gt=timestamp
             )
 
-            token = get_object_or_404(DeviceToken, device_id=device_id)
+            token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
 
             # Found the auth_code?! Great, now look for user with this email.
             try:
@@ -142,7 +142,7 @@ def auth(request, device_id):
 
     else:
 
-        token = get_object_or_404(DeviceToken, device_id=device_id)
+        token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
         email = request.GET.get("email")
 
         if email is None:
@@ -165,7 +165,7 @@ def auth(request, device_id):
 @csrf_exempt
 def get_token(request, device_id):
 
-    token = get_object_or_404(DeviceToken, device_id=device_id)
+    token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
     pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
 
     id_token = {
@@ -199,7 +199,7 @@ def get_token(request, device_id):
 def tokeninfo(request, device_id):
 
     access_token = request.GET.get("access_token")
-    token = get_object_or_404(DeviceToken, Q(access_token=access_token) | Q(device_id=device_id) | Q(device_id_cache=device_id))
+    token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id) | Q(access_token=access_token))
 
     response = {
         "client_id": "simpsons4-android-client",
@@ -229,6 +229,7 @@ def tokeninfo(request, device_id):
             }
         )
 
+    # If access_token is present in URL, then we update the device_id.
     if token.device_id != device_id:
         token.device_id_cache = token.device_id
         token.device_id = device_id

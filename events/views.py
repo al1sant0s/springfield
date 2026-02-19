@@ -10,15 +10,14 @@ import uuid
 
 from connect.models import DeviceToken
 
-# Create your views here.
 
 def index(request):
     return HttpResponse("<h1>Hello, World!</h1>")
 
+
 @require_POST
 @csrf_exempt
 def pinEvents(request):
-
 
     # Try to decompress.
     try:
@@ -32,12 +31,7 @@ def pinEvents(request):
 
     if "didm" in json_data[0]:
 
-        device_id = uuid.UUID(json_data[0]["didm"].get("eadeviceid"))
-        token = get_object_or_404(
-            DeviceToken,
-            Q(device_id=device_id) |
-            Q(device_id_cache=device_id)
-        )
+        token = get_object_or_404(DeviceToken, advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, json_data[0]["didm"].get("gaid")))
 
         if "custom" in json_data[0]:
 
