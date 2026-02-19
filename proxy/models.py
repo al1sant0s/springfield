@@ -8,4 +8,3 @@ class ProgRegCode(models.Model):
     email = models.EmailField(primary_key=True)
     code = models.CharField(max_length=6)
     expiry_on = models.DateTimeField()
-    token = models.ForeignKey(DeviceToken, on_delete=models.CASCADE, null=True, blank=True)

@@ -44,7 +44,7 @@ def search_friends(user, search_username):
     return users
 
 
-def get_auth_code(email, token):
+def get_auth_code(email):
 
     # Search for current active code in database.
     # # If it cannot find one, create a new one.
@@ -52,8 +52,7 @@ def get_auth_code(email, token):
         email=email,
         defaults={
             "code": get_random_string(6, allowed_chars="0123456789"),
-            "expiry_on": timezone.now() + datetime.timedelta(hours=2),
-            "token": token,
+            "expiry_on": timezone.now() + datetime.timedelta(hours=2)
         }
     )
 
@@ -200,10 +199,10 @@ def progreg_code(request):
     else:
 
         if json_data["codeType"].lower() == "email":
-            get_auth_code(
-                BaseUserManager.normalize_email(json_data["email"]),
-                get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1])
-            )
+
+            # Generate auth code.
+            get_auth_code(BaseUserManager.normalize_email(json_data["email"]))
+
             return HttpResponse()
 
         else:

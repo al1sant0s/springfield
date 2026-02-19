@@ -60,7 +60,7 @@ def register(request):
                 messages.error(request, "This email is already being used!")
 
             else:
-                get_auth_code(email, None)
+                get_auth_code(email)
                 request.session["auth_email"] = email
                 return HttpResponseRedirect(reverse("dashboard:auth"))
 
@@ -125,7 +125,7 @@ def forgot_password(request):
                 messages.error(request, "No account was found with this email.")
 
             else:
-                get_auth_code(email, None)
+                get_auth_code(email)
                 request.session["auth_email"] = email
                 return HttpResponseRedirect(reverse("dashboard:auth"))
 

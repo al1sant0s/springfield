@@ -105,34 +105,36 @@ def auth(request, device_id):
                 ProgRegCode,
                 email=BaseUserManager.normalize_email(jsondata["email"]),
                 code=jsondata["cred"],
-                token=get_object_or_404(DeviceToken, device_id=device_id)
+                expiry_on__gt=timestamp
             )
+
+            token = get_object_or_404(DeviceToken, device_id=device_id)
 
             # Found the auth_code?! Great, now look for user with this email.
             try:
-                auth_code.token.user = UserId.objects.get(email=auth_code.email)
+                token.user = UserId.objects.get(email=auth_code.email)
 
             # If a user with this email does not exist, it means we have to update the current user email associated with the token.
             # However, if our user is already registered, then we need to create a new user.
             except UserId.DoesNotExist:
-                if auth_code.token.user.is_registered:
-                    auth_code.token.user = UserId()
+                if token.user.is_registered:
+                    token.user = UserId()
 
 
-            auth_code.token.user.email = auth_code.email
-            auth_code.token.user.is_registered = True
-            auth_code.token.user.session_key = secrets.token_urlsafe(32)
-            auth_code.token.user.last_authenticated = timestamp
-            auth_code.token.user.save()
+            token.user.email = auth_code.email
+            token.user.is_registered = True
+            token.user.session_key = secrets.token_urlsafe(32)
+            token.user.last_authenticated = timestamp
+            token.user.save()
 
-            auth_code.token.session_key = auth_code.token.user.session_key
-            auth_code.token.timestamp = timestamp
-            auth_code.token.login_status = True
-            auth_code.token.save()
+            token.session_key = token.user.session_key
+            token.timestamp = timestamp
+            token.login_status = True
+            token.save()
 
             response = {
-                "code": auth_code.token.code,
-                "lnglv_token": auth_code.token.access_token
+                "code": token.code,
+                "lnglv_token": token.access_token
             }
 
             auth_code.delete()
@@ -154,11 +156,8 @@ def auth(request, device_id):
 
         else:
 
-            # Same code as progreg_code view.
-            get_auth_code(
-                BaseUserManager.normalize_email(email),
-                token
-            )
+            # Generate auth code.
+            get_auth_code(BaseUserManager.normalize_email(email))
 
             return JsonResponse({"error_description": "REQUIRE_PASSWORD_OR_CODE"})
 

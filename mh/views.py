@@ -310,7 +310,7 @@ def friendData(request):
         friend_data_pair.friendData.level = land_data.friendData.level
         friend_data_pair.friendData.rating = land_data.friendData.rating
         friend_data_pair.friendData.spendable.extend(list(land_data.friendData.spendable))
-        friend_data_pair.friendData.landVersion  = land_data.friendData.landVersion 
+        friend_data_pair.friendData.landVersion = land_data.friendData.landVersion 
         friend_data_pair.friendData.sublandInfos.extend(list(land_data.friendData.sublandInfos))
         friend_data_pair.friendData.boardwalkTileCount = land_data.friendData.boardwalkTileCount
         friend_data_pair.friendData.lastPlayedTime = land_data.friendData.lastPlayedTime
