@@ -80,36 +80,24 @@ def geoagerequirements(request):
 
 def me_personas(request, persona_id):
 
+    user = get_object_or_404(UserId, persona_id=persona_id)
+
     response = {
         "persona": {
-            "personaId": persona_id,
-            "pidId": persona_id,
-            "displayName": "user",
-            "name": "user",
+            "personaId": user.persona_id,
+            "pidId": user.user_id,
+            "displayName": user.username,
+            "name": user.username,
             "namespaceName": "gsp-redcrow-simpsons4",
             "isVisible": True,
             "status": "ACTIVE",
             "statusReasonCode": "",
             "showPersona": "EVERYONE",
-            "dateCreated": "2024-10-06T11:3Z",
-            "lastAuthenticated": "2024-10-08T11:35Z",
-            "anonymousId": "user"
-        }
-    }
-
-    user = get_object_or_404(UserId, persona_id=persona_id)
-
-    response["persona"].update(
-        {
-            "personaId": user.persona_id,
-            "pidId": user.user_id,
-            "displayName": user.username,
-            "name": user.username,
             "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
             "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
             "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
         }
-    )
+    }
 
     return JsonResponse(response)
 

@@ -1,5 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -43,8 +44,11 @@ def pinEvents(request, device_id):
             token.manufacturer = json_data[0]["custom"].get("deviceBrand", "unknown")
             token.device_model = json_data[0]["custom"].get("deviceModel", "unknown")
 
+        token.timestamp = timezone.now()
+        token.save(update_fields=["device_id", "device_id_cache", "manufacturer", "device_model", "timestamp"])
 
-        token.save(update_fields=["device_id", "device_id_cache", "manufacturer", "device_model"])
+        token.user.last_authenticated = token.timestamp
+        token.user.save(update_fields=["last_authenticated"])
 
 
     return JsonResponse({"status": "ok"})
@@ -74,7 +78,12 @@ def logEvent(request, device_id):
             if json_data[0].get("persona") is None:
                 token.login_status = False
 
-            token.save(update_fields=["device_id", "device_id_cache", "login_status"])
+            token.timestamp = timezone.now()
+            token.save(update_fields=["device_id", "device_id_cache", "login_status", "timestamp"])
+
+            token.user.last_authenticated = token.timestamp
+            token.user.save(update_fields=["last_authenticated"])
+
 
     response = {
         "status": "ok"
