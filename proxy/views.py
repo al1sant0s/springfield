@@ -218,7 +218,7 @@ def links(request):
                 {
                     "newCreated": False,
                     "personaId": token.user.persona_id,
-                    "personaNamespace": request.GET.get("personaNamespace", "cem_ea_id"),
+                    "personaNamespace": request.GET.get("personaNamespace", "gsp-redcrow-simpsons4"),
                     "pidGamePersonaMappingId": token.user.persona_id,
                     "pidId": token.user.user_id,
                     "status":"ACTIVE"

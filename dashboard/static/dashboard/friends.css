@@ -1,6 +1,6 @@
 .wide-section {
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
 }
 
 .wide-section label {
@@ -23,26 +23,22 @@
 }
 
 .tableFixHead {
- overflow-y: auto; /* make the table scrollable if height is more than 200 px  */
-height: 200px; /* gives an initial height of 200px to the table */
-}
-
-.tableFixHead thead th {
-  position: sticky; /* make the table heads sticky */
-  top: -1px; /* table head will be placed from the top of the table and sticks to it */
+  overflow-y: auto; /* Make the table scrollable if height is more than the what is specified bellow */
+  max-height: 620px;
+  margin: 0 auto 70px auto;
 }
 
 table {
   border-collapse: collapse;
-  border: 2px solid rgb(200,200,200);
+  border: 3px solid #c8c8c8;
   letter-spacing: 1px;
-  margin: 0 auto;
   width: 100%;
 }
 
 td, th {
-  border: 1px solid rgb(190,190,190);
+  border: 1px solid #bebebe;
   padding: 10px 20px;
+  font-size: 1.15em;
 }
 
 td.avatar img {
@@ -51,9 +47,8 @@ td.avatar img {
 }
 
 th {
-  font-size: 1.075em;
   font-weight: 700;
-  background-color: rgb(235,235,235);
+  background: linear-gradient(#6f6f6f, #fbffe5);
 }
 
 td {
@@ -73,9 +68,21 @@ caption {
   padding: 10px;
 }
 
-
 table div input {
   display: block;
   width: 250px;
   background-color: red;
+}
+
+.action-button {
+  text-decoration: none;
+  padding: 20px;
+}
+
+.confirm-action {
+  font-size: 1.7em;
+}
+
+.decline-action {
+  font-size: 1.35em;
 }

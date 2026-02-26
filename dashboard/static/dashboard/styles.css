@@ -68,7 +68,7 @@ button {
 header {
   color: white;
   background: linear-gradient(navy, royalblue);
-  border-bottom: 5px ridge black;
+  border-bottom: 5px ridge #b3b3b3;
 }
 
 header h1 {

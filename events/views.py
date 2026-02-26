@@ -29,9 +29,9 @@ def pinEvents(request, device_id):
 
     json_data = json.loads(decompressed_data)
 
-    if "didm" in json_data[0]:
+    if "didm" in json_data[0] and "gaid" in json_data[0]["didm"]:
 
-        token = get_object_or_404(DeviceToken, advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, json_data[0]["didm"].get("gaid")))
+        token = get_object_or_404(DeviceToken, advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, json_data[0]["didm"]["gaid"]))
 
         # Update device_id.
         if token.device_id != device_id:

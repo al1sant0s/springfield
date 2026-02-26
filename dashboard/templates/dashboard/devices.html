@@ -84,7 +84,7 @@
                         {{ device.last_active }}
                       </td>
                       <td>
-                        <a class="send-request" href="{{ device.remove_url }}">Remove!</a>
+                        <a class="action-button decline-action" aria-label="Remove device" title="Remove device" href="{{ device.remove_url }}">❌</a>
                       </td>
                     </tr>
                   {% endfor %}
