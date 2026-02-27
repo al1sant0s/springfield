@@ -11,8 +11,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
 
 import json
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Grab server url from config json and inject it into ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
 with open("config.json", "r") as f:
@@ -30,10 +35,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-us!8f=&5jt=ir2=ec)9(sr$26v-ijy)d-cwg58i=+_!jua@f5a'
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [host, 'localhost', '127.0.0.1']
 

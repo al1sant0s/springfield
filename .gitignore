@@ -6,3 +6,4 @@ __pycache__/
 # Specific
 *.vim
 towns/
+.env
