@@ -80,14 +80,17 @@ header h1 {
 }
 
 nav {
-  background: royalblue;
   color: white;
+  background-color: royalblue;
   font-weight: bold;
-  border-bottom: 10px ridge cornflowerblue;
   text-shadow: 2px 2px 7px black;
 }
 
-nav ul {
+#nav-wide-menu {
+  border-bottom: 10px ridge cornflowerblue;
+}
+
+#nav-wide-menu ul {
   width: 80%;
   margin: 0 auto;
   justify-content: center;
@@ -129,7 +132,6 @@ nav li {
 #logout button {
   color: white;
   text-shadow: 2px 2px 7px black;
-  text-align: left;
 }
 
 #logout button:hover {
@@ -143,7 +145,7 @@ nav li {
 
 .nav-profile-pic {
   box-sizing: border-box;
-  width: 80px;
+  min-width: 80px;
   min-height: 80px;
   background-size: cover;
   display: inline;
@@ -155,6 +157,17 @@ nav li {
   border: none;
   padding: 10px 25px;
   min-height: 80px;
+}
+
+#nav-menu {
+  position: fixed;
+  top: 1;
+  left: -250px;
+  width: 250px;
+  height: 100vh;
+  transition: left 0.3s ease;
+  z-index: 90;
+  padding-top: 60px;
 }
 
 /* Main-content-general-style */
@@ -226,7 +239,7 @@ section form input {
   border: 2px solid #535ba9;
   border-radius: 10px;
   padding: 5px;
-  width: 24em;
+  width: 24rem;
   color: maroon;
   font-weight: 500;
 }
@@ -327,7 +340,7 @@ footer p {
 
 @media screen and (width < 1920px) {
 
-  nav li {
+  #nav-wide-menu li {
     line-height: 30px;
   }
 
@@ -343,18 +356,70 @@ footer p {
 
 @media screen and (width < 1366px) {
 
-  nav ul {
+  header {
+    position: sticky;
+    top: 0;
+    left: 0;
+  }
+
+  .hamburger {
+    position: absolute;
+    top: 30px;
+    left: 20px;
+    width: 30px;
+    height: 25px;
+    cursor: pointer;
+    display: inline-flex;
     flex-direction: column;
-    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
   }
 
-  nav li {
+  .hamburger span {
+    display: block;
+    height: 3px;
     width: 100%;
+    background-color: goldenrod;
   }
 
-  .nav-username {
-    text-align: center;
+  #nav-wide-menu {
+    display: none;
+  }
+
+  #nav-menu ul {
     padding: 0;
+  }
+
+  #nav-menu a {
+    padding: 15px 25px;
+    text-decoration: none;
+  }
+
+  #nav-menu:target {
+    left: 0;
+    border-right: 5px ridge #b3b3b3;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: goldenrod;
+    text-decoration: none;
+    font-size: 20px;
+  }
+
+  .nav-user-info {
+    display: flex;
+    border: 5px outset whitesmoke;
+  }
+
+  .nav-item {
+    text-align: center;
+  }
+
+  .nav-profile-pic {
+    border: 3px solid gray;
   }
 
   article {
@@ -364,15 +429,17 @@ footer p {
   section, .wide-section {
     min-width: auto;
     width: 80%;
-    max-width: auto;
   }
 
 }
 
+
 @media screen and (width < 720px) {
+
   section form input {
     width: 12rem;
   }
+
 }
 
 @media screen and (width < 720px) and (orientation: portrait) {

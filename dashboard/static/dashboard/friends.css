@@ -89,7 +89,7 @@ table div input {
 
 @media screen and (width < 1366px) {
   .wide-section {
-    max-width: 80%;
+    max-width: 85%;
   }
 }
 
@@ -116,7 +116,6 @@ table div input {
   td.avatar img {
     width: 45px;
     height: 45px;
-    border: 1px solid whitesmoke;
   }
 
   .column-username {
@@ -135,11 +134,18 @@ table div input {
     font-size: 1em;
   }
 
-  .long-table {
-    th:nth-child(3),
-    td:nth-child(3) {
-      display: none;
-    }
+  .long-table * {
+    display: block;
+  }
+
+  .long-table tbody tr {
+    border-bottom: 5px ridge #d5779a;
+  }
+
+  .long-table tbody tr td {
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem;
   }
 
 }

@@ -14,10 +14,15 @@
   <body>
 
     <header>
+      <a href="#nav-menu" class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+      </a>
       <h1 class="corben-bold">User Town</h1>
     </header>
 
-    <nav>
+    <nav id="nav-wide-menu">
       <ul>
         <li>
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
@@ -47,6 +52,41 @@
         </li>
       </ul>
     </nav>
+
+    <nav id="nav-menu">
+      <ul>
+        <a href="#" class="close-btn">✕</a>
+        <ul class="nav-user-info">
+          {% if avatar_exists %}
+            <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
+          {% else %}
+            <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
+          {% endif %}
+          <li class="nav-username">
+            <p>{{ username }}</p>
+          </li>
+        </ul>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
+        </li>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">Profile 👤</a>
+        </li>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends 👥</a>
+        </li>
+        <li>
+          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
+        </li>
+        <li>
+          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+            {% csrf_token %}
+              <button class="nav-item exo-2-generic">Logout 🚪</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+
 
     <main>
       <article>
