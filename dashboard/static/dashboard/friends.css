@@ -1,6 +1,6 @@
 .wide-section {
   width: 100%;
-  max-width: 900px;
+  max-width: 65%;
 }
 
 .wide-section label {
@@ -85,4 +85,61 @@ table div input {
 
 .decline-action {
   font-size: 1.35em;
+}
+
+@media screen and (width < 1366px) {
+  .wide-section {
+    max-width: 80%;
+  }
+}
+
+@media screen and (width < 720px) {
+
+  .wide-section input {
+    padding: 5px 10px;
+    font-size: 1rem;
+  }
+
+  .wide-section form div:has(button) {
+    text-align: center;
+  }
+
+  td.avatar img {
+    border-radius: 5px;
+  }
+
+  th, td {
+    padding: 5px;
+    font-size: 0.79rem;
+  }
+
+  td.avatar img {
+    width: 45px;
+    height: 45px;
+    border: 1px solid whitesmoke;
+  }
+
+  .column-username {
+    max-width: 40px;
+  }
+
+  .action-button {
+    padding: 0;
+  }
+
+  .confirm-action {
+    font-size: 1em;
+  }
+
+  .decline-action {
+    font-size: 1em;
+  }
+
+  .long-table {
+    th:nth-child(3),
+    td:nth-child(3) {
+      display: none;
+    }
+  }
+
 }
