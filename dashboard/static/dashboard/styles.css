@@ -161,13 +161,17 @@ nav li {
 
 #nav-menu {
   position: fixed;
-  top: 1;
+  top: 0;
   left: -250px;
   width: 250px;
   height: 100vh;
   transition: left 0.3s ease;
   z-index: 90;
-  padding-top: 60px;
+  padding: 60px 0 0px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 100vh;
+  box-sizing: border-box;
 }
 
 /* Main-content-general-style */
@@ -387,7 +391,11 @@ footer p {
   }
 
   #nav-menu ul {
-    padding: 0;
+    padding: 0; /* Reset default padding from all internal lists */
+  }
+
+  #nav-menu > ul {
+    padding-bottom: 60px;
   }
 
   #nav-menu a {
