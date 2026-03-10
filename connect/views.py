@@ -32,15 +32,15 @@ def auth(request, device_id):
     if sig is not None:
 
         # Read sig for further authentication.
-        jsondata = sig.split(".")[0]
-        jsondata += "=" * (math.ceil(len(jsondata) / 64) * 64 - len(jsondata))
-        jsondata = json.loads(base64.b64decode(jsondata))
+        json_data = sig.split(".")[0]
+        json_data += "=" * (math.ceil(len(json_data) / 64) * 64 - len(json_data))
+        json_data = json.loads(base64.b64decode(json_data))
 
         # Anonymous login.
         if request.GET.get("authenticator_login_type") == "mobile_anonymous":
 
             # Look up for advertisingId in database.
-            advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, jsondata["advertisingId"])
+            advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, json_data["advertisingId"])
 
             # Grab existing DeviceToken. If it does not exist, make one.
             try:
@@ -103,8 +103,8 @@ def auth(request, device_id):
 
             auth_code = get_object_or_404(
                 ProgRegCode,
-                email=BaseUserManager.normalize_email(jsondata["email"]),
-                code=jsondata["cred"],
+                email=BaseUserManager.normalize_email(json_data["email"]),
+                code=json_data["cred"],
                 expiry_on__gt=timestamp
             )
 

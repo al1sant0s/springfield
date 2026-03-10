@@ -84,7 +84,6 @@ def load_town(user):
                 land_data.ParseFromString(f.read())
 
             except:
-
                 try:
                     f.seek(0x0c)      # see if this might be a teamtsto.org backup
                     land_data.ParseFromString(f.read())
@@ -100,7 +99,6 @@ def load_town(user):
 
     else:
         land_data = starting_town(user.username)
-        save_proto(town_file, land_data)
 
 
     return land_data

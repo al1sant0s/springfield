@@ -61,6 +61,8 @@ def get_auth_code(email):
         auth_code.expiry_on = timezone.now() + datetime.timedelta(hours=2)
         auth_code.save()
 
+    return auth_code
+
 
 # Create your views here.
 
