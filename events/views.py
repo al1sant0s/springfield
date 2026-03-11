@@ -20,11 +20,12 @@ def index(request):
 @csrf_exempt
 def pinEvents(request, device_id):
 
+
     # Try to decompress.
-    try:
+    if request.headers.get("Content-Encoding") == "gzip":
         decompressed_data = gzip.decompress(request.body)
 
-    except gzip.BadGzipFile:
+    else:
         decompressed_data = request.body
 
 

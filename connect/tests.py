@@ -16,6 +16,7 @@ class TestDevice():
     def __init__(self, authenticator_login_type = "mobile_anonymous"):
         self.advertising_id = uuid.uuid4()
         self.device_id = uuid.uuid4()
+        self.current_client_session_id = uuid.uuid4()
         self.authenticator_login_type = authenticator_login_type
 
 
@@ -28,11 +29,24 @@ class TestDevice():
             "authenticator_login_type": self.authenticator_login_type
         }
 
-        return Client().get(reverse("connect:auth", args=(self.device_id,)), query_params=query_params)
+        response = Client().get(reverse("connect:auth", args=(self.device_id,)), query_params=query_params)
+
+        # Write the rest of the fields to the token.
+        self.update_device_token(current_client_session_id=self.current_client_session_id)
+        return response
 
 
     def get_device_token(self):
         return DeviceToken.objects.get(advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, str(self.advertising_id)))
+
+
+    def update_device_token(self, **kwargs):
+        token = self.get_device_token()
+
+        for key, value in kwargs.items():
+            setattr(token, key, value)
+
+        token.save(update_fields = kwargs.keys())
 
 
 class AuthViewTests(TestCase):

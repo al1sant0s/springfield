@@ -42,7 +42,6 @@ def get_user_file(mayhem_id, extension="pb"):
             cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
 
     user_file = Path(towns_dir, f"{mayhem_id}/{mayhem_id}.{extension}")
-    user_file.parent.mkdir(parents=True, exist_ok=True)
 
     return user_file
 
@@ -387,10 +386,10 @@ def protoland(request, mayhem_id):
                 return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
 
             # Try to decompress.
-            try:
+            if request.headers.get("Content-Encoding") == "gzip":
                 decompressed_data = gzip.decompress(request.body)
 
-            except gzip.BadGzipFile:
+            else:
                 decompressed_data = request.body
 
 
@@ -453,12 +452,12 @@ def extraLandUpdate(request, mayhem_id):
         if mayhem_id != user.mayhem_id.int:
             return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
 
-        # Update donuts balance.
+
         # Try to decompress.
-        try:
+        if request.headers.get("Content-Encoding") == "gzip":
             decompressed_data = gzip.decompress(request.body)
 
-        except gzip.BadGzipFile:
+        else:
             decompressed_data = request.body
 
 
