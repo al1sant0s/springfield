@@ -68,7 +68,8 @@ class ProtolandViewTests(TestCase):
         self.assertIn("name", land_data.friendData)
         self.assertIn("rating", land_data.friendData)
 
-        # Post town.
+        # Change some data and post town.
+        land_data.friendData.dataVersion = 123
         compressed_body = gzip.compress(land_data.SerializeToString())
         response = self.client.post(
             reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
@@ -100,3 +101,93 @@ class ProtolandViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+
+    def test_load_premium_currency(self):
+
+        device = TestDevice()
+        device.auth_device()
+        token = device.get_device_token()
+
+        # Get donuts balance.
+        response = self.client.get(
+            reverse("mh:protocurrency", args=(token.user.mayhem_id.int,)),
+            headers={"currentClientSessionId": str(device.current_client_session_id)}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        protocurrency_response = PurchaseData_pb2.CurrencyData()
+        protocurrency_response.ParseFromString(response.content)
+        self.assertEqual(token.user.donuts_balance, protocurrency_response.vcBalance )
+
+
+        # Update donuts and check donuts balance again.
+        token.user.donuts_balance = 123
+        token.user.save()
+        response = self.client.get(
+            reverse("mh:protocurrency", args=(token.user.mayhem_id.int,)),
+            headers={"currentClientSessionId": str(device.current_client_session_id)}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        protocurrency_response = PurchaseData_pb2.CurrencyData()
+        protocurrency_response.ParseFromString(response.content)
+        self.assertEqual(token.user.donuts_balance, protocurrency_response.vcBalance )
+
+
+    def test_update_premium_currency(self):
+
+        device = TestDevice()
+        device.auth_device()
+        token = device.get_device_token()
+        token.user.donuts_balance = 500
+        token.user.save()
+
+
+        # Make some events up.
+        currency_deltas = [
+            LandData_pb2.ExtraLandMessage.CurrencyDelta(id=1, reason="Purchased donuts.", amount=50),
+            LandData_pb2.ExtraLandMessage.CurrencyDelta(id=2, reason="Purchased character.", amount=-25),
+            LandData_pb2.ExtraLandMessage.CurrencyDelta(id=3, reason="Level up!", amount=2)
+        ]
+
+        extraland_request = LandData_pb2.ExtraLandMessage(currencyDelta=currency_deltas)
+        extraland_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta=currency_deltas)
+
+        # Post the previous events.
+        compressed_body = gzip.compress(extraland_request.SerializeToString())
+        response = self.client.post(
+            reverse("mh:extraLandUpdate", args=(token.user.mayhem_id.int,)),
+            data=compressed_body,
+            content_type="application/x-protobuf",
+            headers={"currentClientSessionId": str(device.current_client_session_id), "Content-Encoding": "gzip"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, extraland_response.SerializeToString())
+        token.user.refresh_from_db()
+
+
+        # Request currency info and compare directly with the database.
+        response = self.client.get(
+            reverse("mh:protocurrency", args=(token.user.mayhem_id.int,)),
+            headers={"currentClientSessionId": str(device.current_client_session_id)}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        protocurrency_response = PurchaseData_pb2.CurrencyData()
+        protocurrency_response.ParseFromString(response.content)
+        self.assertEqual(token.user.donuts_balance, protocurrency_response.vcBalance)
+
+
+        # Test if user can override currency from another user.
+        new_device = TestDevice()
+        new_device.auth_device()
+        new_token = new_device.get_device_token()
+
+        compressed_body = gzip.compress(extraland_request.SerializeToString())
+        response = self.client.post(
+            reverse("mh:extraLandUpdate", args=(new_token.user.mayhem_id.int,)),
+            data=compressed_body,
+            content_type="application/x-protobuf",
+            headers={"currentClientSessionId": str(device.current_client_session_id), "Content-Encoding": "gzip"}
+        )
+        self.assertEqual(response.status_code, 400)

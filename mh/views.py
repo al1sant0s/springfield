@@ -39,7 +39,7 @@ def get_user_file(mayhem_id, extension="pb"):
         with open("config.json", "r") as f:
             config = json.load(f)
             towns_dir = Path(config["towns_dir"])
-            cache.set("towns_dir", towns_dir, timeout = config["cache_minutes"])
+            cache.set("towns_dir", towns_dir, timeout=config["cache_minutes"])
 
     user_file = Path(towns_dir, f"{mayhem_id}/{mayhem_id}.{extension}")
 
@@ -133,10 +133,10 @@ def gameplayconfig(request):
 
         with open("config.json", "r") as f:
             config = json.load(f)
-            cache.set("gameplayconfig_response", gameplayconfig_response, timeout = config["cache_minutes"])
+            cache.set("gameplayconfig_response", gameplayconfig_response, timeout=config["cache_minutes"])
 
 
-    return HttpResponse(gameplayconfig_response, content_type = "application/x-protobuf")
+    return HttpResponse(gameplayconfig_response, content_type="application/x-protobuf")
 
 
 @csrf_exempt
@@ -184,7 +184,7 @@ def users(request):
         for subkey, subvalue in value.items():
             setattr(getattr(user_response, key), subkey, subvalue)
 
-    return HttpResponse(user_response.SerializeToString(), content_type = "application/x-protobuf")
+    return HttpResponse(user_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
@@ -207,7 +207,7 @@ def userstats(request):
 
 @csrf_exempt
 def clienttelemetry(request):
-    return HttpResponse(ClientTelemetry_pb2.ClientTelemetryMessage().SerializeToString(), content_type = "application/x-protobuf")
+    return HttpResponse(ClientTelemetry_pb2.ClientTelemetryMessage().SerializeToString(), content_type="application/x-protobuf")
 
 
 #######################################
@@ -321,7 +321,7 @@ def friendData(request):
     friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
     friend_data_response.friendData.extend(friend_data_pairs)
 
-    return HttpResponse(friend_data_response.SerializeToString(), content_type = "application/x-protobuf")
+    return HttpResponse(friend_data_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
@@ -339,7 +339,7 @@ def protoWholeLandToken(request, mayhem_id):
     for key, value in response.items():
         setattr(proto_whole_land_token_response, key, value)
 
-    return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type = "application/x-protobuf")
+    return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 def checkToken(request, mayhem_id):
@@ -349,7 +349,7 @@ def checkToken(request, mayhem_id):
     checktoken_response = AuthData_pb2.TokenData()
     checktoken_response.sessionKey = user.session_key
     checktoken_response.expirationDate = 0
-    return HttpResponse(checktoken_response.SerializeToString(), content_type = "application/x-protobuf")
+    return HttpResponse(checktoken_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
@@ -357,7 +357,7 @@ def deleteToken(request, mayhem_id):
 
     delete_token_response = WholeLandTokenData_pb2.DeleteTokenResponse()
     delete_token_response.result = True
-    return HttpResponse(delete_token_response.SerializeToString(), content_type = "application/x-protobuf")
+    return HttpResponse(delete_token_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
@@ -367,7 +367,7 @@ def protoland(request, mayhem_id):
     # Load town.
     if request.method == "GET":
         protoland_response = load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id)))
-        return HttpResponse(protoland_response.SerializeToString(), content_type = "application/x-protobuf")
+        return HttpResponse(protoland_response.SerializeToString(), content_type="application/x-protobuf")
 
     else:
 
@@ -431,7 +431,7 @@ def protocurrency(request, mayhem_id):
         protocurrency_response.vcBalance = user.donuts_balance                    # number of donuts
         protocurrency_response.createdAt = int(round(time.time() * 1000))
         protocurrency_response.updatedAt = int(round(time.time() * 1000))
-        return HttpResponse(protocurrency_response.SerializeToString(), content_type = "application/x-protobuf")
+        return HttpResponse(protocurrency_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
@@ -487,8 +487,8 @@ def extraLandUpdate(request, mayhem_id):
         # Note: you need to use extend() method if you define the response first and edit a repeated field later.
         # extraland_update_response = LandData_pb2.ExtraLandResponse()
         # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
-        extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta = processed_currency_delta)
-        return HttpResponse(extraland_update_response.SerializeToString(), content_type = "application/x-protobuf")
+        extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta=processed_currency_delta)
+        return HttpResponse(extraland_update_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
@@ -517,9 +517,9 @@ def event_user(request, mayhem_id):
         if event_file.exists():
             event_response = load_proto(event_file, event_response)
 
-        return HttpResponse(event_response.SerializeToString(), content_type = "application/x-protobuf")
+        return HttpResponse(event_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 def event_fakefriend(request):
     fakefriend_response = LandData_pb2.LandMessage.FakeFriendData()
-    return HttpResponse(fakefriend_response.SerializeToString(), content_type = "application/x-protobuf")
+    return HttpResponse(fakefriend_response.SerializeToString(), content_type="application/x-protobuf")
