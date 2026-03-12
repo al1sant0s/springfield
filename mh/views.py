@@ -327,17 +327,21 @@ def friendData(request):
 @csrf_exempt
 def protoWholeLandToken(request, mayhem_id):
 
-    # Generate land token and save land token to user.
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
 
-    response = {
-        "token": str(user.land_token),
-        "conflict": False,
-    }
+    # This raises the warning about another device which did not save the game recently.
+    if request.GET.get("force") != "1" and user.land_token is not None:
+        root = ET.Element("error", attrib={"code": "409", "type": "RESOURCE_ALREADY_EXISTS"})
+        return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+
+
+    # Generate land token and save land token to user.
+    user.land_token = uuid.uuid4()
+    user.save(update_fields=["land_token"])
 
     proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
-    for key, value in response.items():
-        setattr(proto_whole_land_token_response, key, value)
+    proto_whole_land_token_response.token = str(user.land_token)
+    proto_whole_land_token_response.conflict = False
 
     return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
 
@@ -354,6 +358,10 @@ def checkToken(request, mayhem_id):
 
 @csrf_exempt
 def deleteToken(request, mayhem_id):
+
+    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+    user.land_token = None
+    user.save(update_fields=["land_token"])
 
     delete_token_response = WholeLandTokenData_pb2.DeleteTokenResponse()
     delete_token_response.result = True
