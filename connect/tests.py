@@ -80,7 +80,8 @@ class AuthViewTests(TestCase):
 
         # Perform user register connection: request from game login screen.
         email = "testmail@django.com"
-        code = get_auth_code(email).code
+
+        code = get_auth_code(email, use_tsto_api=False).code
         device.authenticator_login_type = "mobile_ea_account" # Switch to registered user.
 
         # User inserts wrong code.

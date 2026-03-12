@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.core.cache import cache
 
 from connect.models import UserId, DeviceToken
 from django.contrib.auth.models import BaseUserManager
@@ -15,6 +16,8 @@ import base64
 import hashlib
 import json
 import datetime
+import os
+import requests
 
 
 def search_friends(user, search_username):
@@ -44,22 +47,72 @@ def search_friends(user, search_username):
     return users
 
 
-def get_auth_code(email):
+def check_tsto_api():
+
+    tsto_api_available = cache.get("tsto_api_available")
+
+    if tsto_api_available is None:
+
+        tsto_api_key = os.getenv("TSTO_API_KEY")
+        tsto_api_team_name = os.getenv("TSTO_API_TEAM_NAME")
+        response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
+
+        with open("config.json", "r") as f:
+            config = json.load(f)
+
+        if response.status_code == 200 and response.json().get("valid", False):
+            tsto_api_available = True
+            cache.set("tsto_api_available", tsto_api_available, timeout=config["cache_minutes"])
+            cache.set("tsto_api_key", tsto_api_key, timeout=config["cache_minutes"])
+            cache.set("tsto_api_team_name", tsto_api_team_name, timeout=config["cache_minutes"])
+
+        else:
+
+            cache.set("tsto_api_available", False, timeout=config["cache_minutes"])
+
+
+    return tsto_api_available
+
+
+def get_auth_code(email, use_tsto_api=True):
+
+    # Initial code.
+    code = get_random_string(6, allowed_chars="0123456789")
+
+    # Get code from TSTO API if available.
+    if use_tsto_api and check_tsto_api():
+
+        response = requests.post("https://tsto.app/api/auth/sendCode/",
+            params={
+                "apikey": cache.get("tsto_api_key"),
+                "emailAddress": email,
+                "teamName": cache.get("tsto_api_team_name"),
+                "username": "user"
+            }
+        )
+
+        if response.status_code == 200:
+            content = response.json()
+
+            if content["status"] == 200:
+                code = content["code"]
+
 
     # Search for current active code in database.
-    # # If it cannot find one, create a new one.
+    # If it cannot find one, create a new one.
     auth_code, created = ProgRegCode.objects.get_or_create(
         email=email,
         defaults={
-            "code": get_random_string(6, allowed_chars="0123456789"),
-            "expiry_on": timezone.now() + datetime.timedelta(hours=2)
+            "code": code,
+            "expiry_on": timezone.now() + datetime.timedelta(minutes=30)
         }
     )
 
     if not created and auth_code.expiry_on < timezone.now():
-        auth_code.code = get_random_string(6, allowed_chars="0123456789")
-        auth_code.expiry_on = timezone.now() + datetime.timedelta(hours=2)
+        auth_code.code = code,
+        auth_code.expiry_on = timezone.now() + datetime.timedelta(minutes=30)
         auth_code.save()
+
 
     return auth_code
 

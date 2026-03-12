@@ -359,7 +359,10 @@ def checkToken(request, mayhem_id):
 @csrf_exempt
 def deleteToken(request, mayhem_id):
 
-    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+    delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+    delete_token_request.ParseFromString(request.body)
+
+    user = get_object_or_404(UserId, land_token=uuid.UUID(delete_token_request.token))
     user.land_token = None
     user.save(update_fields=["land_token"])
 
