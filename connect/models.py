@@ -18,6 +18,7 @@ class UserId(AbstractUser):
     telemetry_id = models.BigIntegerField(unique=True, blank=True, null=True)
     mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
     session_key = models.CharField(max_length=44, unique=True)
+    session_conflict = models.BooleanField(default=False)
     land_token = models.UUIDField(default=uuid.uuid4, unique=True, null=True)
     donuts_balance = models.PositiveIntegerField(default=50)
     last_authenticated = models.DateTimeField(default=timezone.now)

@@ -82,12 +82,22 @@ def get_auth_code(email, use_tsto_api=True):
     # Get code from TSTO API if available.
     if use_tsto_api and check_tsto_api():
 
+        try:
+            user = UserId.objects.get(email=email)
+
+        except UserId.DoesNotExist:
+            username = "user"
+
+        else:
+            username = user.username
+
+
         response = requests.post("https://tsto.app/api/auth/sendCode/",
             params={
                 "apikey": cache.get("tsto_api_key"),
                 "emailAddress": email,
                 "teamName": cache.get("tsto_api_team_name"),
-                "username": "user"
+                "username": username
             }
         )
 

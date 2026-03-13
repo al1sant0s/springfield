@@ -331,17 +331,21 @@ def protoWholeLandToken(request, mayhem_id):
 
     # This raises the warning about another device which did not save the game recently.
     if request.GET.get("force") != "1" and user.land_token is not None:
+        user.session_conflict = True
+        user.save(update_fields=["session_conflict"])
         root = ET.Element("error", attrib={"code": "409", "type": "RESOURCE_ALREADY_EXISTS"})
         return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
 
-    # Generate land token and save land token to user.
+    # Generate land token and resolve session conflict.
+    user.session_conflict = False
     user.land_token = uuid.uuid4()
-    user.save(update_fields=["land_token"])
+    user.save(update_fields=["session_conflict", "land_token"])
 
     proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
     proto_whole_land_token_response.token = str(user.land_token)
-    proto_whole_land_token_response.conflict = False
+    proto_whole_land_token_response.conflict = user.session_conflict
+
 
     return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
 
@@ -350,24 +354,30 @@ def checkToken(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
 
-    checktoken_response = AuthData_pb2.TokenData()
-    checktoken_response.sessionKey = user.session_key
-    checktoken_response.expirationDate = 0
-    return HttpResponse(checktoken_response.SerializeToString(), content_type="application/x-protobuf")
+    proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
+    proto_whole_land_token_response.token = str(user.land_token)
+    proto_whole_land_token_response.conflict = user.session_conflict
+    return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
 def deleteToken(request, mayhem_id):
 
-    delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
-    delete_token_request.ParseFromString(request.body)
-
-    user = get_object_or_404(UserId, land_token=uuid.UUID(delete_token_request.token))
-    user.land_token = None
-    user.save(update_fields=["land_token"])
-
     delete_token_response = WholeLandTokenData_pb2.DeleteTokenResponse()
-    delete_token_response.result = True
+
+    # Only delete land_token if current_client_session_id is correct.
+    try:
+        token = DeviceToken.objects.get(current_client_session_id=uuid.UUID(request.headers.get("currentClientSessionId")))
+
+    except (DeviceToken.DoesNotExist, ValueError):
+        delete_token_response.result = False
+
+    else:
+        token.user.land_token = None
+        token.user.save(update_fields=["land_token"])
+        delete_token_response.result = True
+
+
     return HttpResponse(delete_token_response.SerializeToString(), content_type="application/x-protobuf")
 
 
@@ -383,14 +393,13 @@ def protoland(request, mayhem_id):
     else:
 
         try:
-            session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
+            land_token = uuid.UUID(request.headers.get("Land-Update-Token"))
 
         except ValueError:
-            return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
+            return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
         else:
-
-            user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
+            user = get_object_or_404(UserId, land_token=land_token)
 
             # Avoid user tampering with other towns.
             if mayhem_id != user.mayhem_id.int:
@@ -439,7 +448,7 @@ def protocurrency(request, mayhem_id):
         protocurrency_response.id = str(mayhem_id)
         protocurrency_response.vcTotalPurchased = 0
         protocurrency_response.vcTotalAwarded = 0
-        protocurrency_response.vcBalance = user.donuts_balance                    # number of donuts
+        protocurrency_response.vcBalance = user.donuts_balance
         protocurrency_response.createdAt = int(round(time.time() * 1000))
         protocurrency_response.updatedAt = int(round(time.time() * 1000))
         return HttpResponse(protocurrency_response.SerializeToString(), content_type="application/x-protobuf")
@@ -450,14 +459,13 @@ def protocurrency(request, mayhem_id):
 def extraLandUpdate(request, mayhem_id):
 
     try:
-        session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
+        land_token = uuid.UUID(request.headers.get("Land-Update-Token"))
 
     except ValueError:
-        return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
+        return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
     else:
-
-        user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
+        user = get_object_or_404(UserId, land_token=land_token)
 
         # Avoid user tampering with other towns.
         if mayhem_id != user.mayhem_id.int:

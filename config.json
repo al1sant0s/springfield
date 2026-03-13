@@ -2,7 +2,7 @@
   "protocol": "http",
   "host": "192.168.1.115",
   "port": "8080",
-  "cache_minutes": 3600,
+  "cache_minutes": 60,
   "towns_dir": "towns",
   "avatar_dir": "/data/static/avatar/",
   "avatar_location": "/static/avatar/"
