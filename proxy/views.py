@@ -62,13 +62,13 @@ def check_tsto_api():
 
         if response.status_code == 200 and response.json().get("valid", False):
             tsto_api_available = True
-            cache.set("tsto_api_available", tsto_api_available, timeout=config["cache_minutes"])
-            cache.set("tsto_api_key", tsto_api_key, timeout=config["cache_minutes"])
-            cache.set("tsto_api_team_name", tsto_api_team_name, timeout=config["cache_minutes"])
+            cache.set("tsto_api_available", tsto_api_available, timeout=config["cache_seconds"])
+            cache.set("tsto_api_key", tsto_api_key, timeout=config["cache_seconds"])
+            cache.set("tsto_api_team_name", tsto_api_team_name, timeout=config["cache_seconds"])
 
         else:
 
-            cache.set("tsto_api_available", False, timeout=config["cache_minutes"])
+            cache.set("tsto_api_available", False, timeout=config["cache_seconds"])
 
 
     return tsto_api_available
@@ -173,34 +173,28 @@ def pids_personas(request):
 
 def user_id_personas(request, user_id):
 
-    try:
-        user = UserId.objects.get(user_id=user_id)
-
-    except UserId.DoesNotExist:
-        return JsonResponse({"personas": {"persona": list()}})
-
-    else:
-        response = {
-            "personas": {
-                "persona": [
-                    {
-                        "personaId": user.persona_id,
-                        "pidId": user.user_id,
-                        "displayName": user.username,
-                        "name": user.username,
-                        "namespaceName": "gsp-redcrow-simpsons4",
-                        "isVisible": True,
-                        "status": "ACTIVE",
-                        "statusReasonCode": "",
-                        "showPersona": "FRIENDS",
-                        "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
-                        "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
-                    }
-                ]
-            }
+    user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
+    response = {
+        "personas": {
+            "persona": [
+                {
+                    "personaId": user.persona_id,
+                    "pidId": user.user_id,
+                    "displayName": user.username,
+                    "name": user.username,
+                    "namespaceName": "gsp-redcrow-simpsons4",
+                    "isVisible": True,
+                    "status": "ACTIVE",
+                    "statusReasonCode": "",
+                    "showPersona": "FRIENDS",
+                    "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
+                    "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
+                }
+            ]
         }
+    }
 
-        return JsonResponse(response)
+    return JsonResponse(response)
 
 
 def personas(request):

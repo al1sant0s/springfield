@@ -1,4 +1,5 @@
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
 from django.db.models import F, Q
@@ -7,10 +8,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
 from connect.models import DeviceToken, UserId
+from mh.models import LandToken
 from pathlib import Path
 from protofiles import *
 
 import xml.etree.ElementTree as ET
+import datetime
 import json
 import gzip
 import time
@@ -39,7 +42,7 @@ def get_user_file(mayhem_id, extension="pb"):
         with open("config.json", "r") as f:
             config = json.load(f)
             towns_dir = Path(config["towns_dir"])
-            cache.set("towns_dir", towns_dir, timeout=config["cache_minutes"])
+            cache.set("towns_dir", towns_dir, timeout=config["cache_seconds"])
 
     user_file = Path(towns_dir, f"{mayhem_id}/{mayhem_id}.{extension}")
 
@@ -133,7 +136,7 @@ def gameplayconfig(request):
 
         with open("config.json", "r") as f:
             config = json.load(f)
-            cache.set("gameplayconfig_response", gameplayconfig_response, timeout=config["cache_minutes"])
+            cache.set("gameplayconfig_response", gameplayconfig_response, timeout=config["cache_seconds"])
 
 
     return HttpResponse(gameplayconfig_response, content_type="application/x-protobuf")
@@ -142,18 +145,12 @@ def gameplayconfig(request):
 @csrf_exempt
 def users(request):
 
-    if request.GET.get("application") == "nucleus":
+    application_user_id = request.GET.get("applicationUserId")
 
-        try:
-            application_user_id = int(request.GET.get("applicationUserId"))
+    if application_user_id != "":
+        user = get_object_or_404(UserId, user_id=application_user_id)
 
-        except ValueError:
-            return HttpResponseBadRequest("Invalid URL parameter: applicationUserId")
-
-        else:
-            user = get_object_or_404(UserId, user_id=application_user_id)
-
-    elif request.GET.get("application") == "tnt":
+    else:
 
         try:
             session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
@@ -163,10 +160,6 @@ def users(request):
 
         else:
             user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
-
-
-    else:
-        return HttpResponseBadRequest("Unknown application")
 
 
     response = {
@@ -201,6 +194,27 @@ def userstats(request):
         token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
         token.current_client_session_id = uuid.UUID(request.headers.get("currentClientSessionId"))
         token.save(update_fields=["current_client_session_id"])
+
+        land_token = get_object_or_404(LandToken, user=token.user)
+        town_file = get_user_file(token.user.mayhem_id.int, "pb")
+        cached_town = cache.get(town_file)
+
+        # Save cached town.
+        if cached_town is not None:
+            protoland_request = LandData_pb2.LandMessage()
+            protoland_request.ParseFromString(cached_town)
+            save_proto(town_file, protoland_request)
+            cache.delete(town_file)
+
+        # Authorize land_token or remove it.
+        if land_token.remove:
+            land_token.delete()
+
+        else:
+            land_token.retrieved = True
+            land_token.authorized = True
+            land_token.save(update_fields=["retrieved", "authorized"])
+
 
         return HttpResponse(status=409)
 
@@ -258,7 +272,7 @@ def protoClientConfig(request):
                     setattr(entry, key, value)
 
             clientconfig_response = clientconfig_response.SerializeToString()
-            cache.set("clientconfig", clientconfig_response, timeout = config["cache_minutes"])
+            cache.set("clientconfig", clientconfig_response, timeout=config["cache_seconds"])
 
 
     return HttpResponse(clientconfig_response, content_type = "application/x-protobuf")
@@ -328,55 +342,62 @@ def friendData(request):
 def protoWholeLandToken(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
+    land_token, created = LandToken.objects.get_or_create(user=user)
 
-    # This raises the warning about another device which did not save the game recently.
-    if request.GET.get("force") != "1" and user.land_token is not None:
-        user.session_conflict = True
-        user.save(update_fields=["session_conflict"])
+    if land_token.retrieved:
+        return HttpResponseBadRequest("Land token retrieved")
+
+    elif not created and request.GET.get("force") != "1":
         root = ET.Element("error", attrib={"code": "409", "type": "RESOURCE_ALREADY_EXISTS"})
         return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
+    else:
+        # Generate new land token and resolve session conflict.
+        land_token.land_token = uuid.uuid4()
+        land_token.retrieved = True
+        land_token.authorized = False
+        land_token.save()
 
-    # Generate land token and resolve session conflict.
-    user.session_conflict = False
-    user.land_token = uuid.uuid4()
-    user.save(update_fields=["session_conflict", "land_token"])
+        proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
+        proto_whole_land_token_response.token = str(land_token.land_token)
+        proto_whole_land_token_response.conflict = False
 
-    proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
-    proto_whole_land_token_response.token = str(user.land_token)
-    proto_whole_land_token_response.conflict = user.session_conflict
-
-
-    return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
+        return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 def checkToken(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
+    land_token, _ = LandToken.objects.get_or_create(user=user)
 
-    proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
-    proto_whole_land_token_response.token = str(user.land_token)
-    proto_whole_land_token_response.conflict = user.session_conflict
-    return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
+    if land_token.retrieved:
+        return HttpResponseBadRequest("Land token retrieved")
+
+    else:
+        land_token.authorized = False
+        land_token.save(update_fields=["authorized"])
+        proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
+        proto_whole_land_token_response.token = str(land_token.land_token)
+        proto_whole_land_token_response.conflict = False
+        return HttpResponse(proto_whole_land_token_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
 def deleteToken(request, mayhem_id):
 
-    delete_token_response = WholeLandTokenData_pb2.DeleteTokenResponse()
+    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
+    land_token = get_object_or_404(LandToken, user=user)
 
-    # Only delete land_token if current_client_session_id is correct.
-    try:
-        token = DeviceToken.objects.get(current_client_session_id=uuid.UUID(request.headers.get("currentClientSessionId")))
-
-    except (DeviceToken.DoesNotExist, ValueError):
-        delete_token_response.result = False
+    if land_token.authorized:
+        land_token.delete()
+        cache.delete(get_user_file(user.mayhem_id.int, "pb"))
 
     else:
-        token.user.land_token = None
-        token.user.save(update_fields=["land_token"])
-        delete_token_response.result = True
+        land_token.remove = True
+        land_token.save(update_fields=["remove"])
 
+    delete_token_response = WholeLandTokenData_pb2.DeleteTokenResponse()
+    delete_token_response.result = True
 
     return HttpResponse(delete_token_response.SerializeToString(), content_type="application/x-protobuf")
 
@@ -399,7 +420,8 @@ def protoland(request, mayhem_id):
             return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
         else:
-            user = get_object_or_404(UserId, land_token=land_token)
+            land_token = get_object_or_404(LandToken, land_token=land_token)
+            user = land_token.user
 
             # Avoid user tampering with other towns.
             if mayhem_id != user.mayhem_id.int:
@@ -414,14 +436,24 @@ def protoland(request, mayhem_id):
 
 
             # Update town.
-            protoland_response = LandData_pb2.LandMessage()
-            protoland_response.ParseFromString(decompressed_data) # type: ignore
-            save_proto(get_user_file(mayhem_id, "pb"), protoland_response)
+            protoland_request = LandData_pb2.LandMessage()
+            protoland_request.ParseFromString(decompressed_data) # type: ignore
+            town_file = get_user_file(mayhem_id, "pb")
 
-            # Remove events file if it exists.
-            event_file = get_user_file(mayhem_id, "events")
-            if event_file.exists():
-                os.remove(event_file)
+            # Save direct to disk with an authorized land token.
+            # Cache save from an unauthorized land token to memory to
+            # be saved in mh/userstats/.
+            if land_token.authorized:
+                save_proto(get_user_file(mayhem_id, "pb"), protoland_request)
+
+                # Remove events file if it exists.
+                event_file = get_user_file(mayhem_id, "events")
+                if event_file.exists():
+                    os.remove(event_file)
+
+            else:
+                cache.set(town_file, protoland_request.SerializeToString(), timeout=300)
+
 
             root = ET.Element("WholeLandUpdateResponse")
             return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
@@ -465,7 +497,7 @@ def extraLandUpdate(request, mayhem_id):
         return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
     else:
-        user = get_object_or_404(UserId, land_token=land_token)
+        user = get_object_or_404(LandToken, land_token=land_token).user
 
         # Avoid user tampering with other towns.
         if mayhem_id != user.mayhem_id.int:

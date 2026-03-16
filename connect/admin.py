@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import UserId, DeviceToken
+from mh.models import LandToken
 
 # Register your models here.
 
@@ -29,6 +30,11 @@ class DeviceTokenInLine(admin.TabularInline):
             }
         ),
     ]
+
+
+class LandTokenInLine(admin.StackedInline):
+    model = LandToken
+    extra = 0
 
 
 class UserIdAdmin(admin.ModelAdmin):
@@ -61,8 +67,7 @@ class UserIdAdmin(admin.ModelAdmin):
             }
         ),
     ]
-    inlines = [DeviceTokenInLine]
-
+    inlines = [LandTokenInLine, DeviceTokenInLine]
 
 
 admin.site.register(UserId, UserIdAdmin)

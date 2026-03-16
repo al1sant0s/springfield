@@ -19,7 +19,7 @@ def get_avatar_filename(user_id):
 
             config = json.load(f)
             avatar_dir = config["avatar_dir"]
-            cache.set("avatar_dir", avatar_dir, timeout = config["cache_minutes"])
+            cache.set("avatar_dir", avatar_dir, timeout = config["cache_seconds"])
 
 
     return Path(avatar_dir, f"{user_id}.png")
@@ -40,7 +40,7 @@ def get_avatar_url(user_id):
             avatar_location = config["avatar_location"].removeprefix("/").removesuffix("/")
 
             avatar_url = f"{protocol}://{host}:{port}/{avatar_location}"
-            cache.set("avatar_url", avatar_url, timeout = config["cache_minutes"])
+            cache.set("avatar_url", avatar_url, timeout = config["cache_seconds"])
 
 
     return f"{avatar_url}/{user_id}.png"

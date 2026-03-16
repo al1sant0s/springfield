@@ -35,8 +35,8 @@ def getDirectionByPackage(request, platform):
             for i in services.values():
                 directions_android["serverData"][i]["value"] = f"{protocol}://{host}:{port}"
 
-            cache.set("directions_android", directions_android, timeout = config["cache_minutes"])
-            cache.set("services", services, timeout = config["cache_minutes"])
+            cache.set("directions_android", directions_android, timeout = config["cache_seconds"])
+            cache.set("services", services, timeout = config["cache_seconds"])
 
 
     # Add an exclusive id for some apps.

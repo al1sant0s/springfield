@@ -1,3 +1,4 @@
+import datetime
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -9,6 +10,7 @@ from proxy.models import ProgRegCode
 from proxy.views import get_auth_code
 
 from .models import UserId, DeviceToken
+from mh.models import LandToken
 
 import math
 import json
@@ -109,6 +111,7 @@ def auth(request, device_id):
             )
 
             token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
+            user = token.user
 
             # Found the auth_code?! Great, now look for user with this email.
             try:
@@ -120,7 +123,6 @@ def auth(request, device_id):
                 if token.user.is_registered:
                     token.user = UserId()
 
-
             token.user.email = auth_code.email
             token.user.is_registered = True
             token.user.session_key = secrets.token_urlsafe(32)
@@ -131,6 +133,10 @@ def auth(request, device_id):
             token.timestamp = timestamp
             token.login_status = True
             token.save()
+
+            # Point land_token to new user.
+            LandToken.objects.filter(user=token.user).delete()
+            LandToken.objects.filter(user=user).update(user=token.user)
 
             response = {
                 "code": token.code,
@@ -200,6 +206,27 @@ def tokeninfo(request, device_id):
 
     access_token = request.GET.get("access_token")
     token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id) | Q(access_token=access_token))
+
+    # Update session keys and timestamps.
+    token.user.last_authenticated = timezone.now() 
+    token.user.session_key = secrets.token_urlsafe(32)
+    token.user.save(update_fields=["last_authenticated", "session_key"])
+
+    token.timestamp = token.user.last_authenticated
+    token.session_key = token.user.session_key
+    token.save(update_fields=["timestamp", "session_key"])
+
+    # Make a land token if one does not already exist.
+    # If it does exist, renew the expiration time.
+    try:
+        land_token = LandToken.objects.get(user=token.user)
+
+    except LandToken.DoesNotExist:
+        pass
+
+    else:
+        land_token.retrieved = False
+        land_token.save(update_fields=["retrieved"])
 
     response = {
         "client_id": "simpsons4-android-client",

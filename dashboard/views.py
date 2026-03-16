@@ -8,6 +8,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.forms import formset_factory
 
 from connect.models import UserId, DeviceToken
+from mh.models import LandToken
 from proxy.models import ProgRegCode
 from proxy.views import get_auth_code, personas, search_friends
 from mh.views import get_user_file, save_proto, load_town
@@ -235,9 +236,11 @@ def index(request):
                 land_data.userData.money = currencies["money"]
                 save_proto(get_user_file(request.user.mayhem_id.int, "pb"), land_data)
 
+                # Delete all land tokens.
+                LandToken.objects.filter(user=request.user).delete()
+
                 # Update donuts.
                 request.user.donuts_balance = currencies["donuts"]
-                request.user.land_token = None
                 request.user.save(update_fields=["donuts_balance", "land_token"])
 
                 messages.success(request, "Currencies updated!", extra_tags="currency")
