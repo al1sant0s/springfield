@@ -341,13 +341,13 @@ def friendData(request):
 @csrf_exempt
 def protoWholeLandToken(request, mayhem_id):
 
-    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-    land_token, created = LandToken.objects.get_or_create(user=user)
+    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+    land_token = get_object_or_404(LandToken, user=user)
 
     if land_token.retrieved:
         return HttpResponseBadRequest("Land token retrieved")
 
-    elif not created and request.GET.get("force") != "1":
+    elif land_token.authorized and request.GET.get("force") != "1":
         root = ET.Element("error", attrib={"code": "409", "type": "RESOURCE_ALREADY_EXISTS"})
         return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
@@ -358,6 +358,9 @@ def protoWholeLandToken(request, mayhem_id):
         land_token.authorized = False
         land_token.save()
 
+        # Remove cached town from user.
+        cache.delete(get_user_file(user.mayhem_id.int, "pb"))
+
         proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
         proto_whole_land_token_response.token = str(land_token.land_token)
         proto_whole_land_token_response.conflict = False
@@ -367,8 +370,8 @@ def protoWholeLandToken(request, mayhem_id):
 
 def checkToken(request, mayhem_id):
 
-    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-    land_token, _ = LandToken.objects.get_or_create(user=user)
+    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+    land_token = get_object_or_404(LandToken, user=user)
 
     if land_token.retrieved:
         return HttpResponseBadRequest("Land token retrieved")

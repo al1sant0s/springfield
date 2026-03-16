@@ -217,16 +217,9 @@ def tokeninfo(request, device_id):
     token.save(update_fields=["timestamp", "session_key"])
 
     # Make a land token if one does not already exist.
-    # If it does exist, renew the expiration time.
-    try:
-        land_token = LandToken.objects.get(user=token.user)
-
-    except LandToken.DoesNotExist:
-        pass
-
-    else:
-        land_token.retrieved = False
-        land_token.save(update_fields=["retrieved"])
+    land_token, _ = LandToken.objects.get_or_create(user=token.user)
+    land_token.retrieved = False
+    land_token.save()
 
     response = {
         "client_id": "simpsons4-android-client",
