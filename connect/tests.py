@@ -2,6 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils.crypto import get_random_string
 from connect.models import DeviceToken
+from mh.models import LandToken
 from proxy.views import get_auth_code
 
 import base64
@@ -49,7 +50,7 @@ class TestDevice():
         token.save(update_fields = kwargs.keys())
 
 
-class AuthViewTests(TestCase):
+class ConnectViewsTests(TestCase):
 
     def test_anonymous_connection(self):
         """
@@ -60,7 +61,7 @@ class AuthViewTests(TestCase):
 
         device = TestDevice()
         response = device.auth_device()
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200, "Device authentication failed")
 
         response_data = json.loads(response.content)
         self.assertEqual(type(response_data), dict)
@@ -68,15 +69,17 @@ class AuthViewTests(TestCase):
         self.assertIn("lnglv_token", response_data)
 
 
-    def test_register_user(self):
+    def test_login_logout_user(self):
         """
         User insert code and confirm their email.
+        After a successful login, user requests to be logged out.
         """
 
         # Perform user first connection.
         device = TestDevice()
         response = device.auth_device()
-        self.assertEqual(response.status_code, 200)
+        token = device.get_device_token()
+        self.assertEqual(response.status_code, 200, "Device authentication failed")
 
         # Perform user register connection: request from game login screen.
         email = "testmail@django.com"
@@ -86,13 +89,62 @@ class AuthViewTests(TestCase):
 
         # User inserts wrong code.
         response = device.auth_device(initial_dict={"email": email , "cred": "0"})
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404, "It should return 404 for wrong credential")
 
         # User inserts right code.
         response = device.auth_device(initial_dict={"email": email , "cred": code})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200, "It should return 200 for right credential")
+        token.refresh_from_db()
 
         response_data = json.loads(response.content)
         self.assertEqual(type(response_data), dict)
         self.assertIn("code", response_data)
         self.assertIn("lnglv_token", response_data)
+        self.assertTrue(token.login_status, "Login have failed")
+
+        # User requests a logout.
+        response = self.client.get(
+            reverse("connect:token", args=(device.device_id,)),
+            query_params={"authenticator_type": "NUCLEUS", "grant_type": "remove_authenticator"}
+        )
+        self.assertEqual(response.status_code, 200, "Token view failed")
+        token.refresh_from_db()
+
+        response_data = json.loads(response.content)
+        self.assertEqual(type(response_data), dict)
+        self.assertIn("access_token", response_data)
+        self.assertIn("token_type", response_data)
+        self.assertIn("expires_in", response_data)
+        self.assertIn("refresh_token", response_data)
+        self.assertIn("refresh_token_expires_in", response_data)
+        self.assertIn("id_token", response_data)
+        self.assertFalse(token.login_status, "Logout have failed")
+
+
+    def test_tokeninfo(self):
+
+        # Perform user first connection.
+        device = TestDevice()
+        response = device.auth_device()
+        token = device.get_device_token()
+        self.assertEqual(response.status_code, 200, "Device authentication failed")
+
+        response = self.client.get(reverse("connect:tokeninfo", args=(device.device_id,)))
+        self.assertEqual(response.status_code, 200, "Tokeninfo view failed")
+
+        # Make sure a land token was made for the user.
+        self.assertTrue(LandToken.objects.filter(user=token.user).exists(), "LandToken should exist for the user")
+
+        response_data = json.loads(response.content)
+        self.assertEqual(type(response_data), dict)
+        self.assertIn("client_id", response_data)
+        self.assertIn("scope", response_data)
+        self.assertIn("expires_in", response_data)
+        self.assertIn("pid_id", response_data)
+        self.assertIn("pid_type", response_data)
+        self.assertIn("user_id", response_data)
+        self.assertIn("persona_id", response_data)
+        self.assertIn("authenticators", response_data)
+        self.assertIn("is_underage", response_data)
+        self.assertIn("stopProcess", response_data)
+        self.assertIn("telemetry_id", response_data)

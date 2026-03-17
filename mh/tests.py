@@ -1,9 +1,12 @@
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
 from django.test import TestCase
 from django.urls import reverse
 from django.core.cache import cache
+
 from connect.models import DeviceToken, UserId
 from connect.tests import TestDevice
+from mh.models import LandToken
 from protofiles import *
 
 import xml.etree.ElementTree as ET
@@ -39,6 +42,10 @@ class GetCurrentTimeViewTests(TestCase):
 
 class ProtolandViewTests(TestCase):
 
+    def GetLandTokenFromTokenInfo(self, token):
+        return self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+
+
     def test_load_save_town(self):
         """
         Make a new user and request their town.
@@ -51,6 +58,13 @@ class ProtolandViewTests(TestCase):
         device = TestDevice()
         device.auth_device()
         token = device.get_device_token()
+
+        # Get land token.
+        self.assertEqual(self.GetLandTokenFromTokenInfo(token).status_code, 200, "Failed authentication with tokeninfo")
+        land_token = LandToken.objects.filter(user=token.user).first()
+        self.assertIsNotNone(land_token, "Missing land token")
+        land_token.authorized = True
+        land_token.save()
 
         # Set towns dir to temp directory.
         cache.set("towns_dir", tempfile.TemporaryDirectory().name)
@@ -75,7 +89,11 @@ class ProtolandViewTests(TestCase):
             reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
             data=compressed_body,
             content_type="application/x-protobuf",
-            headers={"currentClientSessionId": str(device.current_client_session_id), "Content-Encoding": "gzip"}
+            headers={
+                "Land-Update-Token": str(land_token.land_token),
+                "currentClientSessionId": str(device.current_client_session_id),
+                "Content-Encoding": "gzip"
+            }
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, ET.tostring(ET.Element("WholeLandUpdateResponse")))
@@ -97,7 +115,11 @@ class ProtolandViewTests(TestCase):
             reverse("mh:protoland", args=(new_token.user.mayhem_id.int,)),
             data=compressed_body,
             content_type="application/x-protobuf",
-            headers={"currentClientSessionId": str(device.current_client_session_id), "Content-Encoding": "gzip"}
+            headers={
+                "Land-Update-Token": str(land_token.land_token),
+                "currentClientSessionId": str(device.current_client_session_id),
+                "Content-Encoding": "gzip"
+            }
         )
         self.assertEqual(response.status_code, 400)
 
@@ -142,6 +164,12 @@ class ProtolandViewTests(TestCase):
         token.user.donuts_balance = 500
         token.user.save()
 
+        # Get land token.
+        self.assertEqual(self.GetLandTokenFromTokenInfo(token).status_code, 200, "Failed authentication with tokeninfo")
+        land_token = LandToken.objects.filter(user=token.user).first()
+        self.assertIsNotNone(land_token, "Land token not found")
+        land_token.authorized = True
+        land_token.save()
 
         # Make some events up.
         currency_deltas = [
@@ -159,7 +187,11 @@ class ProtolandViewTests(TestCase):
             reverse("mh:extraLandUpdate", args=(token.user.mayhem_id.int,)),
             data=compressed_body,
             content_type="application/x-protobuf",
-            headers={"currentClientSessionId": str(device.current_client_session_id), "Content-Encoding": "gzip"}
+            headers={
+                "Land-Update-Token": str(land_token.land_token),
+                "currentClientSessionId": str(device.current_client_session_id),
+                "Content-Encoding": "gzip"
+            }
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, extraland_response.SerializeToString())
@@ -183,11 +215,22 @@ class ProtolandViewTests(TestCase):
         new_device.auth_device()
         new_token = new_device.get_device_token()
 
+        # Get land token.
+        self.assertEqual(self.GetLandTokenFromTokenInfo(new_token).status_code, 200, "Failed authentication with tokeninfo")
+        new_land_token = LandToken.objects.filter(user=new_token.user).first()
+        self.assertIsNotNone(new_land_token, "Land token not found")
+        new_land_token.authorized = True
+        new_land_token.save()
+
         compressed_body = gzip.compress(extraland_request.SerializeToString())
         response = self.client.post(
             reverse("mh:extraLandUpdate", args=(new_token.user.mayhem_id.int,)),
             data=compressed_body,
             content_type="application/x-protobuf",
-            headers={"currentClientSessionId": str(device.current_client_session_id), "Content-Encoding": "gzip"}
+            headers={
+                "Land-Update-Token": str(land_token.land_token),
+                "currentClientSessionId": str(device.current_client_session_id),
+                "Content-Encoding": "gzip"
+            }
         )
         self.assertEqual(response.status_code, 400)

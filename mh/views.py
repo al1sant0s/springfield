@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseRedirect, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
@@ -345,7 +345,7 @@ def protoWholeLandToken(request, mayhem_id):
     land_token = get_object_or_404(LandToken, user=user)
 
     if land_token.retrieved:
-        return HttpResponseBadRequest("Land token retrieved")
+        return HttpResponseForbidden("Land token retrieved")
 
     elif land_token.authorized and request.GET.get("force") != "1":
         root = ET.Element("error", attrib={"code": "409", "type": "RESOURCE_ALREADY_EXISTS"})
@@ -374,7 +374,7 @@ def checkToken(request, mayhem_id):
     land_token = get_object_or_404(LandToken, user=user)
 
     if land_token.retrieved:
-        return HttpResponseBadRequest("Land token retrieved")
+        return HttpResponseForbidden("Land token retrieved")
 
     else:
         land_token.authorized = False
@@ -393,7 +393,6 @@ def deleteToken(request, mayhem_id):
 
     if land_token.authorized:
         land_token.delete()
-        cache.delete(get_user_file(user.mayhem_id.int, "pb"))
 
     else:
         land_token.remove = True

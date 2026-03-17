@@ -241,7 +241,7 @@ def index(request):
 
                 # Update donuts.
                 request.user.donuts_balance = currencies["donuts"]
-                request.user.save(update_fields=["donuts_balance", "land_token"])
+                request.user.save(update_fields=["donuts_balance"])
 
                 messages.success(request, "Currencies updated!", extra_tags="currency")
                 return HttpResponseRedirect(reverse("dashboard:index"))

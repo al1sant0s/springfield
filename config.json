@@ -1,7 +1,7 @@
 {
   "protocol": "http",
   "host": "192.168.1.115",
-  "port": "8081",
+  "port": "8080",
   "cache_seconds": 3600,
   "towns_dir": "towns",
   "avatar_dir": "/data/static/avatar/",
