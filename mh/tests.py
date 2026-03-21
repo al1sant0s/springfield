@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.cache import cache
 
@@ -40,11 +40,68 @@ class GetCurrentTimeViewTests(TestCase):
         self.assertEqual(root[0].text.isnumeric(), True)
 
 
+class UserStatsViewTests(TestCase):
+
+    def test_view(self):
+
+        device = TestDevice()
+        device.authenticate_device()
+        device.authenticate_token()
+
+        token = device.get_device_token()
+
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            reverse("mh:userstats"),
+            headers={
+                "currentClientSessionId": str(device.current_client_session_id)
+            },
+            query_params={
+                "device_id": str(device.device_id)
+            }
+        )
+        self.assertEqual(response.status_code, 409)
+
+
+class FriendDataViewTests(TestCase):
+
+    def test_debug_mayhem_id(self):
+
+        device = TestDevice()
+        device.authenticate_device()
+        device.authenticate_token()
+
+        token = device.get_device_token()
+
+        response = self.client.get(
+            reverse("mh:friendData"),
+            headers={"currentClientSessionId": str(token.current_client_session_id)},
+            query_params={"debug_mayhem_id": str(token.user.mayhem_id.int)}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
+        friend_data_response.ParseFromString(response.content)
+
+
+    def test_origin(self):
+
+        device = TestDevice()
+        device.authenticate_device()
+        device.authenticate_token()
+
+        token = device.get_device_token()
+
+        response = self.client.get(reverse("mh:friendDataOrigin"), headers={"currentClientSessionId": str(token.current_client_session_id)})
+        self.assertEqual(response.status_code, 200)
+
+        friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
+        friend_data_response.ParseFromString(response.content)
+
+
 class ProtolandViewTests(TestCase):
-
-    def GetLandTokenFromTokenInfo(self, token):
-        return self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
-
 
     def test_load_save_town(self):
         """
@@ -56,15 +113,11 @@ class ProtolandViewTests(TestCase):
         """
 
         device = TestDevice()
-        device.auth_device()
-        token = device.get_device_token()
+        device.authenticate_device()
+        device.authenticate_token()
 
-        # Get land token.
-        self.assertEqual(self.GetLandTokenFromTokenInfo(token).status_code, 200, "Failed authentication with tokeninfo")
+        token = device.get_device_token()
         land_token = LandToken.objects.filter(user=token.user).first()
-        self.assertIsNotNone(land_token, "Missing land token")
-        land_token.authorized = True
-        land_token.save()
 
         # Set towns dir to temp directory.
         cache.set("towns_dir", tempfile.TemporaryDirectory().name)
@@ -107,7 +160,7 @@ class ProtolandViewTests(TestCase):
 
         # Attempt to post to other user's town by giving their mayhem id.
         new_device = TestDevice()
-        new_device.auth_device()
+        new_device.authenticate_device()
         new_token = new_device.get_device_token()
 
         compressed_body = gzip.compress(land_data.SerializeToString())
@@ -127,7 +180,9 @@ class ProtolandViewTests(TestCase):
     def test_load_premium_currency(self):
 
         device = TestDevice()
-        device.auth_device()
+        device.authenticate_device()
+        device.authenticate_token()
+
         token = device.get_device_token()
 
         # Get donuts balance.
@@ -159,17 +214,14 @@ class ProtolandViewTests(TestCase):
     def test_update_premium_currency(self):
 
         device = TestDevice()
-        device.auth_device()
+        device.authenticate_device()
+        device.authenticate_token()
+
         token = device.get_device_token()
         token.user.donuts_balance = 500
         token.user.save()
 
-        # Get land token.
-        self.assertEqual(self.GetLandTokenFromTokenInfo(token).status_code, 200, "Failed authentication with tokeninfo")
         land_token = LandToken.objects.filter(user=token.user).first()
-        self.assertIsNotNone(land_token, "Land token not found")
-        land_token.authorized = True
-        land_token.save()
 
         # Make some events up.
         currency_deltas = [
@@ -212,15 +264,10 @@ class ProtolandViewTests(TestCase):
 
         # Test if user can override currency from another user.
         new_device = TestDevice()
-        new_device.auth_device()
-        new_token = new_device.get_device_token()
+        new_device.authenticate_device()
+        new_device.authenticate_token()
 
-        # Get land token.
-        self.assertEqual(self.GetLandTokenFromTokenInfo(new_token).status_code, 200, "Failed authentication with tokeninfo")
-        new_land_token = LandToken.objects.filter(user=new_token.user).first()
-        self.assertIsNotNone(new_land_token, "Land token not found")
-        new_land_token.authorized = True
-        new_land_token.save()
+        new_token = new_device.get_device_token()
 
         compressed_body = gzip.compress(extraland_request.SerializeToString())
         response = self.client.post(

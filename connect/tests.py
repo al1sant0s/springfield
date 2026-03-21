@@ -21,22 +21,6 @@ class TestDevice():
         self.authenticator_login_type = authenticator_login_type
 
 
-    def auth_device(self, initial_dict = dict()):
-        json_dict = {"advertisingId": str(self.advertising_id)}
-        json_dict.update(initial_dict)
-        json_data = json.dumps(json_dict)
-        query_params = {
-            "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
-            "authenticator_login_type": self.authenticator_login_type
-        }
-
-        response = Client().get(reverse("connect:auth", args=(self.device_id,)), query_params=query_params)
-
-        # Write the rest of the fields to the token.
-        self.update_device_token(current_client_session_id=self.current_client_session_id)
-        return response
-
-
     def get_device_token(self):
         return DeviceToken.objects.get(advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, str(self.advertising_id)))
 
@@ -50,6 +34,32 @@ class TestDevice():
         token.save(update_fields = kwargs.keys())
 
 
+    def authenticate_device(self, initial_dict = dict()):
+        json_dict = {"advertisingId": str(self.advertising_id)}
+        json_dict.update(initial_dict)
+        json_data = json.dumps(json_dict)
+        query_params = {
+            "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
+            "authenticator_login_type": self.authenticator_login_type
+        }
+
+        return Client().get(reverse("connect:auth", args=(self.device_id,)), query_params=query_params)
+
+
+    def authenticate_token(self):
+        self.client = Client()
+        self.client.get(reverse("connect:tokeninfo", args=(self.get_device_token().device_id,)))
+        self.client.post(
+            reverse("mh:userstats"),
+            headers={
+                "currentClientSessionId": str(self.current_client_session_id)
+            },
+            query_params={
+                "device_id": str(self.device_id)
+            }
+        )
+
+
 class ConnectViewsTests(TestCase):
 
     def test_anonymous_connection(self):
@@ -60,7 +70,7 @@ class ConnectViewsTests(TestCase):
         """
 
         device = TestDevice()
-        response = device.auth_device()
+        response = device.authenticate_device()
         self.assertEqual(response.status_code, 200, "Device authentication failed")
 
         response_data = json.loads(response.content)
@@ -77,7 +87,7 @@ class ConnectViewsTests(TestCase):
 
         # Perform user first connection.
         device = TestDevice()
-        response = device.auth_device()
+        response = device.authenticate_device()
         token = device.get_device_token()
         self.assertEqual(response.status_code, 200, "Device authentication failed")
 
@@ -88,11 +98,11 @@ class ConnectViewsTests(TestCase):
         device.authenticator_login_type = "mobile_ea_account" # Switch to registered user.
 
         # User inserts wrong code.
-        response = device.auth_device(initial_dict={"email": email , "cred": "0"})
+        response = device.authenticate_device(initial_dict={"email": email , "cred": "0"})
         self.assertEqual(response.status_code, 404, "It should return 404 for wrong credential")
 
         # User inserts right code.
-        response = device.auth_device(initial_dict={"email": email , "cred": code})
+        response = device.authenticate_device(initial_dict={"email": email , "cred": code})
         self.assertEqual(response.status_code, 200, "It should return 200 for right credential")
         token.refresh_from_db()
 
@@ -125,7 +135,7 @@ class ConnectViewsTests(TestCase):
 
         # Perform user first connection.
         device = TestDevice()
-        response = device.auth_device()
+        response = device.authenticate_device()
         token = device.get_device_token()
         self.assertEqual(response.status_code, 200, "Device authentication failed")
 

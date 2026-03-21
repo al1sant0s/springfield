@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.db import models, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -12,7 +12,7 @@ from friends.models import FriendInvitation
 def send_friend_request(from_user, to_user, success_response):
 
     if from_user == to_user:
-        return HttpResponseBadRequest("Cannot befriend yourself!")
+        return HttpResponseForbidden("Cannot befriend yourself!")
 
     try:
         with transaction.atomic():
@@ -23,13 +23,13 @@ def send_friend_request(from_user, to_user, success_response):
             ).exists()
 
             if exists:
-                return HttpResponseBadRequest("An invitation already exists between these users.")
+                return HttpResponse("An invitation already exists between these users.", status=409)
 
             FriendInvitation.objects.create(from_user=from_user, to_user=to_user, invitation_date=timezone.now())
             return success_response
 
     except Exception:
-        return HttpResponseBadRequest("Failed to create invitation.")
+        return HttpResponse("Failed to create invitation.", status=500)
 
 
 def cancel_friend_request(from_user, to_user, success_response):
@@ -42,7 +42,7 @@ def cancel_friend_request(from_user, to_user, success_response):
             ).delete()
 
     except Exception:
-        return HttpResponseBadRequest("Failed to delete friend invitations.")
+        return HttpResponse("Failed to delete friend invitations.", status=500)
 
     else:
         return success_response
@@ -58,11 +58,11 @@ def accept_friend_request(from_user, to_user, success_response):
             ).delete()
 
     except Exception:
-        return HttpResponseBadRequest("Failed to delete friend invitations.")
+        return HttpResponse("Failed to delete friend invitations.", status=500)
 
     else:
         if from_user == to_user:
-            return HttpResponseBadRequest("Cannot befriend yourself!")
+            return HttpResponseForbidden("Cannot befriend yourself!")
 
         else:
             to_user.friends.add(from_user)
