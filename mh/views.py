@@ -316,10 +316,12 @@ def checkToken(request, mayhem_id):
 
 
 @csrf_exempt
+@require_POST
 def deleteToken(request, mayhem_id):
 
-    user = get_object_or_404(UserId, mayhem_id = uuid.UUID(int=mayhem_id))
-    land_token = get_object_or_404(LandToken, user=user)
+    delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+    delete_token_request.ParseFromString(request.body)
+    land_token = get_object_or_404(LandToken, land_token=uuid.UUID(delete_token_request.token))
 
     if land_token.authorized:
         land_token.delete()

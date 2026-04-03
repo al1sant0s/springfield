@@ -1,10 +1,6 @@
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
-from django.test import TestCase, Client
+from django.test import TestCase
 from django.urls import reverse
-from django.core.cache import cache
 
-from connect.models import DeviceToken, UserId
 from connect.tests import TestDevice
 from mh.models import LandToken
 from protofiles import *
@@ -12,7 +8,6 @@ from protofiles import *
 import xml.etree.ElementTree as ET
 import uuid
 import gzip
-import tempfile
 
 # Create your tests here.
 
@@ -46,8 +41,6 @@ class UserStatsViewTests(TestCase):
 
         device = TestDevice()
         device.authenticate_device()
-        device.authenticate_token()
-
         token = device.get_device_token()
 
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
@@ -62,6 +55,8 @@ class UserStatsViewTests(TestCase):
                 "device_id": str(device.device_id)
             }
         )
+
+        self.assertTrue(token.user.landtoken.authorized)
         self.assertEqual(response.status_code, 409)
 
 
@@ -117,7 +112,7 @@ class ProtolandViewTests(TestCase):
         device.authenticate_token()
 
         token = device.get_device_token()
-        land_token = LandToken.objects.filter(user=token.user).first()
+        land_token = token.user.landtoken
 
         # Get town.
         response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
@@ -196,7 +191,6 @@ class ProtolandViewTests(TestCase):
         protocurrency_response.ParseFromString(response.content)
         self.assertEqual(token.user.donuts_balance, protocurrency_response.vcBalance )
 
-
         # Update donuts and check donuts balance again.
         token.user.donuts_balance = 123
         token.user.save()
@@ -221,7 +215,7 @@ class ProtolandViewTests(TestCase):
         token.user.donuts_balance = 500
         token.user.save()
 
-        land_token = LandToken.objects.filter(user=token.user).first()
+        land_token = token.user.landtoken
 
         # Make some events up.
         currency_deltas = [
@@ -249,7 +243,6 @@ class ProtolandViewTests(TestCase):
         self.assertContains(response, extraland_response.SerializeToString())
         token.user.refresh_from_db()
 
-
         # Request currency info and compare directly with the database.
         response = self.client.get(
             reverse("mh:protocurrency", args=(token.user.mayhem_id.int,)),
@@ -260,7 +253,6 @@ class ProtolandViewTests(TestCase):
         protocurrency_response = PurchaseData_pb2.CurrencyData()
         protocurrency_response.ParseFromString(response.content)
         self.assertEqual(token.user.donuts_balance, protocurrency_response.vcBalance)
-
 
         # Test if user can override currency from another user.
         new_device = TestDevice()
@@ -281,3 +273,152 @@ class ProtolandViewTests(TestCase):
             }
         )
         self.assertEqual(response.status_code, 400)
+
+
+class WholeLandTokenViewsTest(TestCase):
+
+    def test_proto_whole_land_token(self):
+
+        # Create user, device and land token.
+        device = TestDevice()
+        device.authenticate_device()
+        token = device.get_device_token()
+
+        # Check the token is unauthorized and not retrieved.
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertFalse(token.user.landtoken.authorized)
+        self.assertFalse(token.user.landtoken.retrieved)
+
+        # Retrieve the token and check it's retrieved and it cannot be retrieved again.
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+
+        token.user.refresh_from_db()
+        self.assertFalse(token.user.landtoken.authorized)
+        self.assertTrue(token.user.landtoken.retrieved)
+
+        # Try to retrieve it again should not be possible until calling tokeninfo again.
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 403)
+
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+
+        # If an authorized token exists then the user may choose if they want to overwrite it
+        # or switch to other device to save their progress first.
+        device.authenticate_token()
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200) 
+
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, ET.tostring(ET.Element("error", attrib={"code": "409", "type": "RESOURCE_ALREADY_EXISTS"})))
+
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)), query_params={"force": "1"})
+        self.assertEqual(response.status_code, 200)
+
+        token.refresh_from_db()
+        self.assertFalse(token.user.landtoken.authorized)
+        self.assertTrue(token.user.landtoken.retrieved)
+
+
+    def test_check_token(self):
+
+        # Create user, device and land token.
+        device = TestDevice()
+        device.authenticate_device()
+        device.authenticate_token()
+        token = device.get_device_token()
+
+        # Check that a retrieved token cannot be retrieved again.
+        self.assertTrue(token.user.landtoken.retrieved)
+        response = self.client.get(reverse("mh:checkToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 403)
+
+        # Unauthorize a previous authorized token.
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        response = self.client.get(reverse("mh:checkToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+
+        token.refresh_from_db()
+        self.assertFalse(token.user.landtoken.authorized)
+
+    def test_delete_token(self):
+
+        # Create user, device and land token.
+        device = TestDevice()
+        device.authenticate_device()
+        device.authenticate_token()
+        token = device.get_device_token()
+
+        # Call view with wrong body land token.
+        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+        delete_token_request.token = str(uuid.uuid4())
+
+        response = self.client.post(
+            reverse("mh:deleteToken",
+            args=(token.user.mayhem_id.int,)),
+            data=delete_token_request.SerializeToString(),
+            content_type="application/x-protobuf"
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(LandToken.objects.filter(user=token.user).exists())
+
+        # Call view with right land token and verify it deletes it.
+        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+        delete_token_request.token = str(token.user.landtoken.land_token)
+
+        response = self.client.post(
+            reverse("mh:deleteToken",
+            args=(token.user.mayhem_id.int,)),
+            data=delete_token_request.SerializeToString(),
+            content_type="application/x-protobuf"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(LandToken.objects.filter(user=token.user).exists())
+
+        # Create new unauthorized land token and check the removal procedure.
+        # The land token should be marked for removal but it should only be removed
+        # once the user reach userstats.
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        token.user.refresh_from_db()
+        self.assertFalse(token.user.landtoken.remove)
+
+        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+        delete_token_request.token = str(token.user.landtoken.land_token)
+
+        response = self.client.post(
+            reverse("mh:deleteToken",
+            args=(token.user.mayhem_id.int,)),
+            data=delete_token_request.SerializeToString(),
+            content_type="application/x-protobuf"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Marked for removal but it is not removed yet.
+        token.user.refresh_from_db()
+        self.assertTrue(token.user.landtoken.remove)
+        self.assertTrue(LandToken.objects.filter(user=token.user).exists())
+
+        response = self.client.post(
+            reverse("mh:userstats"),
+            headers={
+                "currentClientSessionId": str(device.current_client_session_id)
+            },
+            query_params={
+                "device_id": str(device.device_id)
+            }
+        )
+
+        # Now the land token has been removed.
+        self.assertFalse(LandToken.objects.filter(user=token.user).exists())

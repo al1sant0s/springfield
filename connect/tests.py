@@ -42,7 +42,6 @@ class TestDevice():
             "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
             "authenticator_login_type": self.authenticator_login_type
         }
-
         return Client().get(reverse("connect:auth", args=(self.device_id,)), query_params=query_params)
 
 
