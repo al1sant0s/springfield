@@ -6,9 +6,10 @@ from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.core.cache import cache
-
-from connect.models import UserId, DeviceToken
 from django.contrib.auth.models import BaseUserManager
+
+from springfield.settings import env
+from connect.models import UserId, DeviceToken
 from friends.models import FriendInvitation
 from .models import ProgRegCode
 
@@ -16,7 +17,6 @@ import base64
 import hashlib
 import json
 import datetime
-import os
 import requests
 
 
@@ -53,8 +53,8 @@ def check_tsto_api():
 
     if tsto_api_available is None:
 
-        tsto_api_key = os.getenv("TSTO_API_KEY")
-        tsto_api_team_name = os.getenv("TSTO_API_TEAM_NAME")
+        tsto_api_key = env("TSTO_API_KEY")
+        tsto_api_team_name = env("TSTO_API_TEAM_NAME")
         response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
 
         with open("config.json", "r") as f:
@@ -67,7 +67,6 @@ def check_tsto_api():
             cache.set("tsto_api_team_name", tsto_api_team_name, timeout=config["cache_seconds"])
 
         else:
-
             cache.set("tsto_api_available", False, timeout=config["cache_seconds"])
 
 
@@ -130,7 +129,6 @@ def get_auth_code(email, use_tsto_api=True):
 # Create your views here.
 
 def geoagerequirements(request):
-
     response = {
         "geoAgeRequirements": {
             "minLegalRegAge": 13,
@@ -139,14 +137,11 @@ def geoagerequirements(request):
             "country": "US"
         }
     }
-
     return JsonResponse(response)
 
 
 def me_personas(request, persona_id):
-
     user = get_object_or_404(UserId, persona_id=persona_id)
-
     response = {
         "persona": {
             "personaId": user.persona_id,
@@ -163,7 +158,6 @@ def me_personas(request, persona_id):
             "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
         }
     }
-
     return JsonResponse(response)
 
 
@@ -172,7 +166,6 @@ def pids_personas(request):
 
 
 def user_id_personas(request, user_id):
-
     user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
     response = {
         "personas": {
@@ -193,7 +186,6 @@ def user_id_personas(request, user_id):
             ]
         }
     }
-
     return JsonResponse(response)
 
 
@@ -204,8 +196,10 @@ def personas(request):
 
     if username is None:
         return HttpResponseBadRequest("Missing displayName in URL!")
+
     elif len(username) < 6:
         return HttpResponseBadRequest("DisplayName is too short!")
+
     elif username.endswith("*"):
         username = username[:-1]
 
@@ -257,7 +251,6 @@ def progreg_code(request):
 
 
 def links(request):
-
     token = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1])
     response = {
         "pidGamePersonaMappings": {
@@ -273,5 +266,4 @@ def links(request):
             ]
         }
     }
-
     return JsonResponse(response)

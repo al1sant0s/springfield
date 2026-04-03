@@ -119,9 +119,6 @@ class ProtolandViewTests(TestCase):
         token = device.get_device_token()
         land_token = LandToken.objects.filter(user=token.user).first()
 
-        # Set towns dir to temp directory.
-        cache.set("towns_dir", tempfile.TemporaryDirectory().name)
-
         # Get town.
         response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
         self.assertEqual(response.status_code, 200)
@@ -157,6 +154,9 @@ class ProtolandViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, land_data.SerializeToString())
 
+        # Remove town.
+        token.user.refresh_from_db()
+        token.user.town.delete()
 
         # Attempt to post to other user's town by giving their mayhem id.
         new_device = TestDevice()

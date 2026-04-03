@@ -1,21 +1,28 @@
 from django import forms
 
+from connect.models import UserId
+
 
 class LoginForm(forms.Form):
     email = forms.EmailField(label="Email")
     password = forms.CharField(label="Password", widget=forms.PasswordInput)
 
 
+class UploadTownForm(forms.ModelForm):
+    class Meta:
+        model = UserId
+        fields = ["town"]
+        widgets = {
+            "town": forms.FileInput
+        }
 
-class UploadTownForm(forms.Form):
-    prefix = "town"
-    town_file = forms.FileField(label="Town file")
 
-
-class EditCurrenciesForm(forms.Form):
-    prefix = "currency"
+class EditCurrenciesForm(forms.ModelForm):
     money = forms.IntegerField(initial=0, min_value=0, max_value=4294967295)
-    donuts = forms.IntegerField(initial=0, min_value=0, max_value=99999)
+    donuts_balance = forms.IntegerField(min_value=0, max_value=99999, label="Donuts")
+    class Meta:
+        model = UserId
+        fields = ["donuts_balance"]
 
 
 class RequestUserForm(forms.Form):
@@ -24,7 +31,7 @@ class RequestUserForm(forms.Form):
 
 class AuthCodeForm(forms.Form):
     email = forms.EmailField(widget=forms.HiddenInput)
-    code = forms.CharField(min_length=6, max_length=6)
+    code = forms.CharField(min_length=5, max_length=6)
 
 
 class ResetPasswordForm(forms.Form):
@@ -33,15 +40,17 @@ class ResetPasswordForm(forms.Form):
     same_password = forms.CharField(label="Password", widget=forms.PasswordInput, min_length=8)
 
 
-class UserProfileForm(forms.Form):
-    profile_avatar = forms.ImageField(label="Avatar Picture", required=False)
-    profile_username = forms.CharField(
-        label="Username",
-        label_suffix="",
-        min_length=5,
-        max_length=12,
-        empty_value=".null",
-    )
+class UserProfileForm(forms.ModelForm):
+    username = forms.CharField(min_length=5, max_length=12, label_suffix="")
+    class Meta:
+        model = UserId
+        fields = ["avatar", "username"]
+        widgets = {
+            "avatar": forms.FileInput
+        }
+        labels = {
+            "avatar": False
+        }
 
 
 class SearchUserForm(forms.Form):

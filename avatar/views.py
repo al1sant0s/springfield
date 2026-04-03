@@ -2,7 +2,8 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.core.cache import cache
 
-from connect.models import DeviceToken
+from connect.models import UserId, DeviceToken
+from springfield.settings import env
 
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -14,44 +15,35 @@ def get_avatar_filename(user_id):
     avatar_dir = cache.get("avatar_dir")
 
     if avatar_dir is None:
-
         with open("config.json", "r") as f:
-
             config = json.load(f)
             avatar_dir = config["avatar_dir"]
             cache.set("avatar_dir", avatar_dir, timeout = config["cache_seconds"])
 
-
     return Path(avatar_dir, f"{user_id}.png")
 
 
-def get_avatar_url(user_id):
+def get_avatar_url(user):
 
-    avatar_url = cache.get("avatar_url")
+    static_url = cache.get("static_url")
 
-    if avatar_url is None:
+    if static_url is None:
+        protocol = env("PROTOCOL")
+        host = env("HOST")
+        port = env("PORT")
+        static_location = env("STATIC_LOCATION", default="/data/static/")
+        static_url = f"{protocol}://{host}:{port}/{static_location.strip('/')}"
+        cache.set("static_url", static_url, timeout = env("CACHE_SECONDS", default=3600))
 
-        with open("config.json", "r") as f:
-
-            config = json.load(f)
-            protocol = config["protocol"]
-            host = config["host"]
-            port = config["port"]
-            avatar_location = config["avatar_location"].removeprefix("/").removesuffix("/")
-
-            avatar_url = f"{protocol}://{host}:{port}/{avatar_location}"
-            cache.set("avatar_url", avatar_url, timeout = config["cache_seconds"])
-
-
-    return f"{avatar_url}/{user_id}.png"
+    return f"{static_url}/{user.avatar.name}"
 
 
 # Create your views here.
 
-
 def get_avatar(request):
 
     access_token = request.headers.get("AuthToken")
+
     if access_token is not None:
         user = get_object_or_404(DeviceToken, access_token=access_token).user
         return get_avatars(request, str(user.user_id))
@@ -66,12 +58,20 @@ def get_avatars(request, users_ids):
 
     for user_id in users_ids.split(";"):
 
-        user = ET.SubElement(root, "user")
-        ET.SubElement(user, "userId").text = user_id
+        root = ET.SubElement(root, "user")
+        ET.SubElement(root, "userId").text = user_id
 
         avatar = ET.SubElement(user, "avatar")
         ET.SubElement(avatar, "avatarId").text = user_id
-        ET.SubElement(avatar, "link").text = get_avatar_url(user_id)
+
+        try:
+            user = UserId.objects.get(user_id=int(user_id))
+
+        except UserId.DoesNotExist():
+            ET.SubElement(avatar, "link").text = ""
+
+        else:
+            ET.SubElement(avatar, "link").text = get_avatar_url(user)
 
 
     return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")

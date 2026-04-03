@@ -1,17 +1,17 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
-from django.db import models
+from django.core.files.storage import storages
+from django.core.files.base import ContentFile
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
-from django.forms import formset_factory
 
 from connect.models import UserId, DeviceToken
 from mh.models import LandToken
 from proxy.models import ProgRegCode
-from proxy.views import get_auth_code, personas, search_friends
-from mh.views import get_user_file, save_proto, load_town
+from proxy.views import get_auth_code, search_friends
+from mh.views import save_town, load_town
 from avatar.views import get_avatar_url, get_avatar_filename
 from friends.views import send_friend_request, cancel_friend_request, accept_friend_request, remove_friend
 
@@ -25,10 +25,8 @@ from .forms import SearchUserForm
 
 from protofiles import LandData_pb2
 from operator import itemgetter
-from pathlib import Path
 
 import google.protobuf
-import os
 
 # Create your views here.
 
@@ -175,73 +173,68 @@ def reset_password(request):
 @login_required(login_url="dashboard:login")
 def index(request):
 
-    # Pre-load forms with user data.
-    town_form = UploadTownForm()
-
-    # Pre-load currencies.
-    land_data = load_town(request.user)
-    currency_form = EditCurrenciesForm(
-        initial = {
-            "money": land_data.userData.money,
-            "donuts": request.user.donuts_balance
-        }
-    )
+    town_form = UploadTownForm(instance=request.user)       # Pre-load forms with user data.
+    land_data = LandData_pb2.LandMessage()                  # Pre-load currencies.
+    land_data.ParseFromString(load_town(request.user))
+    currency_form = EditCurrenciesForm(instance=request.user, initial = {"money": land_data.userData.money})
  
     if request.method == "POST":
 
         if "town-form" in request.POST:
 
-            town_form = UploadTownForm(request.POST, request.FILES, prefix="town")
+            town_form = UploadTownForm(request.POST, request.FILES, instance=request.user)
+            town_ready = False
 
             if town_form.is_valid():
-
-                mayhem_id = request.user.mayhem_id.int
-                town_file = get_user_file(mayhem_id, "pb")
-
                 # Validate town file.
                 try:
                     land_data = LandData_pb2.LandMessage()
-                    land_data.ParseFromString(town_form.cleaned_data["town_file"].read())
+                    land_data.ParseFromString(town_form.cleaned_data["town"].read())
 
-                # Reject file
                 except google.protobuf.message.DecodeError:
-                    messages.error(request, "Invalid town file!", extra_tags="town")
+                    # See if this might be a tstole.de backup.
+                    try:
+                        town_file = town_form.cleaned_data["town"]
+                        town_file.seek(0x0c)
+                        land_data.ParseFromString(town_file.read())
+
+                    # Reject file
+                    except google.protobuf.message.DecodeError:
+                        messages.error(request, "Invalid town file!", extra_tags="town")
+
+                    else:
+                        town_ready = True
 
                 else:
-                    land_data.id = str(request.user.mayhem_id.int)
+                    town_ready = True
+
+                if town_ready:
+                    mayhem_id = request.user.mayhem_id.int
+                    land_data.id = str(mayhem_id)
                     land_data.friendData.name = request.user.username
-                    save_proto(town_file, land_data)
-
-                    # Remove user's events file since we are loading a new town.
-                    events_file = get_user_file(mayhem_id, "events")
-
-                    if events_file.exists():
-                        os.remove(events_file)
-
+                    user = town_form.save(commit=False)
+                    user.town = ContentFile(land_data.SerializeToString(), f"{mayhem_id}.pb")
+                    user.events = ""
+                    user.save()
                     messages.success(request, "Uploaded town successfuly!", extra_tags="town")
 
-                return HttpResponseRedirect(reverse("dashboard:index"))
+                    return HttpResponseRedirect(reverse("dashboard:index"))
 
 
         elif "currency-form" in request.POST:
 
-            currency_form = EditCurrenciesForm(request.POST, prefix="currency")
+            currency_form = EditCurrenciesForm(request.POST, instance=request.user)
 
             if currency_form.is_valid():
 
-                currencies = currency_form.cleaned_data
-
                 # Update town file currencies.
-                land_data = load_town(request.user)
+                currencies = currency_form.cleaned_data
+                currency_form.save()
                 land_data.userData.money = currencies["money"]
-                save_proto(get_user_file(request.user.mayhem_id.int, "pb"), land_data)
+                save_town(request.user, land_data)
 
                 # Delete all land tokens.
                 LandToken.objects.filter(user=request.user).delete()
-
-                # Update donuts.
-                request.user.donuts_balance = currencies["donuts"]
-                request.user.save(update_fields=["donuts_balance"])
 
                 messages.success(request, "Currencies updated!", extra_tags="currency")
                 return HttpResponseRedirect(reverse("dashboard:index"))
@@ -251,8 +244,8 @@ def index(request):
         "town_form": town_form,
         "town_url": reverse("mh:download_protoland", args=(request.user.mayhem_id.int,)),
         "currency_form": currency_form,
-        "avatar_url":  get_avatar_url(request.user.user_id),
-        "avatar_exists": get_avatar_filename(request.user.user_id).exists(),
+        "avatar_url":  get_avatar_url(request.user),
+        "avatar_exists": request.user.avatar,
         "username": request.user.username
     }
 
@@ -262,22 +255,21 @@ def index(request):
 @login_required(login_url="dashboard:login")
 def profile(request):
 
-    avatar = get_avatar_filename(request.user.user_id)
-
     if request.method == "POST":
-        profile_form = UserProfileForm(request.POST, request.FILES)
+        profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
 
         if profile_form.is_valid():
 
             success = True
 
             # Update avatar picture if any was uploaded.
-            if profile_form.cleaned_data.get("profile_avatar", False):
+            if profile_form.cleaned_data.get("avatar", False):
 
-                avatar_img = profile_form.cleaned_data["profile_avatar"].image
+                avatar_img = profile_form.cleaned_data["avatar"].image
+                avatar_ext = avatar_img.format.lower()
 
-                if avatar_img.format.lower() != "png":
-                    messages.error(request, "Image must be png.")
+                if avatar_ext not in ["png", "jpg"]:
+                    messages.error(request, "Image must be either png or jpg.")
                     success = False
 
                 elif avatar_img.width > 416 or avatar_img.height > 416:
@@ -285,34 +277,37 @@ def profile(request):
                     success = False
 
                 else:
-
-                    with open(avatar, "wb") as f:
-                        for chunk in request.FILES["profile_avatar"].chunks():
-                            f.write(chunk)
-
+                    request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
                     messages.success(request, "Avatar image updated.")
 
 
             # Update username if it was edited.
-            if profile_form.cleaned_data["profile_username"] not in (".null", request.user.username):
-                request.user.username = profile_form.cleaned_data["profile_username"]
-                request.user.save(update_fields=["username"])
-                messages.success(request, "Username updated.")
+            if profile_form.cleaned_data["username"] != request.user.username:
+
+                if len(profile_form.cleaned_data["username"].strip()) < 5:
+                    messages.error(request, "Username must have at least 5 characters.")
+                    success = False
+
+                else:
+                    request.user.username = profile_form.cleaned_data["username"]
+                    request.user.save(update_fields=["username"])
+                    messages.success(request, "Username updated.")
 
 
             # No errors. Reset the page.
             if success:
+                profile_form.save()
                 return HttpResponseRedirect(reverse("dashboard:profile"))
 
 
     else:
-        profile_form = UserProfileForm(initial={"profile_username": request.user.username})
+        profile_form = UserProfileForm(instance=request.user)
 
 
     context = {
         "profile_form": profile_form,
-        "avatar_url": get_avatar_url(request.user.user_id),
-        "avatar_exists": avatar.exists(),
+        "avatar_url": get_avatar_url(request.user),
+        "avatar_exists": request.user.avatar,
         "username": request.user.username
     }
 
@@ -339,7 +334,7 @@ def friends(request):
             search_matches = sorted(
                 [
                     {
-                        "avatar_url": get_avatar_url(user.user_id),
+                        "avatar_url": get_avatar_url(user),
                         "username": user.username,
                         "invite_url": reverse("dashboard:friends_send_request", args=(user.user_id,))
 
@@ -353,7 +348,7 @@ def friends(request):
     received_requests = sorted(
         [
             {
-                "avatar_url": get_avatar_url(invitation.from_user.user_id),
+                "avatar_url": get_avatar_url(invitation.from_user),
                 "username": invitation.from_user.username,
                 "accept_url": reverse("dashboard:friends_accept_request", args=(invitation.from_user.user_id,)),
                 "reject_url": reverse("dashboard:friends_cancel_request", args=(invitation.from_user.user_id,))
@@ -367,7 +362,7 @@ def friends(request):
     sent_requests = sorted(
         [
             {
-                "avatar_url": get_avatar_url(invitation.to_user.user_id),
+                "avatar_url": get_avatar_url(invitation.to_user),
                 "username": invitation.to_user.username,
                 "cancel_url": reverse("dashboard:friends_cancel_request", args=(invitation.to_user.user_id,))
 
@@ -379,7 +374,7 @@ def friends(request):
     friends = sorted(
         [
             {
-                "avatar_url": get_avatar_url(user.user_id),
+                "avatar_url": get_avatar_url(user),
                 "username": user.username,
                 "last_active": user.last_authenticated,
                 "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,))
@@ -393,8 +388,8 @@ def friends(request):
 
     context = {
         "search_form": search_form,
-        "avatar_url":  get_avatar_url(request.user.user_id),
-        "avatar_exists": get_avatar_filename(request.user.user_id).exists(),
+        "avatar_url":  get_avatar_url(request.user),
+        "avatar_exists": request.user.avatar,
         "username": request.user.username,
         "search_matches": search_matches,
         "received_requests": received_requests,
@@ -453,8 +448,8 @@ def devices(request):
     ]
 
     context = {
-        "avatar_url":  get_avatar_url(request.user.user_id),
-        "avatar_exists": get_avatar_filename(request.user.user_id).exists(),
+        "avatar_url":  get_avatar_url(request.user),
+        "avatar_exists": request.user.avatar,
         "username": request.user.username,
         "devices": user_devices
     }

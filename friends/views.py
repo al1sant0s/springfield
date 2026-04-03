@@ -109,10 +109,10 @@ def outbound(request, user_id):
 
     return JsonResponse(response)
 
+
 @csrf_exempt
 @require_http_methods(["POST", "DELETE"])
 def outbound_sent(request, from_user_id, to_user_id):
-
     # Get user sending invitation and receiving invitation.
     from_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
@@ -126,7 +126,6 @@ def outbound_sent(request, from_user_id, to_user_id):
 
 @require_GET
 def inbound(request, user_id):
-
     # Look up for received_invitations.
     user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
 
@@ -162,11 +161,9 @@ def inbound(request, user_id):
 @csrf_exempt
 @require_POST
 def inbound_accept(request, to_user_id, from_user_id):
-
     # Get user sending invitation and receiving invitation.
     from_user = get_object_or_404(UserId, user_id=from_user_id)
     to_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
-
     return accept_friend_request(from_user, to_user, HttpResponse(status=204))
 
 

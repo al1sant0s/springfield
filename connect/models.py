@@ -1,7 +1,13 @@
 from django.db import models, transaction
+from django.forms import ValidationError
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.utils.crypto import get_random_string
+from django.core.files.storage import storages
+
+from springfield.settings import env
+
+from pathlib import Path
 
 import uuid
 import secrets
@@ -18,9 +24,12 @@ class UserId(AbstractUser):
     telemetry_id = models.BigIntegerField(unique=True, blank=True, null=True)
     mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
     session_key = models.CharField(max_length=44, unique=True)
-    donuts_balance = models.PositiveIntegerField(default=50)
+    donuts_balance = models.PositiveIntegerField("Donuts", default=50)
     last_authenticated = models.DateTimeField(default=timezone.now)
     friends = models.ManyToManyField("self", symmetrical=True)
+    avatar = models.ImageField("Avatar Picture", storage=storages["staticfiles"], upload_to=env("STATIC_LOCATION", default="static/"), blank=True)
+    town = models.FileField("Town File", upload_to=env("TOWNS_ROOT", default="towns/"), blank=True)
+    events = models.TextField()
  
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -30,6 +39,17 @@ class UserId(AbstractUser):
             self.set_password(secrets.token_urlsafe(32))
         else:
             self.set_password(pwd)
+
+
+    def clean(self):
+        super().clean()
+        if self.town and self.town.size > 5 * 1024 ** 2:
+            raise ValidationError({"town": "File size exceeds 5MB limit"})
+        if self.avatar:
+            if self.avatar.size > 1 * 1024 ** 2:
+                raise ValidationError({"avatar": "File size exceeds 1MB limit"})
+            if Path(self.avatar.name).suffix not in [".png", ".jpg"]:
+                raise ValidationError("Image must be either PNG or JPG.")
 
 
     @transaction.atomic

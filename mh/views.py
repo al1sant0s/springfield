@@ -1,6 +1,7 @@
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseRedirect, JsonResponse
-from django.utils import timezone
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 from django.core.cache import cache
 from django.db.models import F, Q
 from django.views.decorators.http import require_http_methods, require_POST
@@ -13,97 +14,31 @@ from pathlib import Path
 from protofiles import *
 
 import xml.etree.ElementTree as ET
-import datetime
 import json
 import gzip
 import time
 import uuid
-import os
 
 
-def starting_town(username):
-
+def starting_town(user):
     land_data = LandData_pb2.LandMessage()
+    land_data.id = str(user.mayhem_id.int)
     land_data.friendData.dataVersion = 72
     land_data.friendData.hasLemonTree = False
     land_data.friendData.language = 0
     land_data.friendData.level = 0
-    land_data.friendData.name = username
+    land_data.friendData.name = user.username
     land_data.friendData.rating = 0
     land_data.friendData.boardwalkTileCount = 0
-
     return land_data
 
 
-def get_user_file(mayhem_id, extension="pb"):
-
-    towns_dir = cache.get("towns_dir")
-    if towns_dir is None:
-        with open("config.json", "r") as f:
-            config = json.load(f)
-            towns_dir = Path(config["towns_dir"])
-            cache.set("towns_dir", towns_dir, timeout=config["cache_seconds"])
-
-    user_file = Path(towns_dir, f"{mayhem_id}/{mayhem_id}.{extension}")
-
-    return user_file
-
-
-def save_proto(target, proto_data):
-
-    target.parent.mkdir(parents=True, exist_ok=True)
-
-    proto_data = proto_data.SerializeToString()
-
-    with open(target, "wb") as f:
-        f.write(proto_data)
-
-
-def load_proto(target, proto_object):
-
-    if not target.exists():
-        return proto_object
-
-    else:
-        with open(target, "rb") as f:
-            proto_object.ParseFromString(f.read())
-
-        return proto_object
+def save_town(user, proto_data):
+    user.town.save(f"{user.mayhem_id.int}.pb", ContentFile(proto_data.SerializeToString()))
 
 
 def load_town(user):
-
-    land_data = LandData_pb2.LandMessage()
-    mayhem_id = str(user.mayhem_id.int)
-    town_file = get_user_file(mayhem_id, "pb")
-
-    if town_file.exists():
-
-        # Credits: Tjac python server.
-        with open(town_file, "rb") as f:
-
-            try:
-                land_data.ParseFromString(f.read())
-
-            except:
-                try:
-                    f.seek(0x0c)      # see if this might be a teamtsto.org backup
-                    land_data.ParseFromString(f.read())
-
-                # If everything fails just return an empty town response.
-                except:
-                    land_data = starting_town(user.username)
-
-
-            # Override Mayhem id.
-            if land_data.HasField("id") and land_data.id != mayhem_id:
-                land_data.id = mayhem_id
-
-    else:
-        land_data = starting_town(user.username)
-
-
-    return land_data
+    return user.town.read() if user.town else starting_town(user).SerializeToString()
 
 
 #######################################
@@ -192,19 +127,18 @@ def userstats(request):
 
     else:
         token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
+        land_token = get_object_or_404(LandToken, user=token.user)
         token.current_client_session_id = uuid.UUID(request.headers.get("currentClientSessionId"))
         token.save(update_fields=["current_client_session_id"])
-
-        land_token = get_object_or_404(LandToken, user=token.user)
-        town_file = get_user_file(token.user.mayhem_id.int, "pb")
-        cached_town = cache.get(town_file)
+        mayhem_id = str(token.user.mayhem_id.int)
+        cached_town = cache.get(mayhem_id)
 
         # Save cached town.
         if cached_town is not None:
             protoland_request = LandData_pb2.LandMessage()
             protoland_request.ParseFromString(cached_town)
-            save_proto(town_file, protoland_request)
-            cache.delete(town_file)
+            save_town(token.user, protoland_request)
+            cache.delete(mayhem_id)
 
         # Authorize land_token or remove it.
         if land_token.remove:
@@ -308,7 +242,8 @@ def friendData(request):
     for mayhem_id in mayhem_ids:
 
         user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-        land_data = load_town(user)
+        land_data = LandData_pb2.LandMessage()
+        land_data.ParseFromString(load_town(user))
 
         friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
         friend_data_pair.friendData.name = user.username
@@ -359,7 +294,7 @@ def protoWholeLandToken(request, mayhem_id):
         land_token.save()
 
         # Remove cached town from user.
-        cache.delete(get_user_file(user.mayhem_id.int, "pb"))
+        cache.delete(str(user.mayhem_id.int))
 
         proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
         proto_whole_land_token_response.token = str(land_token.land_token)
@@ -410,8 +345,7 @@ def protoland(request, mayhem_id):
 
     # Load town.
     if request.method == "GET":
-        protoland_response = load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id)))
-        return HttpResponse(protoland_response.SerializeToString(), content_type="application/x-protobuf")
+        return HttpResponse(load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))), content_type="application/x-protobuf")
 
     else:
 
@@ -422,11 +356,11 @@ def protoland(request, mayhem_id):
             return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
         else:
+
             land_token = get_object_or_404(LandToken, land_token=land_token)
-            user = land_token.user
 
             # Avoid user tampering with other towns.
-            if mayhem_id != user.mayhem_id.int:
+            if mayhem_id != land_token.user.mayhem_id.int:
                 return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
 
             # Try to decompress.
@@ -440,22 +374,17 @@ def protoland(request, mayhem_id):
             # Update town.
             protoland_request = LandData_pb2.LandMessage()
             protoland_request.ParseFromString(decompressed_data) # type: ignore
-            town_file = get_user_file(mayhem_id, "pb")
 
             # Save direct to disk with an authorized land token.
             # Cache save from an unauthorized land token to memory to
             # be saved in mh/userstats/.
             if land_token.authorized:
-                save_proto(get_user_file(mayhem_id, "pb"), protoland_request)
-
-                # Remove events file if it exists.
-                event_file = get_user_file(mayhem_id, "events")
-                if event_file.exists():
-                    os.remove(event_file)
+                save_town(land_token.user, protoland_request)
+                land_token.user.events = ""
+                land_token.user.save(update_fields=["events"])
 
             else:
-                cache.set(town_file, protoland_request.SerializeToString(), timeout=300)
-
+                cache.set(str(mayhem_id), protoland_request.SerializeToString(), timeout=300)
 
             root = ET.Element("WholeLandUpdateResponse")
             return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
@@ -548,28 +477,24 @@ def extraLandUpdate(request, mayhem_id):
 @require_http_methods(["GET", "POST"])
 def event_user(request, mayhem_id):
 
-    if request.method == "POST":
+    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
 
+    if request.method == "POST":
         event_request = LandData_pb2.EventMessage()
         event_request.ParseFromString(request.body)
         event_request.id = str(uuid.uuid4())
         event_request.fromPlayerId = str(mayhem_id)
-        event_file = get_user_file(event_request.toPlayerId, "events")
-        event_data = load_proto(event_file, LandData_pb2.EventsMessage())
+        event_data = LandData_pb2.EventsMessage()
+        event_data.ParseFromString(user.events)
         event_data.event.extend([event_request])
-        save_proto(event_file, event_data)
-
+        user.events = event_data.SerializeToString()
+        user.save(update_fields=["events"])
         root = ET.Element("Land")
         return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
     else:
-
         event_response = LandData_pb2.EventsMessage()
-        event_file = get_user_file(mayhem_id, "events")
-
-        if event_file.exists():
-            event_response = load_proto(event_file, event_response)
-
+        event_response.ParseFromString(user.events)
         return HttpResponse(event_response.SerializeToString(), content_type="application/x-protobuf")
 
 

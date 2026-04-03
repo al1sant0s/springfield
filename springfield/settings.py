@@ -11,110 +11,108 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-from dotenv import load_dotenv
 
-import json
 import os
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Grab server url from config json and inject it into ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
-with open("config.json", "r") as f:
-    config = json.load(f)
-    protocol = config["protocol"]
-    host = config["host"]
-    port = config["port"]
+import environ
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+# Initialize environment variables
+env = environ.Env(
+    # Set project defaults and casting types
+    DEBUG=(bool, False)
+)
+
+
+# Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Take environment variables from .env file
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# False if not in os.environ because of casting above
+DEBUG = env("DEBUG")
+
+# Grab server url from environment variables and inject it into ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
+protocol = env("PROTOCOL")
+host = env("HOST")
+port = env("PORT")
+
+# Raises Django"s ImproperlyConfigured
+# exception if SECRET_KEY not in os.environ
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = env("SECRET_KEY")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
-ALLOWED_HOSTS = [host, 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = [host, "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
-    f'{protocol}://{host}:{port}',
-    f'{protocol}://localhost:{port}',
-    f'http://127.0.0.1:{port}'
+    f"{protocol}://{host}:{port}",
+    f"{protocol}://localhost:{port}",
+    f"http://127.0.0.1:{port}"
 ]
 
-INTERNAL_IPS = ['localhost', '127.0.0.1']
+INTERNAL_IPS = ["localhost", "127.0.0.1"]
 
 # Application definition
 
 INSTALLED_APPS = [
-    'connect.apps.ConnectConfig',
-    'director.apps.DirectorConfig',
-    'events.apps.EventsConfig',
-    'mh.apps.MhConfig',
-    'user.apps.UserConfig',
-    'proxy.apps.ProxyConfig',
-    'friends.apps.FriendsConfig',
-    'avatar.apps.AvatarConfig',
-    'dashboard.apps.DashboardConfig',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'debug_toolbar',
+    "connect.apps.ConnectConfig",
+    "director.apps.DirectorConfig",
+    "events.apps.EventsConfig",
+    "mh.apps.MhConfig",
+    "user.apps.UserConfig",
+    "proxy.apps.ProxyConfig",
+    "friends.apps.FriendsConfig",
+    "avatar.apps.AvatarConfig",
+    "dashboard.apps.DashboardConfig",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.gzip.GZipMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'springfield.urls'
+ROOT_URLCONF = "springfield.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'springfield.wsgi.application'
+WSGI_APPLICATION = "springfield.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "springfield",
-        "USER": "django",
-        "PASSWORD": "django",
-        "HOST": "127.0.0.1",
-        "PORT": "5432",
-    }
+    "default": env("DATABASE_DEFAULT", default="postgres://myuser:mypasswd@localhost:5432/mydb?pool.min_size=2&pool.max_size=10&sslmode=require#CONN_MAX_AGE=300")
 }
 
 
@@ -123,16 +121,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -140,9 +138,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'America/Fortaleza'
+TIME_ZONE = "America/Fortaleza"
 
 USE_I18N = True
 
@@ -152,18 +150,20 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
-STATIC_ROOT = "/data/static/"
+STATIC_ROOT = env("STATIC_ROOT", default="/data/static/")
 
-AUTH_USER_MODEL = 'connect.UserId'
+AUTH_USER_MODEL = "connect.UserId"
 
 CACHES = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
+        "BACKEND": env("CACHE_DEFAULT_BACKEND", default="django.core.cache.backends.locmem.LocMemCache"),
+        "LOCATION": env("CACHE_DEFAULT_LOCATION", default="unique-snowflake"),
     }
+}
+
+STORAGES = {
+    "default": env("STORAGE_DEFAULT", default="fs://?allow_overwrite=true"),
+    "staticfiles": env("STORAGE_STATICFILES", default="static://"),
 }
