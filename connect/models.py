@@ -27,9 +27,9 @@ class UserId(AbstractUser):
     donuts_balance = models.PositiveIntegerField("Donuts", default=50)
     last_authenticated = models.DateTimeField(default=timezone.now)
     friends = models.ManyToManyField("self", symmetrical=True)
-    avatar = models.ImageField("Avatar Picture", storage=storages["staticfiles"], upload_to=env("STATIC_LOCATION", default="static/"), blank=True)
+    avatar = models.ImageField("Avatar Picture", storage=storages["staticfiles"], blank=True)
     town = models.FileField("Town File", upload_to=env("TOWNS_ROOT", default="towns/"), blank=True)
-    events = models.TextField()
+    events = models.BinaryField()
  
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -43,9 +43,9 @@ class UserId(AbstractUser):
 
     def clean(self):
         super().clean()
-        if self.town and self.town.size > 5 * 1024 ** 2:
+        if self.town and storages["default"].exists(self.town.name) and self.town.size > 5 * 1024 ** 2:
             raise ValidationError({"town": "File size exceeds 5MB limit"})
-        if self.avatar:
+        if self.avatar and storages["staticfiles"].exists(self.avatar.name):
             if self.avatar.size > 1 * 1024 ** 2:
                 raise ValidationError({"avatar": "File size exceeds 1MB limit"})
             if Path(self.avatar.name).suffix not in [".png", ".jpg"]:

@@ -12,7 +12,7 @@ from mh.models import LandToken
 from proxy.models import ProgRegCode
 from proxy.views import get_auth_code, search_friends
 from mh.views import save_town, load_town
-from avatar.views import get_avatar_url, get_avatar_filename
+from avatar.views import get_avatar_url
 from friends.views import send_friend_request, cancel_friend_request, accept_friend_request, remove_friend
 
 from .forms import UploadTownForm
@@ -214,7 +214,7 @@ def index(request):
                     land_data.friendData.name = request.user.username
                     user = town_form.save(commit=False)
                     user.town = ContentFile(land_data.SerializeToString(), f"{mayhem_id}.pb")
-                    user.events = ""
+                    user.events = bytes()
                     user.save()
                     messages.success(request, "Uploaded town successfuly!", extra_tags="town")
 

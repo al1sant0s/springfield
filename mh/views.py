@@ -1,13 +1,14 @@
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.core.cache import cache
 from django.db.models import F, Q
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
+from springfield.settings import env
 from connect.models import DeviceToken, UserId
 from mh.models import LandToken
 from pathlib import Path
@@ -38,7 +39,7 @@ def save_town(user, proto_data):
 
 
 def load_town(user):
-    return user.town.read() if user.town else starting_town(user).SerializeToString()
+    return user.town.read() if user.town and default_storage.exists(user.town.name) else starting_town(user).SerializeToString()
 
 
 #######################################
@@ -68,11 +69,7 @@ def gameplayconfig(request):
                 setattr(entry, key, value)
 
         gameplayconfig_response = gameplayconfig_response.SerializeToString()
-
-        with open("config.json", "r") as f:
-            config = json.load(f)
-            cache.set("gameplayconfig_response", gameplayconfig_response, timeout=config["cache_seconds"])
-
+        cache.set("gameplayconfig_response", gameplayconfig_response, timeout=env("CACHE_SECONDS", default=3600))
 
     return HttpResponse(gameplayconfig_response, content_type="application/x-protobuf")
 
@@ -186,28 +183,25 @@ def protoClientConfig(request):
         with open(Path("mh/responses/protoClientConfig.json"), "r") as f:
             json_data = json.load(f)
 
-        with open("config.json", "r") as f:
+        protocol = env("PROTOCOL")
+        domain = env("DOMAIN")
+        port = env("PORT")
 
-            config = json.load(f)
-            protocol = config["protocol"]
-            host = config["host"]
-            port = config["port"]
+        # Avatar change url.
+        for item in json_data:
+            if item["clientConfigId"] == 52:
+                item["value"] = f"{protocol}://{domain}:{port}"
 
-            # Avatar change url.
-            for item in json_data:
-                if item["clientConfigId"] == 52:
-                    item["value"] = f"{protocol}://{host}:{port}"
 
-            clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()
+        clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()
 
-            for obj in json_data:
-                entry = clientconfig_response.items.add()
-                for key, value in obj.items():
-                    setattr(entry, key, value)
+        for obj in json_data:
+            entry = clientconfig_response.items.add()
+            for key, value in obj.items():
+                setattr(entry, key, value)
 
-            clientconfig_response = clientconfig_response.SerializeToString()
-            cache.set("clientconfig", clientconfig_response, timeout=config["cache_seconds"])
-
+        clientconfig_response = clientconfig_response.SerializeToString()
+        cache.set("clientconfig", clientconfig_response, timeout=env("CACHE_SECONDS", default=3600))
 
     return HttpResponse(clientconfig_response, content_type = "application/x-protobuf")
 
@@ -244,6 +238,7 @@ def friendData(request):
         user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
         land_data = LandData_pb2.LandMessage()
         land_data.ParseFromString(load_town(user))
+
 
         friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
         friend_data_pair.friendData.name = user.username
@@ -380,7 +375,7 @@ def protoland(request, mayhem_id):
             # be saved in mh/userstats/.
             if land_token.authorized:
                 save_town(land_token.user, protoland_request)
-                land_token.user.events = ""
+                land_token.user.events = bytes()
                 land_token.user.save(update_fields=["events"])
 
             else:

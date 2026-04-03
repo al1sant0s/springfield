@@ -5,22 +5,7 @@ from django.core.cache import cache
 from connect.models import UserId, DeviceToken
 from springfield.settings import env
 
-from pathlib import Path
 import xml.etree.ElementTree as ET
-import json
-
-
-def get_avatar_filename(user_id):
-
-    avatar_dir = cache.get("avatar_dir")
-
-    if avatar_dir is None:
-        with open("config.json", "r") as f:
-            config = json.load(f)
-            avatar_dir = config["avatar_dir"]
-            cache.set("avatar_dir", avatar_dir, timeout = config["cache_seconds"])
-
-    return Path(avatar_dir, f"{user_id}.png")
 
 
 def get_avatar_url(user):
@@ -29,13 +14,13 @@ def get_avatar_url(user):
 
     if static_url is None:
         protocol = env("PROTOCOL")
-        host = env("HOST")
+        domain = env("DOMAIN")
         port = env("PORT")
         static_location = env("STATIC_LOCATION", default="/data/static/")
-        static_url = f"{protocol}://{host}:{port}/{static_location.strip('/')}"
+        static_url = f"{protocol}://{domain}:{port}/{static_location}"
         cache.set("static_url", static_url, timeout = env("CACHE_SECONDS", default=3600))
 
-    return f"{static_url}/{user.avatar.name}"
+    return f"{static_url}{user.avatar.name.lower()}"
 
 
 # Create your views here.
@@ -61,7 +46,7 @@ def get_avatars(request, users_ids):
         root = ET.SubElement(root, "user")
         ET.SubElement(root, "userId").text = user_id
 
-        avatar = ET.SubElement(user, "avatar")
+        avatar = ET.SubElement(root, "avatar")
         ET.SubElement(avatar, "avatarId").text = user_id
 
         try:

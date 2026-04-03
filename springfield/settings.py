@@ -19,7 +19,7 @@ import environ
 # Initialize environment variables
 env = environ.Env(
     # Set project defaults and casting types
-    DEBUG=(bool, False)
+    DEBUG=(bool, False),
 )
 
 
@@ -34,7 +34,7 @@ DEBUG = env("DEBUG")
 
 # Grab server url from environment variables and inject it into ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
 protocol = env("PROTOCOL")
-host = env("HOST")
+domain = env("DOMAIN")
 port = env("PORT")
 
 # Raises Django"s ImproperlyConfigured
@@ -45,10 +45,10 @@ SECRET_KEY = env("SECRET_KEY")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-ALLOWED_HOSTS = [host, "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = [domain, "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
-    f"{protocol}://{host}:{port}",
+    f"{protocol}://{domain}:{port}",
     f"{protocol}://localhost:{port}",
     f"http://127.0.0.1:{port}"
 ]
@@ -150,7 +150,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = env("STATIC_LOCATION", default="static/")
 
 STATIC_ROOT = env("STATIC_ROOT", default="/data/static/")
 

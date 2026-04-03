@@ -56,18 +56,16 @@ def check_tsto_api():
         tsto_api_key = env("TSTO_API_KEY")
         tsto_api_team_name = env("TSTO_API_TEAM_NAME")
         response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
-
-        with open("config.json", "r") as f:
-            config = json.load(f)
+        timeout = env("CACHE_SECONDS", default=3600)
 
         if response.status_code == 200 and response.json().get("valid", False):
             tsto_api_available = True
-            cache.set("tsto_api_available", tsto_api_available, timeout=config["cache_seconds"])
-            cache.set("tsto_api_key", tsto_api_key, timeout=config["cache_seconds"])
-            cache.set("tsto_api_team_name", tsto_api_team_name, timeout=config["cache_seconds"])
+            cache.set("tsto_api_available", tsto_api_available, timeout=timeout)
+            cache.set("tsto_api_key", tsto_api_key, timeout=timeout)
+            cache.set("tsto_api_team_name", tsto_api_team_name, timeout=timeout)
 
         else:
-            cache.set("tsto_api_available", False, timeout=config["cache_seconds"])
+            cache.set("tsto_api_available", False, timeout=timeout)
 
 
     return tsto_api_available
