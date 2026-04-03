@@ -43,10 +43,10 @@ def get_avatars(request, users_ids):
 
     for user_id in users_ids.split(";"):
 
-        root = ET.SubElement(root, "user")
-        ET.SubElement(root, "userId").text = user_id
+        user = ET.SubElement(root, "user")
+        ET.SubElement(user, "userId").text = user_id
 
-        avatar = ET.SubElement(root, "avatar")
+        avatar = ET.SubElement(user, "avatar")
         ET.SubElement(avatar, "avatarId").text = user_id
 
         try:
