@@ -471,14 +471,12 @@ def extraLandUpdate(request, mayhem_id):
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def event_user(request, mayhem_id):
-
-    user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-
     if request.method == "POST":
         event_request = LandData_pb2.EventMessage()
         event_request.ParseFromString(request.body)
         event_request.id = str(uuid.uuid4())
         event_request.fromPlayerId = str(mayhem_id)
+        user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=int(event_request.toPlayerId)))
         event_data = LandData_pb2.EventsMessage()
         event_data.ParseFromString(user.events)
         event_data.event.extend([event_request])
@@ -488,6 +486,7 @@ def event_user(request, mayhem_id):
         return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
     else:
+        user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
         event_response = LandData_pb2.EventsMessage()
         event_response.ParseFromString(user.events)
         return HttpResponse(event_response.SerializeToString(), content_type="application/x-protobuf")
