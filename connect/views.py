@@ -196,6 +196,8 @@ def get_token(request, device_id):
     }
 
     if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
+        # Delete all land tokens.
+        LandToken.objects.filter(user=token.user).delete()
         token.login_status = False
         token.save(update_fields=["login_status"])
 

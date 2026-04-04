@@ -73,55 +73,60 @@ def check_tsto_api():
 
 def get_auth_code(email, use_tsto_api=True):
 
-    # Initial code.
-    code = get_random_string(6, allowed_chars="0123456789")
+    # If a non expired auth code exists in the database already use it.
+    # Otherwise get a new code.
+    auth_code_queryset = ProgRegCode.objects.filter(email=email)
+    if auth_code_queryset.exists() and auth_code_queryset.first().expiry_on < timezone.now():
+        return auth_code_queryset.first()
 
-    # Get code from TSTO API if available.
-    if use_tsto_api and check_tsto_api():
+    else:
+        code = get_random_string(6, allowed_chars="0123456789")
 
-        try:
-            user = UserId.objects.get(email=email)
+        # Get code from TSTO API if available.
+        if use_tsto_api and check_tsto_api():
 
-        except UserId.DoesNotExist:
-            username = "user"
+            try:
+                user = UserId.objects.get(email=email)
 
-        else:
-            username = user.username
+            except UserId.DoesNotExist:
+                username = "user"
+
+            else:
+                username = user.username
+
+            response = requests.post("https://tsto.app/api/auth/sendCode/",
+                params={
+                    "apikey": cache.get("tsto_api_key"),
+                    "emailAddress": email,
+                    "teamName": cache.get("tsto_api_team_name"),
+                    "username": username
+                }
+            )
+
+            if response.status_code == 200:
+                content = response.json()
+
+                if content["status"] == 200:
+                    code = content["code"]
 
 
-        response = requests.post("https://tsto.app/api/auth/sendCode/",
-            params={
-                "apikey": cache.get("tsto_api_key"),
-                "emailAddress": email,
-                "teamName": cache.get("tsto_api_team_name"),
-                "username": username
+        # Search for current active code in database.
+        # If it cannot find one, create a new one.
+        auth_code, created = ProgRegCode.objects.get_or_create(
+            email=email,
+            defaults={
+                "code": code,
+                "expiry_on": timezone.now() + datetime.timedelta(minutes=30)
             }
         )
 
-        if response.status_code == 200:
-            content = response.json()
-
-            if content["status"] == 200:
-                code = content["code"]
-
-
-    # Search for current active code in database.
-    # If it cannot find one, create a new one.
-    auth_code, created = ProgRegCode.objects.get_or_create(
-        email=email,
-        defaults={
-            "code": code,
-            "expiry_on": timezone.now() + datetime.timedelta(minutes=30)
-        }
-    )
-
-    if not created and auth_code.expiry_on < timezone.now():
-        auth_code.code = code,
-        auth_code.expiry_on = timezone.now() + datetime.timedelta(minutes=30)
-        auth_code.save()
+        if not created:
+            auth_code.code = code,
+            auth_code.expiry_on = timezone.now() + datetime.timedelta(minutes=30)
+            auth_code.save()
 
 
-    return auth_code
+        return auth_code
 
 
 # Create your views here.
@@ -238,10 +243,8 @@ def progreg_code(request):
     else:
 
         if json_data["codeType"].lower() == "email":
-
             # Generate auth code.
             get_auth_code(BaseUserManager.normalize_email(json_data["email"]))
-
             return HttpResponse()
 
         else:
