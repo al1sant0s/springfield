@@ -135,8 +135,9 @@ def auth(request, device_id):
             token.save()
 
             # Point land_token to new user.
-            LandToken.objects.filter(user=token.user).delete()
-            LandToken.objects.filter(user=user).update(user=token.user)
+            if user != token.user:
+                LandToken.objects.filter(user=token.user).delete()
+                LandToken.objects.filter(user=user).update(user=token.user)
 
             response = {
                 "code": token.code,

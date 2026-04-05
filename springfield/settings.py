@@ -167,3 +167,8 @@ STORAGES = {
     "default": env("STORAGE_DEFAULT", default="fs://?allow_overwrite=true"),
     "staticfiles": env("STORAGE_STATICFILES", default="static://"),
 }
+
+# Setup cacheops.
+CACHEOPS_REDIS = env("CACHEOPS_REDIS_URL", default=False)
+if CACHEOPS_REDIS:
+    INSTALLED_APPS.append("cacheops")
