@@ -173,11 +173,12 @@ def reset_password(request):
 @login_required(login_url="dashboard:login")
 def index(request):
 
-    town_form = UploadTownForm(instance=request.user)       # Pre-load forms with user data.
-    land_data = LandData_pb2.LandMessage()                  # Pre-load currencies.
+    # Pre-load currencies.
+    land_data = LandData_pb2.LandMessage()
     land_data.ParseFromString(load_town(request.user))
+    town_form = UploadTownForm()
     currency_form = EditCurrenciesForm(instance=request.user, initial = {"money": land_data.userData.money})
- 
+
     if request.method == "POST":
 
         if "town-form" in request.POST:
@@ -186,9 +187,8 @@ def index(request):
             town_ready = False
 
             if town_form.is_valid():
-                # Validate town file.
+
                 try:
-                    land_data = LandData_pb2.LandMessage()
                     land_data.ParseFromString(town_form.cleaned_data["town"].read())
 
                 except google.protobuf.message.DecodeError:
@@ -217,7 +217,6 @@ def index(request):
                     user.events = bytes()
                     user.save()
                     messages.success(request, "Uploaded town successfuly!", extra_tags="town")
-
                     return HttpResponseRedirect(reverse("dashboard:index"))
 
 

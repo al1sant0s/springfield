@@ -28,7 +28,7 @@ class UserId(AbstractUser):
     last_authenticated = models.DateTimeField(default=timezone.now)
     friends = models.ManyToManyField("self", symmetrical=True)
     avatar = models.ImageField("Avatar Picture", storage=storages["staticfiles"], blank=True)
-    town = models.FileField("Town File", upload_to=env("TOWNS_ROOT", default="towns/"), blank=True)
+    town = models.FileField("Town File", upload_to=env("TOWNS_ROOT", default="towns/"))
     events = models.BinaryField()
  
     USERNAME_FIELD = "email"
