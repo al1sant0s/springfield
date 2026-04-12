@@ -217,6 +217,7 @@ def index(request):
                     user.events = bytes()
                     user.save()
                     messages.success(request, "Uploaded town successfuly!", extra_tags="town")
+                    LandToken.objects.filter(user=request.user).delete()
                     return HttpResponseRedirect(reverse("dashboard:index"))
 
 
