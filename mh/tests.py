@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.core.cache import cache
 
 from connect.tests import TestDevice
 from mh.models import LandToken
@@ -37,12 +38,13 @@ class GetCurrentTimeViewTests(TestCase):
 
 class UserStatsViewTests(TestCase):
 
-    def test_view(self):
+    def test_land_token_authorization(self):
 
         device = TestDevice()
         device.authenticate_device()
         token = device.get_device_token()
 
+        # Create user land token.
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
         self.assertEqual(response.status_code, 200)
 
@@ -58,6 +60,29 @@ class UserStatsViewTests(TestCase):
 
         self.assertTrue(token.user.landtoken.authorized)
         self.assertEqual(response.status_code, 409)
+
+
+    def test_missing_currenct_client_session_id(self):
+        device = TestDevice()
+        device.authenticate_device()
+        response = self.client.post(
+            reverse("mh:userstats"),
+            query_params={
+                "device_id": str(device.device_id)
+            }
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_missing_device_id(self):
+        device = TestDevice()
+        device.authenticate_device()
+        response = self.client.post(
+            reverse("mh:userstats"),
+            headers={
+                "currentClientSessionId": str(device.current_client_session_id)
+            }
+        )
+        self.assertEqual(response.status_code, 400)
 
 
 class FriendDataViewTests(TestCase):
@@ -143,11 +168,54 @@ class ProtolandViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, ET.tostring(ET.Element("WholeLandUpdateResponse")))
 
-
         # Get town again.
         response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, land_data.SerializeToString())
+
+
+        # Change some data and post town with unauthorized land token.
+        land_token.authorized = False
+        land_token.save()
+        land_token.refresh_from_db()
+        land_data.friendData.dataVersion = 124
+        compressed_body = gzip.compress(land_data.SerializeToString())
+        response = self.client.post(
+            reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
+            data=compressed_body,
+            content_type="application/x-protobuf",
+            headers={
+                "Land-Update-Token": str(land_token.land_token),
+                "currentClientSessionId": str(device.current_client_session_id),
+                "Content-Encoding": "gzip"
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, ET.tostring(ET.Element("WholeLandUpdateResponse")))
+
+        # Get town again and make sure it was not saved yet.
+        response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, land_data.SerializeToString(), msg_prefix="Unauthorized land token should not save town")
+        self.assertTrue(cache.get(str(land_token.land_token)))
+
+        # Call mh/userstats/ to authenticate and finally save the cached town.
+        response = self.client.post(
+            reverse("mh:userstats"),
+            headers={
+                "currentClientSessionId": str(device.current_client_session_id)
+            },
+            query_params={
+                "device_id": str(device.device_id)
+            }
+        )
+        self.assertEqual(response.status_code, 409)
+
+        # Get town again and make sure it was saved this time.
+        response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, land_data.SerializeToString())
+        self.assertFalse(cache.get(str(land_token.land_token)))
 
         # Remove town.
         token.user.refresh_from_db()

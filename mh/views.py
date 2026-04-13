@@ -117,25 +117,31 @@ def users(request):
 def userstats(request):
 
     try:
+        current_client_session_id = uuid.UUID(request.headers.get("currentClientSessionId"))
+
+    except TypeError, ValueError:
+        return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
+
+    try:
         device_id = uuid.UUID(request.GET.get("device_id"))
 
-    except ValueError:
+    except TypeError, ValueError:
         return HttpResponseBadRequest("Missing or invalid URL paramater: device_id")
 
     else:
         token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
         land_token = get_object_or_404(LandToken, user=token.user)
-        token.current_client_session_id = uuid.UUID(request.headers.get("currentClientSessionId"))
+        token.current_client_session_id = current_client_session_id
         token.save(update_fields=["current_client_session_id"])
-        mayhem_id = str(token.user.mayhem_id.int)
-        cached_town = cache.get(mayhem_id)
+        cache_entry = str(token.user.landtoken.land_token)
+        cached_town = cache.get(cache_entry, False)
 
         # Save cached town.
-        if cached_town is not None:
+        if cached_town:
             protoland_request = LandData_pb2.LandMessage()
             protoland_request.ParseFromString(cached_town)
             save_town(token.user, protoland_request)
-            cache.delete(mayhem_id)
+            cache.set(cache_entry, False)
 
         # Authorize land_token or remove it.
         if land_token.remove:
@@ -289,7 +295,7 @@ def protoWholeLandToken(request, mayhem_id):
         land_token.save()
 
         # Remove cached town from user.
-        cache.delete(str(user.mayhem_id.int))
+        cache.set(str(land_token.land_token), False)
 
         proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
         proto_whole_land_token_response.token = str(land_token.land_token)
@@ -374,14 +380,15 @@ def protoland(request, mayhem_id):
 
             # Save direct to disk with an authorized land token.
             # Cache save from an unauthorized land token to memory to
-            # be saved in mh/userstats/.
+            # be saved at mh/userstats/.
             if land_token.authorized:
                 save_town(land_token.user, protoland_request)
                 land_token.user.events = bytes()
                 land_token.user.save(update_fields=["events"])
 
             else:
-                cache.set(str(mayhem_id), protoland_request.SerializeToString(), timeout=300)
+                cache.set(str(land_token.land_token), protoland_request.SerializeToString(), timeout=300)
+
 
             root = ET.Element("WholeLandUpdateResponse")
             return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
