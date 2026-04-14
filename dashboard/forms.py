@@ -30,7 +30,6 @@ class RequestUserForm(forms.Form):
 
 
 class AuthCodeForm(forms.Form):
-    email = forms.EmailField(widget=forms.HiddenInput)
     code = forms.CharField(min_length=5, max_length=6)
 
 

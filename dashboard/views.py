@@ -87,18 +87,16 @@ def auth(request):
             else:
 
                 if auth_form.cleaned_data["code"] == auth_code.code:
-
                     auth_code.delete()
                     user, _ = UserId.objects.get_or_create(email=request.session["auth_email"], is_registered=True)
                     request.session["auth_username"] = user.username
                     return HttpResponseRedirect(reverse("dashboard:reset_password"))
 
-
                 else:
                     messages.error(request, "Wrong code.")
 
     else:
-        auth_form = AuthCodeForm(initial={"email": request.session["auth_email"]})
+        auth_form = AuthCodeForm()
 
 
     return render(request, "dashboard/auth.html", {"auth_form": auth_form, "email": request.session["auth_email"]})
@@ -136,7 +134,6 @@ def reset_password(request):
 
     if not request.session.get("auth_email", False) or not request.session.get("auth_username", False):
         return HttpResponseRedirect(reverse("dashboard:login"))
-
 
     elif request.method == "POST":
         password_form = ResetPasswordForm(request.POST)
