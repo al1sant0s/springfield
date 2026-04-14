@@ -35,7 +35,9 @@ def starting_town(user):
 
 
 def save_town(user, proto_data):
-    user.town.save(f"{user.mayhem_id.int}.pb", ContentFile(proto_data.SerializeToString()))
+    user.town = ContentFile(proto_data.SerializeToString(), f"{user.mayhem_id.int}.pb")
+    user.clean()
+    user.save(update_fields=["town"])
 
 
 def load_town(user):
