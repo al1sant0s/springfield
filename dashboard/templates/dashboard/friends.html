@@ -114,14 +114,14 @@
             <div class="tableFixHead">
               <table>
                 <colgroup>
-                <col class="column-avatar"> 
-                <col class="column-username"> 
-                <col class="column-action"> 
+                  <col class="column-avatar"> 
+                  <col class="column-username"> 
+                  <col class="column-action"> 
                 </colgroup>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Username</th>
-                  <th>Add as a friend?</th>
+                  <th scope="col">Avatar</th>
+                  <th scope="col">Username</th>
+                  <th scope="col">Add as a friend?</th>
                 </tr>
                 {% for match in search_matches %}
                   <tr>
@@ -145,14 +145,14 @@
             <div class="tableFixHead">
               <table>
                 <colgroup>
-                <col class="column-avatar">
-                <col class="column-username">
-                <col class="column-action">
+                  <col class="column-avatar">
+                  <col class="column-username">
+                  <col class="column-action">
                 </colgroup>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Username</th>
-                  <th colspan="2">Accept friend request?</th>
+                  <th scope="col">Avatar</th>
+                  <th scope="col">Username</th>
+                  <th scope="colgroup" colspan="2">Accept friend request?</th>
                 </tr>
                 {% for match in received_requests %}
                   <tr>
@@ -179,14 +179,14 @@
             <div class="tableFixHead">
               <table>
                 <colgroup>
-                <col class="column-avatar">
-                <col class="column-username">
-                <col class="column-action">
+                  <col class="column-avatar">
+                  <col class="column-username">
+                  <col class="column-action">
                 </colgroup>
                 <tr>
-                  <th>Avatar</th>
-                  <th>Username</th>
-                  <th>Cancel friend request?</th>
+                  <th scope="col">Avatar</th>
+                  <th scope="col">Username</th>
+                  <th scope="col">Cancel friend request?</th>
                 </tr>
                 {% for match in sent_requests %}
                   <tr>
@@ -210,17 +210,17 @@
             <div class="tableFixHead">
               <table class="long-table">
                 <colgroup>
-                <col class="column-avatar">
-                <col class="column-username">
-                <col class="column-last-active">
-                <col class="column-action">
+                  <col class="column-avatar">
+                  <col class="column-username">
+                  <col class="column-last-active">
+                  <col class="column-action">
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Avatar</th>
-                    <th>Username</th>
-                    <th>Last active</th>
-                    <th>Remove friend?</th>
+                    <th scope="col">Avatar</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Last active</th>
+                    <th scope="col">Remove friend?</th>
                   </tr>
                 </thead>
                 <tbody>

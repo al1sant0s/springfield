@@ -219,3 +219,4 @@ __marimo__/
 # Specific
 *.vim
 towns/
+compose.yaml
