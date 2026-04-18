@@ -348,13 +348,12 @@ def friends(request):
                 "avatar_url": get_avatar_url(invitation.from_user),
                 "username": invitation.from_user.username,
                 "accept_url": reverse("dashboard:friends_accept_request", args=(invitation.from_user.user_id,)),
-                "reject_url": reverse("dashboard:friends_cancel_request", args=(invitation.from_user.user_id,))
+                "reject_url": reverse("dashboard:friends_reject_request", args=(invitation.from_user.user_id,))
 
             } for invitation in request.user.received_invitations.all()
         ],
         key=itemgetter("username")
     )
-
 
     sent_requests = sorted(
         [

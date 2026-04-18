@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
 from django.db import models, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -33,40 +33,29 @@ def send_friend_request(from_user, to_user, success_response):
 
 
 def cancel_friend_request(from_user, to_user, success_response):
-
-    try:
-        with transaction.atomic():
-            FriendInvitation.objects.filter(
-                models.Q(from_user=to_user, to_user=from_user) |
-                models.Q(from_user=from_user, to_user=to_user)
-            ).delete()
-
-    except Exception:
-        return HttpResponse("Failed to delete friend invitations.", status=500)
-
-    else:
-        return success_response
+    with transaction.atomic():
+        FriendInvitation.objects.filter(
+            models.Q(from_user=to_user, to_user=from_user) |
+            models.Q(from_user=from_user, to_user=to_user)
+        ).delete()
+    return success_response
 
 
 def accept_friend_request(from_user, to_user, success_response):
 
+    if from_user == to_user:
+        return HttpResponseForbidden("Cannot befriend yourself!")
+
     try:
         with transaction.atomic():
-            FriendInvitation.objects.filter(
-                models.Q(from_user=to_user, to_user=from_user) |
-                models.Q(from_user=from_user, to_user=to_user)
-            ).delete()
+            FriendInvitation.objects.get(from_user=from_user, to_user=to_user).delete()
 
-    except Exception:
-        return HttpResponse("Failed to delete friend invitations.", status=500)
+    except FriendInvitation.DoesNotExist:
+        return HttpResponseNotFound("No such friend invitation exists.")
 
     else:
-        if from_user == to_user:
-            return HttpResponseForbidden("Cannot befriend yourself!")
-
-        else:
-            to_user.friends.add(from_user)
-            return success_response
+        to_user.friends.add(from_user)
+        return success_response
 
 
 def remove_friend(from_user, to_user, success_response):
