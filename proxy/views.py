@@ -1,4 +1,4 @@
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.db.models import Q
 from django.utils import timezone
 from django.shortcuts import get_object_or_404

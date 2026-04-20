@@ -1,0 +1,5 @@
+Dockerfile
+.env
+*.pyc
+__pycache__
+redis-data
