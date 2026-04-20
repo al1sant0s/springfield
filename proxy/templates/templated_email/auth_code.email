@@ -1,0 +1,12 @@
+{% block subject %}Your Authentication Code{% endblock %}
+{% block plain %}
+  Hi {{username}},
+
+  A reusable sign-in code was requested for your account on
+  The Simpsons: Tapped Out. Your code is valid for 30 minutes and
+  can be reused multiple times during this period.
+
+  Your authentication code is {{code}}.
+
+  Thanks for joining us!
+{% endblock %}

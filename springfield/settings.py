@@ -168,6 +168,8 @@ STORAGES = {
     "staticfiles": env("STORAGE_STATICFILES", default="static://"),
 }
 
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="console://")
+
 # Setup cacheops.
 CACHEOPS_REDIS = env("CACHEOPS_REDIS_URL", default=False)
 if CACHEOPS_REDIS:

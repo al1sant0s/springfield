@@ -3,3 +3,4 @@ Dockerfile
 *.pyc
 __pycache__
 redis-data
+.templates/

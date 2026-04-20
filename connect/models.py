@@ -77,7 +77,7 @@ class UserId(AbstractUser):
                 self.is_registered = True
 
             else:
-                self.username = get_random_string(length=16)
+                self.username = get_random_string(length=12)
                 self.email = f"{self.username}@user.com" if self.email is None else self.email
                 self.reset_password()
 

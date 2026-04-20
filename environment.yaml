@@ -108,5 +108,7 @@ dependencies:
   - zstd=1.5.7=hb78ec9c_6
   - pip:
       - django-cacheops==7.2
+      - django-render-block==0.11
       - django-service-urls==2.1
+      - django-templated-email==3.1.1
       - funcy==2.0

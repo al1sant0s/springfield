@@ -7,6 +7,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.core.cache import cache
 from django.contrib.auth.models import BaseUserManager
+from templated_email import send_templated_mail
 
 from springfield.settings import env
 from connect.models import UserId, DeviceToken
@@ -53,8 +54,8 @@ def check_tsto_api():
 
     if tsto_api_available is None:
 
-        tsto_api_key = env("TSTO_API_KEY")
-        tsto_api_team_name = env("TSTO_API_TEAM_NAME")
+        tsto_api_key = env("TSTO_API_KEY", default=None)
+        tsto_api_team_name = env("TSTO_API_TEAM_NAME", default=None)
         response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
         timeout = env("CACHE_SECONDS", default=3600)
 
@@ -71,43 +72,55 @@ def check_tsto_api():
     return tsto_api_available
 
 
-def get_auth_code(email, use_tsto_api=True):
+def get_auth_code(email, send_email=True):
 
     # If a non expired auth code exists in the database already use it.
     # Otherwise get a new code.
     auth_code_queryset = ProgRegCode.objects.filter(email=email)
-    if auth_code_queryset.exists() and auth_code_queryset.first().expiry_on < timezone.now():
+    if auth_code_queryset.exists() and auth_code_queryset.first().expiry_on > timezone.now():
         return auth_code_queryset.first()
 
     else:
         code = get_random_string(6, allowed_chars="0123456789")
 
-        # Get code from TSTO API if available.
-        if use_tsto_api and check_tsto_api():
+        try:
+            user = UserId.objects.get(email=email)
 
-            try:
-                user = UserId.objects.get(email=email)
+        except UserId.DoesNotExist:
+            username = "user"
 
-            except UserId.DoesNotExist:
-                username = "user"
+        else:
+            username = user.username
 
-            else:
-                username = user.username
+        # Send code through specified email backend.
+        if send_email:
+            if env("SENDER_EMAIL", default=False):
+                send_templated_mail(
+                    template_name="auth_code",
+                    from_email=env("SENDER_EMAIL"),
+                    recipient_list=[email],
+                    context={
+                        "username": username,
+                        "code": code,
+                    },
+                )
 
-            response = requests.post("https://tsto.app/api/auth/sendCode/",
-                params={
-                    "apikey": cache.get("tsto_api_key"),
-                    "emailAddress": email,
-                    "teamName": cache.get("tsto_api_team_name"),
-                    "username": username
-                }
-            )
+            # Get code from TSTO API if available.
+            elif check_tsto_api():
+                response = requests.post("https://tsto.app/api/auth/sendCode/",
+                    params={
+                        "apikey": cache.get("tsto_api_key"),
+                        "emailAddress": email,
+                        "teamName": cache.get("tsto_api_team_name"),
+                        "username": username
+                    }
+                )
 
-            if response.status_code == 200:
-                content = response.json()
+                if response.status_code == 200:
+                    content = response.json()
 
-                if content["status"] == 200:
-                    code = content["code"]
+                    if content["status"] == 200:
+                        code = content["code"]
 
 
         # Search for current active code in database.
@@ -116,13 +129,13 @@ def get_auth_code(email, use_tsto_api=True):
             email=email,
             defaults={
                 "code": code,
-                "expiry_on": timezone.now() + datetime.timedelta(minutes=30)
+                "expiry_on": timezone.now() + datetime.timedelta(minutes=env("AUTH_CODE_MINUTES", default=30))
             }
         )
 
         if not created:
-            auth_code.code = code,
-            auth_code.expiry_on = timezone.now() + datetime.timedelta(minutes=30)
+            auth_code.code = code
+            auth_code.expiry_on = timezone.now() + datetime.timedelta(minutes=env("AUTH_CODE_MINUTES", default=30))
             auth_code.save()
 
 

@@ -218,5 +218,6 @@ __marimo__/
 
 # Specific
 *.vim
+.templates/
 towns/
 compose.yaml
