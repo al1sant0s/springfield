@@ -171,6 +171,5 @@ STORAGES = {
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="console://")
 
 # Setup cacheops.
-CACHEOPS_REDIS = env("CACHEOPS_REDIS_URL", default=False)
-if CACHEOPS_REDIS:
+if env("CACHEOPS_REDIS_URL", default=None):
     INSTALLED_APPS.append("cacheops")

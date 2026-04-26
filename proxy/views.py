@@ -53,20 +53,20 @@ def check_tsto_api():
     tsto_api_available = cache.get("tsto_api_available")
 
     if tsto_api_available is None:
-
         tsto_api_key = env("TSTO_API_KEY", default=None)
         tsto_api_team_name = env("TSTO_API_TEAM_NAME", default=None)
         response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
         timeout = env("CACHE_SECONDS", default=3600)
+        cache.set("tsto_api_key", tsto_api_key, timeout=timeout)
+        cache.set("tsto_api_team_name", tsto_api_team_name, timeout=timeout)
 
-        if response.status_code == 200 and response.json().get("valid", False):
+        if response.status_code == 200 and response.json().get("valid", False) and tsto_api_key and tsto_api_team_name:
+            cache.set("tsto_api_available", True, timeout=timeout)
             tsto_api_available = True
-            cache.set("tsto_api_available", tsto_api_available, timeout=timeout)
-            cache.set("tsto_api_key", tsto_api_key, timeout=timeout)
-            cache.set("tsto_api_team_name", tsto_api_team_name, timeout=timeout)
 
         else:
             cache.set("tsto_api_available", False, timeout=timeout)
+            tsto_api_available = False
 
 
     return tsto_api_available
@@ -94,7 +94,7 @@ def get_auth_code(email, send_email=True):
 
         # Send code through specified email backend.
         if send_email:
-            if env("SENDER_EMAIL", default=False):
+            if env("SENDER_EMAIL", default=None):
                 send_templated_mail(
                     template_name="auth_code",
                     from_email=env("SENDER_EMAIL"),
