@@ -1,6 +1,6 @@
 Dockerfile
+compose.yaml
 .env
 *.pyc
 __pycache__
 redis-data
-.templates/
