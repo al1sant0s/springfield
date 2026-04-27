@@ -64,17 +64,9 @@ The optional services, which extend the server functionality, are:
 - any other kind of storage service listed in [django-storages](https://django-storages.readthedocs.io/en/latest/), just in case you prefer to
   use another type of storage rather than local storage (i.e., S3 bucket),
 
-- an email service to send emails with authentication codes. This is completely optional as you can also request permission to use [TSTO API](https://tsto.app/).
+- an email service to deliver emails with authentication codes. This is completely optional as you can also request permission to use [TSTO API](https://tsto.app/).
 
-
-
-
-
-
-The second requirement is choosing which database you will run the server with. Django offer supports for multiple [database engines](https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances you may stick with the simple sqlite database. However, if you plan to have multiple people playing in your server, I highly
-recommend picking PostgreSQL as your database. We will provide a simple example later.
-
-The other requirements are optional so we will explain them in the following subsections. 
+Follow along for more details.
 
 ## Usage
 
@@ -152,7 +144,7 @@ TOWNS_ROOT=./towns/
 > Remember to change the DOMAIN with your server address.
 > Pick a good **SECRET_KEY**. Change the PORT and STATIC_LOCATION to reflect your nginx settings.
 > STATIC_ROOT is where the static files from the server will be served at.
-> TOWNS_ROOT is where towns will be stored.
+> TOWNS_ROOT is where towns will be stored in.
 
 With nginx running and your compose and .env file ready, start your server with the command
 
@@ -161,10 +153,10 @@ docker compose up -d
 ```
 
 To check if your server is running, navigate to the address `http://localhost:8080` or whatever address your
-nginx instance is running on. If you get a "Hello, World!" page, then your server is running, congratulations!
+nginx instance is running on. If you get a "Hello, World!" page, then your server is running but it is not ready yet for usage.
+There are still two steps left.
 
-However your server is not ready yet for usage. There are still two steps left. First, you must run the migrations against your database.
-Run the following command for that
+First, you must run the migrations against your database. Run the following command for that
 
 ```sh
 docker compose exec springfield-server python manage.py migrate
@@ -179,7 +171,32 @@ docker compose exec springfield-server python manage.py createsuperuser
 
 Check the admin dashboard at `http://localhost:8080/admin/`.
 
-Now your server is ready to be used.
+Now your server is ready to be used. Congratulations!
+
+## Advanced usage
+
+The previous configurations work, but since the server is so flexible, you can do a lot more with it. To demonstrate that, in this advanced section, we will explore some optional
+external services to use with the server. Mainly we will:
+
+- pick another database engine, PostgreSQL in this case,
+
+- set up Redis for caching,
+
+- configure the TSTO API for delivering code emails,
+
+- use a self-hosted garage S3 bucket to illustrate how to use other types of storages.
+
+Any external service can be installed in a variety of ways. To keep this guide the most simplest possible, we will stick with Docker Compose to
+install these additional services.
+
+### Picking a database
+
+Django offer support for multiple [database engines](https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances you may stick with the light sqlite database. However, if you plan to have multiple people playing in your server, I highly
+recommend picking PostgreSQL as your database. If you device to pick another database other than PostgreSQL or sqlite you may need to install additional depenciens in your container so the server can talk with the specified database.
+
+### Set up all the se
+
+To use PostgreSQL, we will expand our compose file like so
 
 ## Run tests
 
