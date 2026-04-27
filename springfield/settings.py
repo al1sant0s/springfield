@@ -112,7 +112,7 @@ WSGI_APPLICATION = "springfield.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    "default": env("DATABASE_DEFAULT", default="postgres://myuser:mypasswd@localhost:5432/mydb?pool.min_size=2&pool.max_size=10&sslmode=require#CONN_MAX_AGE=300")
+    "default": env("DATABASE_DEFAULT", default=f"sqlite://{Path(Path.cwd(), 'database.db')}")
 }
 
 

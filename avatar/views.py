@@ -16,7 +16,7 @@ def get_avatar_url(user):
         protocol = env("PROTOCOL")
         domain = env("DOMAIN")
         port = env("PORT")
-        static_location = env("STATIC_LOCATION", default="/data/static/")
+        static_location = env("STATIC_LOCATION", default="static/")
         static_url = f"{protocol}://{domain}:{port}/{static_location}"
         cache.set("static_url", static_url, timeout = env("CACHE_SECONDS", default=3600))
 
