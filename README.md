@@ -22,6 +22,7 @@
 
 > A full featured server for the game &#34;The Simpsons Tapped Out&#34;.
 
+Get your old springfield back up and running again with this super customizable free server.
 Among all its features it includes supports for:
 
 - multiple accounts,
@@ -42,12 +43,48 @@ Among all its features it includes supports for:
 
 - and a lot of other cool things.
 
+## Requirements
+
+The server can be set up in a plethora of ways, and depending on your preferences, some external services must be available. The simplest possible configuration requires only that you provide a web server to act as a reverse proxy and serve the static files for the dashboard and DLC (i.e., nginx).
+
+A simple nginx configuration for a local server, which listens on port 8080, may be specified like so:
+
+```
+	server {
+		listen 8080;
+		server_name localhost;
+		client_max_body_size 5M;
 
 
+		location /static/ {
+			root		/data;
+		}
 
-### 🏠 [Homepage](https://github.com/al1sant0s/springfield)
+		location /dlc/ {
+			root		/data;
+		}
 
-## Usage
+		location / {
+
+			proxy_pass	http://localhost:8000;
+
+		}
+	}
+
+```
+
+This configuration specifies that static files are served at `/data/static/` and dlc served at `data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port.
+Obvsiouly this is just an example of configuration for the proxy server and you will need to make one according for your own circustances.
+
+The second requirement is choosing which database you will run the server with. Django offer supports for multiple (database engines)[https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-DATABASE-ENGINE]. If you plan to run a server only for you and a few acquaintances you may stick with the simple sqlite database. However, if you plan to have multiple people playing in your server, I highly
+recommend picking PostgreSQL as your database. We will provide a simple example later.
+
+The other requirements are optional so we will explain them in the next subsections.
+
+## Instalation
+
+The easiest way to get the server running is through the usage of docker containers.
+
 
 ```sh
 docker compose up
