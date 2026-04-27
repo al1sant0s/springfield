@@ -20,10 +20,10 @@
   </a>
 </p>
 
-> A full featured server for the game &#34;The Simpsons Tapped Out&#34;.
+> A full featured server for the game: &#34;The Simpsons Tapped Out&#34;.
 
-Get your old springfield back up and running again with this super customizable Tapped Out game server.
-Among all its features it includes supports for:
+Get your old springfield back up and running again with this super customizable game server.
+Among all its features it includes support for:
 
 - multiple accounts,
 
@@ -43,7 +43,7 @@ Among all its features it includes supports for:
 
 - and a lot of other cool things.
 
-## Requirements
+## 📋 Requirements
 
 The server can be set up in a plethora of ways according to your preferences, but it relies on some external services to work.
 
@@ -66,15 +66,15 @@ The optional services, which extend the server functionality, are:
 
 - an email service to deliver emails with authentication codes. This is completely optional as you can also request permission to use [TSTO API](https://tsto.app/).
 
-Follow along for more details.
+Other independent services are not covered in this guide, like fail2ban for rate limiting with nginx and whatnot.
 
-## Usage
+## ⚡ Usage
 
-The easiest and recommended way to get the server running is through the usage of Docker containers. If you do not want to use Docker, you will need to install each dependency listed.
+The easiest and recommended way to get the server running is through the usage of Docker containers. If you do not want to use Docker, you will need to install each dependency listed
 in the file `environment.yaml` with your favorite Python package manager: pip, conda, etc.
 
 To make this guide easier to follow we will focus on Docker Compose. Let's start with the simplest possible configuration which just includes the server itself.
-Create the following compose file somewhere in your file system.
+Create the following compose file somewhere in your file system. If necessary adjust the ports field.
 
 **`compose.yaml`**
 ```yaml
@@ -86,17 +86,11 @@ services:
       - "8000:8000"
     env_file:
       - .env
-    develop:
-      watch:
-        - action: sync+restart
-          path: .
-          target: /app
-        - action: rebuild
-          path: environment.yaml
+
 ```
 
 With this configuration the server will use a sqlite file as your database.
-It only requires that you provide a web server to act as a reverse proxy and serve the static files for the dashboard and DLC (i.e., nginx).
+It only requires that you provide a web server, i.e., nginx, to act as a reverse proxy and serve the DLC and static files for the dashboard.
 
 A simple nginx configuration for a local server, which listens on port 8080, may be specified like so:
 
@@ -122,7 +116,7 @@ A simple nginx configuration for a local server, which listens on port 8080, may
 
 ```
 
-This configuration specifies that static files are served at `/data/static/` and DLC served at `data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server, and you will need to make one according to your own circumstances.
+This configuration specifies that static files are served at `/data/static/` and DLC served at `data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server, you will need to make one according to your own circumstances. For example, if your server and proxy are running on different machines, you shouldn't use `localhost` for the proxy_pass entry.
 
 Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file. With the following minimal settings:
 
@@ -141,20 +135,23 @@ TOWNS_ROOT=./towns/
 
 ```
 
-> Remember to change the DOMAIN with your server address.
-> Pick a good **SECRET_KEY**. Change the PORT and STATIC_LOCATION to reflect your nginx settings.
-> STATIC_ROOT is where the static files from the server will be served at.
-> TOWNS_ROOT is where towns will be stored in.
+* Remember to change the DOMAIN with your server address.
+* Pick a good **SECRET_KEY**. Change the PORT and STATIC_LOCATION to reflect your nginx settings.
+* STATIC_ROOT is where the static files from the server will be served at.
+* TOWNS_ROOT is where towns will be stored in.
 
-With nginx running and your compose and .env file ready, start your server with the command
+> For a full detailed list of the environment variables, jump to section #ref.
+
+With nginx running and your compose and .env file ready, start your server running the following command
+in a terminal at the same location as your compose.yaml file
 
 ```sh
 docker compose up -d
 ```
 
 To check if your server is running, navigate to the address `http://localhost:8080` or whatever address your
-nginx instance is running on. If you get a "Hello, World!" page, then your server is running but it is not ready yet for usage.
-There are still two steps left.
+nginx instance is running on. If you get a "Hello, World!" page, then your server _is running, but it is not ready yet for usage_.
+There are still two remaining steps.
 
 First, you must run the migrations against your database. Run the following command for that
 
