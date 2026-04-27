@@ -1,8 +1,17 @@
-<h1 align="center">Welcome to springfield 👋</h1>
+<h1 align="center">Welcome to springfield ](url)</h1>
 <p>
-  <a href="https://www.npmjs.com/package/springfield" target="_blank">
-    <img alt="Version" src="https://img.shields.io/npm/v/springfield.svg">
+  <a href="https://www.docker.com/" target="_blank">
+    <img alt="Docker badge" src="https://img.shields.io/badge/docker-white?logo=docker">
   </a>
+  <a href="#" target="_blank">
+    <img alt="Django badge" src="https://img.shields.io/badge/django-green?logo=django">
+  </a>
+  <a href="#" target="_blank">
+    <img alt="Postgresql Badge" src="https://img.shields.io/badge/postgresql-beige?logo=postgresql">
+  </a>
+  <a href="#" target="_blank">
+      <img alt="Redis Badge" src="https://img.shields.io/badge/redis-orange?logo=redis">
+  </a>  
   <a href="#" target="_blank">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
   </a>
