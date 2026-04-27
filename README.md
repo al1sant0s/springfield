@@ -22,7 +22,7 @@
 
 > A full featured server for the game &#34;The Simpsons Tapped Out&#34;.
 
-Get your old springfield back up and running again with this super customizable free server.
+Get your old springfield back up and running again with this super customizable Tapped Out game server.
 Among all its features it includes supports for:
 
 - multiple accounts,
@@ -45,7 +45,32 @@ Among all its features it includes supports for:
 
 ## Requirements
 
-The server can be set up in a plethora of ways, and depending on your preferences, some external services must be available. The simplest possible configuration requires only that you provide a web server to act as a reverse proxy and serve the static files for the dashboard and DLC (i.e., nginx).
+The server can be set up in a plethora of ways according to your preferences, but it relies on some external services to work.
+
+Some services are essential, whilst others are optional and can extend the server functionality.
+
+The required services, which must be available in any configuration, are:
+
+- a web server to act as a reverse proxy to the server and the static and DLC files, i.e., nginx
+
+- and a database service.
+
+The optional services, which extend the server functionality, are:
+
+- docker (**highly recommended**)
+
+- redis for caching (recommended),
+
+- any other kind of storage service listed in [django-storages](https://django-storages.readthedocs.io/en/latest/), just in case you prefer to
+  use another type of storage rather than local storage (i.e., S3 bucket),
+
+- an email service to send emails with authentication codes (this is completely optional since you can also request permission to use [TSTO API](https://tsto.app/).
+
+The simplest possible configuration requires only that you provide a web server to act as a reverse proxy and serve the static files for the dashboard and DLC (i.e., nginx).
+
+
+The simplest possible configuration requires only that you provide a web server to act as a reverse proxy and serve the static files for the dashboard and DLC (i.e., nginx).
+In such configuration the server will use a sqlite file as your database. In the following subsections I will explain each of teste components in detail and how to set them up.
 
 A simple nginx configuration for a local server, which listens on port 8080, may be specified like so:
 
@@ -76,10 +101,10 @@ A simple nginx configuration for a local server, which listens on port 8080, may
 This configuration specifies that static files are served at `/data/static/` and dlc served at `data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port.
 Obvsiouly this is just an example of configuration for the proxy server and you will need to make one according for your own circustances.
 
-The second requirement is choosing which database you will run the server with. Django offer supports for multiple (database engines)[https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-DATABASE-ENGINE]. If you plan to run a server only for you and a few acquaintances you may stick with the simple sqlite database. However, if you plan to have multiple people playing in your server, I highly
+The second requirement is choosing which database you will run the server with. Django offer supports for multiple [database engines](https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances you may stick with the simple sqlite database. However, if you plan to have multiple people playing in your server, I highly
 recommend picking PostgreSQL as your database. We will provide a simple example later.
 
-The other requirements are optional so we will explain them in the next subsections.
+The other requirements are optional so we will explain them in the following subsections.
 
 ## Instalation
 
