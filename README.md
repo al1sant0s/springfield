@@ -89,7 +89,7 @@ services:
 
 ```
 
-With this configuration the server will use a sqlite file as your database.
+With this configuration the server will use a SQLite file as your database.
 It only requires that you provide a web server, i.e., nginx, to act as a reverse proxy and serve the DLC and static files for the dashboard.
 
 A simple nginx configuration for a local server, which listens on port 8080, may be specified like so:
@@ -143,36 +143,42 @@ TOWNS_ROOT=./towns/
 > For a full detailed list of the environment variables, jump to section #ref.
 
 With nginx running and your compose and .env file ready, start your server running the following command
-in a terminal at the same location as your compose.yaml file
+in a terminal at the same location as your compose.yaml file.
 
 ```sh
 docker compose up -d
 ```
 
 To check if your server is running, navigate to the address `http://localhost:8080` or whatever address your
-nginx instance is running on. If you get a "Hello, World!" page, then your server _is running, but it is not ready yet for usage_.
-There are still two remaining steps.
+nginx instance is running on. If you get a "Hello, World!" page, then your server _is running, but it is not ready for usage yet_.
+There are still two remaining steps that need to be done.
 
-First, you must run the migrations against your database. Run the following command for that
+First, you must run the migrations against your database. Run the following command for that.
 
 ```sh
 docker compose exec springfield-server python manage.py migrate
 ```
 
-Second, you should create an admin account for you. This isn't exactly required but it is recommended in case you need to manage the server directly
-with Django admin dashboard. Run the following command and follow the instructions it presents to you
+Second, you must copy the server static files to the destination defined in `STATIC_ROOT`.
+
+```sh
+docker compose exec springfield-server python manage.py collectstatic
+```
+
+Additionaly, you should create an admin account for you. This isn't exactly required but it is recommended in case you need to manage the server directly
+with Django admin dashboard. Run the following command and follow answer the questions it prompts to you.
 
 ```sh
 docker compose exec springfield-server python manage.py createsuperuser
 ```
 
-Check the admin dashboard at `http://localhost:8080/admin/`.
+After that, check the admin dashboard at `http://localhost:8080/admin/`.
 
 Now your server is ready to be used. Congratulations!
 
-## Advanced usage
+## 💪 Advanced usage
 
-The previous configurations work, but since the server is so flexible, you can do a lot more with it. To demonstrate that, in this advanced section, we will explore some optional
+The previous configurations work, but since the server is so flexible, you can do a lot more with it. To demonstrate this, in this advanced section, we will explore some optional
 external services to use with the server. Mainly we will:
 
 - pick another database engine, PostgreSQL in this case,
@@ -186,10 +192,30 @@ external services to use with the server. Mainly we will:
 Any external service can be installed in a variety of ways. To keep this guide the most simplest possible, we will stick with Docker Compose to
 install these additional services.
 
-### Picking a database
+With that said, let's expand our compose file like so.
 
-Django offer support for multiple [database engines](https://docs.djangoproject.com/en/5.2/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances you may stick with the light sqlite database. However, if you plan to have multiple people playing in your server, I highly
-recommend picking PostgreSQL as your database. If you device to pick another database other than PostgreSQL or sqlite you may need to install additional depenciens in your container so the server can talk with the specified database.
+**`compose.yaml`**
+```yaml
+services:
+
+  springfield-server:
+    image: docker.io/al1sant0s/springfield-server:v1.1
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+
+```
+
+### 🗃️ Picking a database
+
+Django offers support for multiple [database engines](https://docs.djangoproject.com/en/6.0/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances, you may stick with the light SQLite database. However, if you plan to have multiple people playing in your server, I highly
+
+We recommend picking PostgreSQL as your database. If you decide to pick another database other than PostgreSQL or SQLite, you may need to install additional dependencies in your container so the server can talk with the specified database.
+
+### 
+
+### 
 
 ### Set up all the se
 
