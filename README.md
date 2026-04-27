@@ -135,10 +135,12 @@ TOWNS_ROOT=./towns/
 
 ```
 
-* Remember to change the DOMAIN with your server address.
-* Pick a good **SECRET_KEY**. Change the PORT and STATIC_LOCATION to reflect your nginx settings.
-* STATIC_ROOT is where the static files from the server will be served at.
-* TOWNS_ROOT is where towns will be stored in.
+A few things to consider.
+
+* Pick a good **SECRET_KEY**.
+* Remember to change the DOMAIN, PORT and STATIC_LOCATION with your own values to reflect your nginx settings.
+* STATIC_ROOT is where the static files from the server will be served at. Change it if necessary.
+* TOWNS_ROOT is where towns will be stored in. Change it if necessary.
 
 > For a full detailed list of the environment variables, jump to section #ref.
 
@@ -166,13 +168,14 @@ docker compose exec springfield-server python manage.py collectstatic
 ```
 
 Additionaly, you should create an admin account for you. This isn't exactly required but it is recommended in case you need to manage the server directly
-with Django admin dashboard. Run the following command and follow answer the questions it prompts to you.
+with Django admin dashboard. Run the following command and answer the questions it prompts to you.
 
 ```sh
 docker compose exec springfield-server python manage.py createsuperuser
 ```
 
 After that, check the admin dashboard at `http://localhost:8080/admin/`.
+The normal user dashboard is located at `http://localhost:8080/dashboard/`.
 
 Now your server is ready to be used. Congratulations!
 
@@ -181,16 +184,17 @@ Now your server is ready to be used. Congratulations!
 The previous configurations work, but since the server is so flexible, you can do a lot more with it. To demonstrate this, in this advanced section, we will explore some optional
 external services to use with the server. Mainly we will:
 
-- pick another database engine, PostgreSQL in this case,
+- pick another database engine, [PostgreSQL](https://hub.docker.com/_/postgres) in this case,
 
-- set up Redis for caching,
+- set up [Redis](https://hub.docker.com/r/redis/redis-stack-server) for caching,
 
-- configure the TSTO API for delivering code emails,
+- configure the [TSTO API](https://tsto.app/) for delivering code emails,
 
-- use a self-hosted garage S3 bucket to illustrate how to use other types of storages.
+- use a self-hosted [garage](https://garagehq.deuxfleurs.fr/) S3 bucket to illustrate how to use other types of storages.
 
 Any external service can be installed in a variety of ways. To keep this guide the most simplest possible, we will stick with Docker Compose to
-install these additional services.
+Install these additional services. Be aware that some of these services (like **garage** for example) require additional configuration that cannot be covered in this guide. You
+should definitely check their documentation too.
 
 With that said, let's expand our compose file like so.
 
@@ -204,8 +208,119 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      garage:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  garage:
+    image: dxflrs/garage:v2.2.0
+    ports:
+      - "3900:3900"
+      - "3901:3901"
+      - "3902:3902"
+      - "3903:3903"
+    volumes:
+      - /etc/garage.toml:/etc/garage.toml:ro,z
+      - /var/lib/garage/meta:/var/lib/garage/meta:z
+      - /var/lib/garage/data:/var/lib/garage/data:z
+    healthcheck:
+      test: ["CMD", "/garage", "status"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  webui:
+    image: khairul169/garage-webui:latest
+    container_name: garage-webui
+    volumes:
+      - /etc/garage.toml:/etc/garage.toml:ro,z
+    ports:
+      - 3909:3909
+    environment:
+      API_BASE_URL: "http://garage:3903"
+      S3_ENDPOINT_URL: "http://garage:3900"
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+
+volumes:
+  db-data:
+  redis-data:
 
 ```
+
+For these new services to run, we need to expand our .env file. Remember, you must update each environment variable with your own values.
+
+**`.env`**
+```env
+# Server settings
+AUTH_CODE_MINUTES=30
+CACHE_DEFAULT_BACKEND=django_redis.cache.RedisCache
+CACHE_DEFAULT_LOCATION=redis://redis:6379/1
+CACHEOPS_REDIS_URL=$CACHE_DEFAULT_LOCATION
+CACHE_SECONDS=3600
+DATABASE_DEFAULT=postgres://springfield:springfield@db:5432/springfield
+DEBUG=false
+DOMAIN=192.168.1.115
+PORT=8080
+PROTOCOL=http
+SECRET_KEY='insert-your-secret-key-here'
+STATIC_LOCATION=static/
+STATIC_ROOT=static/
+STORAGE_DEFAULT=s3://?bucket_name=tsto-bucket
+STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=192.168.1.115:8080&location=static/
+TOWNS_ROOT=./
+
+
+# TSTO API configuration
+TSTO_API_KEY='insert-your-api-key-if-you-have-one'
+TSTO_API_TEAM_NAME=MyTeamNameHere
+
+
+# Postgresql configuration
+POSTGRES_DB=springfield
+POSTGRES_USER=springfield
+POSTGRES_PASSWORD=springfield
+
+
+# Garage authentication
+AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+AWS_DEFAULT_REGION=garage
+AWS_ENDPOINT_URL=http://garage:3900
+
+```
+
+
 
 ### 🗃️ Picking a database
 
