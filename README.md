@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to springfield 👋</h1>
+<h1 align="center">Welcome to Springfield 👋</h1>
 <p>
   <a href="https://www.docker.com/" target="_blank">
     <img alt="Docker badge" src="https://img.shields.io/badge/docker-white?logo=docker">
@@ -42,6 +42,12 @@ Among all its features it includes support for:
 - versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (i.e. S3 bucket)
 
 - and a lot of other cool things.
+
+## Table of contents
+
+- [📋 Requirements](#user-content--requirements)
+
+
 
 ## 📋 Requirements
 
@@ -375,6 +381,21 @@ docker compose exec springfield-server python manage.py createsuperuser
 
 To confirm your server works correctly, run the [testing routines](#user-content--run-tests).
 
+## 📧 Sending emails with a custom email service
+
+If you are unable to use the TSTO API service to send emails for you, you can use another service for that. Remove the TSTO_API variables from your .env file and set two new variables:
+SENDER_EMAIL and EMAIL_BACKEND.
+
+SENDER_EMAIL is used to specify whose email address sends emails to users. EMAIL_BACKEND contains the configuration for the server to connect
+with your email service. Check [django-service-urls documentation](https://pypi.org/project/django-service-urls/) for details on how to specify that.
+Here is a fake example to illustrate, using a gmail account to send emails.
+
+**.env**
+```.env
+SENDER_EMAIL=myaddress@gmail.com
+EMAIL_BACKEND=smtp+tls://myaddress%40gmail.com:abcd%20efgh%20ijkl%20mnop@smtp.gmail.com:587
+```
+
 ## 🗃️ Picking another database
 
 Django offers support for multiple [database engines](https://docs.djangoproject.com/en/6.0/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances, you may stick with the light SQLite database. However, if you plan to have multiple people playing in your server,
@@ -399,6 +420,9 @@ docker compose exec springfield-server python manage.py test
 ## Environment variables
 
 Here is a list of all available environment variables, which you can tweak in your .env file to adjust the server. Variables between square brackets [] are optional. Variables without square brackets [] are required, and if they are not specified, the server will not work.
+
+Variables which specifies the backends for: cache, database, storages, etc; use _django-service-urls_ to specify multiple values with a single string.
+Consult the [documentation](https://pypi.org/project/django-service-urls/) to understand how to specify such values.
 
 - [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Defaults to 30 minutes.
 
