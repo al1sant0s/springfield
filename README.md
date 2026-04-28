@@ -386,10 +386,12 @@ and location, so the server may construct the appropriate static URL. These extr
 	}
 ```
 
-Now that everything is done, run the commands to start and set the server up.
+Now that everything is done, run the commands to start and set the server up. Note that this time we need to run the makemigrations command since we have defined
+a new location for the static files.
 
 ```sh
 docker compose up -d
+docker compose exec springfield-server python manage.py makemigrations
 docker compose exec springfield-server python manage.py migrate
 docker compose exec springfield-server python manage.py collectstatic
 docker compose exec springfield-server python manage.py createsuperuser
