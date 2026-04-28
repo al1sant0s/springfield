@@ -396,6 +396,39 @@ Always run tests whenever you start your server.
 docker compose exec springfield-server python manage.py test
 ```
 
+## Environment variables
+
+Here is a list of all available environment variables which you can tweak in your .env file to adjust the server.
+Variables between square brackets [] are optional. Varables without square brackets [] are required and if they are not specified, the server will not work.
+
+- [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Defaults to 30 minutes.
+
+- [CACHEOPS_REDIS_URL]: enables django-cacheops. Only set this variable in case you are using Redis as your caching backend. Usually it should be set with the same value as CACHE_DEFAULT_LOCATION.
+
+- [CACHE_DEFAULT_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the cache backend. Defaults to django.core.cache.backends.locmem.LocMemCache.
+
+- [CACHE_DEFAULT_LOCATION]: a string specified in the format described by _django-service-urls_ which determines the cache service location. Defaults to unique-snowflake.
+
+- [CACHE_SECONDS]: self explanatory. 
+- DATABASE_DEFAULT
+- DEBUG
+- DOMAIN
+- EMAIL_BACKEND
+- PORT
+- POSTGRES_DB
+- POSTGRES_PASSWORD
+- POSTGRES_USER
+- PROTOCOL
+- SECRET_KEY
+- SENDER_EMAIL
+- STATIC_LOCATION
+- STATIC_ROOT
+- STORAGE_DEFAULT
+- STORAGE_STATICFILES
+- TOWNS_ROOT
+- TSTO_API_KEY
+- TSTO_API_TEAM_NAME
+
 ## Author
 
 👤 **Alisson Santos**
