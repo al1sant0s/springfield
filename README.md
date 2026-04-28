@@ -100,6 +100,12 @@ services:
       - GUNICORN_CMD_ARGS=--workers=4
     env_file:
       - .env
+    volumes:
+      - server-data:/app/
+
+volumes:
+  server-data:
+
 ```
 
 With this configuration the server will use a SQLite file as your database.
