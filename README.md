@@ -100,9 +100,6 @@ services:
       - GUNICORN_CMD_ARGS=--workers=4
     env_file:
       - .env
-    volumes:
-      - /data/static/:/app/static/
-
 ```
 
 With this configuration the server will use a SQLite file as your database.
@@ -177,10 +174,11 @@ First, you must run the migrations against your database. Run the following comm
 docker compose exec springfield-server python manage.py migrate
 ```
 
-Second, you must copy the server static files to the destination defined in `STATIC_ROOT`.
+Second, you must collect the static files and copy them from `STATIC_ROOT` to the appropriate location. In this example, the files should be copied to the host machine where nginx is running.
 
 ```sh
 docker compose exec springfield-server python manage.py collectstatic
+docker compose cp springfield-server:/app/static/ /data/
 ```
 
 Additionaly, you should create an admin account for you. This isn't exactly required but it is recommended in case you need to manage the server directly
