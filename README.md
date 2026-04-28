@@ -39,7 +39,7 @@ Among all its features it includes support for:
 
 - a beautiful user dashboard for managing your accounts,
 
-- versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (i.e. s3 bucket)
+- versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (i.e. S3 bucket)
 
 - and a lot of other cool things.
 
@@ -353,18 +353,25 @@ docker compose exec springfield-server python manage.py createsuperuser
 
 To confirm your server works correctly, run the [testing routines](#user-content--run-tests).
 
-### 🗃️ Picking a database
+## 🗃️ Picking another database
 
-Django offers support for multiple [database engines](https://docs.djangoproject.com/en/6.0/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances, you may stick with the light SQLite database. However, if you plan to have multiple people playing in your server, I highly
+Django offers support for multiple [database engines](https://docs.djangoproject.com/en/6.0/ref/settings/#std-setting-DATABASE-ENGINE). If you plan to run a server only for you and a few acquaintances, you may stick with the light SQLite database. However, if you plan to have multiple people playing in your server,
+I highly recommend picking PostgreSQL as your database. If you decide to pick another database other than PostgreSQL or SQLite, you may need to install additional dependencies in your container so the server can talk with the specified database.
 
-We recommend picking PostgreSQL as your database. If you decide to pick another database other than PostgreSQL or SQLite, you may need to install additional dependencies in your container so the server can talk with the specified database.
+## ⬆️ Updating the server
 
-## 🩺 Run tests
-
-Always run these tests when you fire your server.
+Every time you update your server you need to check for new migrations. It's just convenient to run the migrate command every time you update the server.
 
 ```sh
 docker compose exec springfield-server python manage.py migrate
+```
+
+## 🩺 Run tests
+
+Always run these tests whenever you start your server.
+
+```sh
+docker compose exec springfield-server python manage.py test
 ```
 
 ## Author
