@@ -116,7 +116,7 @@ A simple nginx configuration for a local server, which listens on port 8080, may
 
 ```
 
-This configuration specifies that static files are served at `/data/static/` and DLC served at `data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server, you will need to make one according to your own circumstances. For example, if your server and proxy are running on different machines, you shouldn't use `localhost` for the proxy_pass entry.
+This configuration specifies that static files are served at `/data/static/` and DLC served at `/data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server, you will need to make one according to your own circumstances. For example, if your server and proxy are running on different machines, you shouldn't use `localhost` for the `proxy_pass` entry.
 
 Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file. With the following minimal settings:
 
@@ -329,10 +329,10 @@ The variable CACHEOPS_REDIS_URL is also important here; it signals to our server
 Also we are now saying that our static files will be situated at `static/` (STATIC_ROOT). This directory is actually relative to
 the S3 bucket we will use to store the static files.
 
-Moving on to the second part, we have our TSTO API configuration. If you have obtained access to the TSTO API, then you may insert your settings here.
+Moving on to the second part, we have our TSTO API configuration. If you have obtained access to the TSTO API, then you can insert your settings here.
 The TSTO API settings will be used for authentication when users request a code for login.
 
-The third part is our database configuration for PostgreSQL. We are setting an user, their password and database all with the same value 'springfield'.
+The third part is our database configuration for PostgreSQL. We are setting an user, their password and database; all with the same value 'springfield'.
 The variable DATABASE_DEFAULT defines the server database backend.
 
 The last part is our S3 service configuration. The first four variables are for establishing a connection with it.
@@ -340,7 +340,29 @@ The last part is our S3 service configuration. The first four variables are for 
 STORAGE_DEFAULT defines the backend for the default storage as well as the name of our bucket (tsto-bucket in this case).
 
 Analogously, there is STORAGE_STATICFILES which defines the storage backend for static files. We provide extra options to it: the custom_domain
-and location, so the server may construct the appropriate static URL. These extra options are described in the specific page for S3 storage from [django-storages](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html).
+and location, so the server may construct the appropriate static URL. These extra options are described in the specific page for S3 storage from [django-storages](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html). For the static files we are using another bucket rather than tsto-bucket called static-bucket. This bucket is different since its exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/). This is done so the user web browser can request the static files from the bucket. Otherwise, only the game server would have access to the static files. To reflect our new static configurations, we also updated our nginx settings.
+
+```
+	server {
+		listen 8080;
+		server_name localhost;
+		client_max_body_size 5M;
+
+
+		location /static/ {
+			root		/data;
+		}
+
+		location /dlc/ {
+			proxy_pass		http://localhost:3902;
+			proxy_set_header	Host static-bucket.web.garage.localhost;
+		}
+
+		location / {
+			proxy_pass	http://localhost:8000;
+		}
+	}
+```
 
 Now that everything is done, run the commands to start and set the server up.
 
@@ -360,7 +382,7 @@ I highly recommend picking PostgreSQL as your database. If you decide to pick an
 
 ## ⬆️ Updating the server
 
-Every time you update your server you need to check for new migrations. It's just convenient to run the migrate command every time you update the server.
+It's just convenient to run the migrate command every time you update the server.
 
 ```sh
 docker compose exec springfield-server python manage.py migrate
@@ -368,7 +390,7 @@ docker compose exec springfield-server python manage.py migrate
 
 ## 🩺 Run tests
 
-Always run these tests whenever you start your server.
+Always run tests whenever you start your server.
 
 ```sh
 docker compose exec springfield-server python manage.py test
