@@ -288,7 +288,6 @@ CACHE_DEFAULT_BACKEND=django_redis.cache.RedisCache
 CACHE_DEFAULT_LOCATION=redis://redis:6379/1
 CACHEOPS_REDIS_URL=$CACHE_DEFAULT_LOCATION
 CACHE_SECONDS=3600
-DATABASE_DEFAULT=postgres://springfield:springfield@db:5432/springfield
 DEBUG=false
 DOMAIN=192.168.1.115
 PORT=8080
@@ -296,8 +295,6 @@ PROTOCOL=http
 SECRET_KEY='insert-your-secret-key-here'
 STATIC_LOCATION=static/
 STATIC_ROOT=static/
-STORAGE_DEFAULT=s3://?bucket_name=tsto-bucket
-STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=192.168.1.115:8080&location=static/
 TOWNS_ROOT=./
 
 
@@ -310,16 +307,25 @@ TSTO_API_TEAM_NAME=MyTeamNameHere
 POSTGRES_DB=springfield
 POSTGRES_USER=springfield
 POSTGRES_PASSWORD=springfield
+DATABASE_DEFAULT=postgres://springfield:springfield@db:5432/springfield
 
-
-# Garage authentication
+# Garage configuration
 AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 AWS_DEFAULT_REGION=garage
 AWS_ENDPOINT_URL=http://garage:3900
+STORAGE_DEFAULT=s3://?bucket_name=tsto-bucket
+STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=192.168.1.115:8080&location=static/
 
 ```
 
+This .env file is way longer than the first one we saw before, so lets take it easy.
+
+In the first part of the file we are defining some new defaults for the lifetime of the authentication codes (AUTH_CODE_MINUTES) and the cache duration (CACHE_SECONDS).
+We are also specifying that our cache backend is powered by Redis (CACHE_DEFAULT_BACKEND) and pointing to its location (CACHE_DEFAULT_LOCATION).
+The variable CACHEOPS_REDIS_URL is also important here; it signals to our server that we want to enable an additional service for caching (actually it would be called an app in Django context), which depends on Redis. It's called [django-cacheops](https://pypi.org/project/django-cacheops/) and its main purpose is to support automatic or manual queryset caching.
+Finally we changed something from the first .env file. We are now saying that our static files will be situated at `static/` (STATIC_ROOT). This directory is actually relative to
+the S3 bucket we will use to store the static files.
 
 
 ### 🗃️ Picking a database
