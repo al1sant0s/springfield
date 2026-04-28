@@ -303,7 +303,7 @@ TSTO_API_KEY='insert-your-api-key-if-you-have-one'
 TSTO_API_TEAM_NAME=MyTeamNameHere
 
 
-# Postgresql configuration
+# PostgreSQL configuration
 POSTGRES_DB=springfield
 POSTGRES_USER=springfield
 POSTGRES_PASSWORD=springfield
@@ -322,10 +322,22 @@ STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&cu
 This .env file is way longer than the first one we saw before, so lets take it easy.
 
 In the first part of the file we are defining some new defaults for the lifetime of the authentication codes (AUTH_CODE_MINUTES) and the cache duration (CACHE_SECONDS).
-We are also specifying that our cache backend is powered by Redis (CACHE_DEFAULT_BACKEND) and pointing to its location (CACHE_DEFAULT_LOCATION).
+
+We are specifying that our cache backend is powered by Redis (CACHE_DEFAULT_BACKEND) and pointing to its location (CACHE_DEFAULT_LOCATION).
 The variable CACHEOPS_REDIS_URL is also important here; it signals to our server that we want to enable an additional service for caching (actually it would be called an app in Django context), which depends on Redis. It's called [django-cacheops](https://pypi.org/project/django-cacheops/) and its main purpose is to support automatic or manual queryset caching.
-Finally we changed something from the first .env file. We are now saying that our static files will be situated at `static/` (STATIC_ROOT). This directory is actually relative to
+
+Also we are now saying that our static files will be situated at `static/` (STATIC_ROOT). This directory is actually relative to
 the S3 bucket we will use to store the static files.
+
+Moving on to the second part, we have our TSTO API configuration. If you have obtained access to the TSTO API, then you may insert your settings here.
+The TSTO API settings will be used for authentication when users request a code for login.
+
+The third part is our database configuration for PostgreSQL. We are setting an user, their password and database all with the same value 'springfield'.
+The variable DATABASE_DEFAULT defines the server database backend.
+
+The last part is our S3 service configuration. The first four variables are for establishing a connection with it. STORAGE_DEFAULT defines the backend for the default storage
+as well as the name of our bucket (tsto-bucket in this case). Analogously, STORAGE_STATICFILES defines the storage backend for static files. We provide extra options to it: the custom_domain
+and location, so the server may construct the appropriate static URL. These extra options are described in the specific page for S3 storage from [django-storages](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html).
 
 
 ### 🗃️ Picking a database
