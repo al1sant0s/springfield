@@ -101,7 +101,7 @@ services:
     env_file:
       - .env
     volumes:
-      - /data/static/:/data/static/
+      - /data/static/:/app/static/
 
 ```
 
@@ -146,7 +146,7 @@ PORT=8080
 PROTOCOL=http
 SECRET_KEY='insert-your-secret-key-here'
 STATIC_LOCATION=static/
-STATIC_ROOT=/data/static/
+STATIC_ROOT=/app/static/
 TOWNS_ROOT=./towns/
 
 ```
@@ -464,7 +464,7 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 
 - [STATIC_LOCATION]: static endpoint. Defaults to `static/`.
 
-- [STATIC_ROOT]: directory or path where static files will be stored. Defaults to `/data/static/`.
+- STATIC_ROOT: directory or path where static files will be stored.
 
 - [STORAGE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Defaults to _django.core.files.storage.filesystem.FileSystemStorage_.
 

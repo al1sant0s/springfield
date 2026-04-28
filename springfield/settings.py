@@ -152,7 +152,7 @@ USE_TZ = True
 
 STATIC_URL = env("STATIC_LOCATION", default="static/")
 
-STATIC_ROOT = env("STATIC_ROOT", default="/data/static/")
+STATIC_ROOT = env("STATIC_ROOT")
 
 AUTH_USER_MODEL = "connect.UserId"
 
