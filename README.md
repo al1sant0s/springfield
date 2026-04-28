@@ -93,7 +93,7 @@ Create the following compose file somewhere in your file system. If necessary ad
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.3
+    image: docker.io/al1sant0s/springfield-server:v1.4
     ports:
       - "8000:8000"
     environment:
@@ -223,7 +223,7 @@ With that said, let's update our compose file like so.
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.3
+    image: docker.io/al1sant0s/springfield-server:v1.4
     ports:
       - "8000:8000"
     environment:
