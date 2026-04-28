@@ -52,7 +52,7 @@ Among all its features it includes support for:
 - [🗃️ Picking another database](#user-content--picking-another-database)
 - [⬆️ Updating the server](#user-content--updating-the-server)
 - [🩺 Run tests](#user-content--run-tests)
-- [Environment variables](#user-content-environment-variables)
+- [⚙️ Environment variables](#user-content--environment-variables)
 
 
 ## 📋 Requirements
@@ -93,7 +93,7 @@ Create the following compose file somewhere in your file system. If necessary ad
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.1
+    image: docker.io/al1sant0s/springfield-server:v1.2
     ports:
       - "8000:8000"
     env_file:
@@ -215,7 +215,7 @@ With that said, let's expand our compose file like so.
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.1
+    image: docker.io/al1sant0s/springfield-server:v1.2
     ports:
       - "8000:8000"
     env_file:
@@ -423,7 +423,7 @@ Always run tests whenever you start your server.
 docker compose exec springfield-server python manage.py test
 ```
 
-## Environment variables
+## ⚙️ Environment variables
 
 Here is a list of all available environment variables, which you can tweak in your .env file to adjust the server. Variables between square brackets [] are optional. Variables without square brackets [] are required, and if they are not specified, the server will not work.
 
