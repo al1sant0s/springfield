@@ -403,18 +403,24 @@ Variables between square brackets [] are optional. Varables without square brack
 
 - [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Defaults to 30 minutes.
 
-- [CACHEOPS_REDIS_URL]: enables django-cacheops. Only set this variable in case you are using Redis as your caching backend. Usually it should be set with the same value as CACHE_DEFAULT_LOCATION.
+- [CACHEOPS_REDIS_URL]: enables _django-cacheops_. Only set this variable in case you are using Redis as your caching backend. Usually it should be set with the same value as CACHE_DEFAULT_LOCATION.
 
-- [CACHE_DEFAULT_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the cache backend. Defaults to django.core.cache.backends.locmem.LocMemCache.
+- [CACHE_DEFAULT_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the cache backend. Defaults to _django.core.cache.backends.locmem.LocMemCache_.
 
-- [CACHE_DEFAULT_LOCATION]: a string specified in the format described by _django-service-urls_ which determines the cache service location. Defaults to unique-snowflake.
+- [CACHE_DEFAULT_LOCATION]: a string specified in the format described by _django-service-urls_ which determines the cache service location. Defaults to _unique-snowflake_.
 
-- [CACHE_SECONDS]: self explanatory. 
-- DATABASE_DEFAULT
-- DEBUG
-- DOMAIN
-- EMAIL_BACKEND
-- PORT
+- [CACHE_SECONDS]: duration of cached values in seconds. Defaults to 3600 seconds.
+
+- [DATABASE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the database backend. Defaults to a SQLite file called database.db which is created in the working directory.
+
+- DEBUG: boolean variable which determines if server runs in debug mode. This value must be set to false when the server is in a production environment.
+
+- DOMAIN: reverse proxy domain or ip address which redirects to the server.
+
+- EMAIL_BACKEND:
+
+- PORT: reverse proxy port.
+
 - POSTGRES_DB
 - POSTGRES_PASSWORD
 - POSTGRES_USER
