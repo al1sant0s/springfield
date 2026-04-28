@@ -1,4 +1,4 @@
-<h1 align="center">Welcome to springfield ](url)</h1>
+<h1 align="center">Welcome to springfield 👋</h1>
 <p>
   <a href="https://www.docker.com/" target="_blank">
     <img alt="Docker badge" src="https://img.shields.io/badge/docker-white?logo=docker">
@@ -142,7 +142,7 @@ A few things to consider.
 * STATIC_ROOT is where the static files from the server will be served at. Change it if necessary.
 * TOWNS_ROOT is where towns will be stored in. Change it if necessary.
 
-> For a full detailed list of the environment variables, jump to section #ref.
+> For a full detailed list of the environment variables, jump to section #user-content-environment-variables.
 
 With nginx running and your compose and .env file ready, start your server running the following command
 in a terminal at the same location as your compose.yaml file.
@@ -350,16 +350,16 @@ and location, so the server may construct the appropriate static URL. These extr
 
 
 		location /static/ {
-			root		/data;
+			root					/data;
 		}
 
 		location /dlc/ {
-			proxy_pass		http://localhost:3902;
-			proxy_set_header	Host static-bucket.web.garage.localhost;
+			proxy_pass				http://localhost:3902;
+			proxy_set_header		Host static-bucket.web.garage.localhost;
 		}
 
 		location / {
-			proxy_pass	http://localhost:8000;
+			proxy_pass				http://localhost:8000;
 		}
 	}
 ```
@@ -436,9 +436,9 @@ Here is a list of all available environment variables, which you can tweak in yo
   
 - [TOWNS_ROOT]: directory or path where town files will be stored. Defaults to `towns/`.
 
-- [TSTO_API_KEY]: self-explanatory.
+- [TSTO_API_KEY]: self-explanatory. No default value.
 
-- [TSTO_API_TEAM_NAME]: self-explanatory.
+- [TSTO_API_TEAM_NAME]: self-explanatory. No default value.
 
 ## Author
 
