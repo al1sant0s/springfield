@@ -86,14 +86,14 @@ The easiest and recommended way to get the server running is through the usage o
 in the file `environment.yaml` with your favorite Python package manager: pip, conda, etc.
 
 To make this guide easier to follow we will focus on Docker Compose. Let's start with the simplest possible configuration which just includes the server itself.
-Create the following compose file somewhere in your file system. If necessary adjust the ports field.
+Create the following compose file somewhere in your file system. If necessary adjust the ports field. If you have a good machine, you may want to increase the number of gunicorn workers (here it is set to 4).
 
 **`compose.yaml`**
 ```yaml
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.2
+    image: docker.io/al1sant0s/springfield-server:v1.3
     ports:
       - "8000:8000"
     environment:
@@ -102,6 +102,7 @@ services:
       - .env
     volumes:
       - server-data:/app/
+      - /data/static/:$STATIC_ROOT:z
 
 volumes:
   server-data:
@@ -158,7 +159,7 @@ A few things to consider.
 
 * Pick a good **SECRET_KEY**.
 * Remember to change the DOMAIN, PORT and STATIC_LOCATION with your own values to reflect your nginx settings.
-* STATIC_ROOT is where the static files from the server will be served at. Change it if necessary.
+* STATIC_ROOT is where the static files from the server will be stored in. Change it if necessary.
 * TOWNS_ROOT is where towns will be stored in. Change it if necessary.
 
 > For a full detailed list of the environment variables, jump to the [environment variables](user-content-️-environment-variables) section.
@@ -180,11 +181,10 @@ First, you must run the migrations against your database. Run the following comm
 docker compose exec springfield-server python manage.py migrate
 ```
 
-Second, you must collect the static files and copy them from `STATIC_ROOT` to the appropriate location. In this example, the files should be copied to the host machine where nginx is running.
+Second, you must collect the static files into `STATIC_ROOT`. Since `STATIC_ROOT` lives within the container and we need its contents to be available to the host machine (where nginx is running), we provided a bind mount in the `compose.yaml` file that links `STATIC_ROOT` with the static files location from nginx.
 
 ```sh
 docker compose exec springfield-server python manage.py collectstatic
-docker compose cp springfield-server:/app/static/ /data/
 ```
 
 Additionaly, you should create an admin account for you. This isn't exactly required but it is recommended in case you need to manage the server directly
@@ -223,7 +223,7 @@ With that said, let's update our compose file like so.
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.2
+    image: docker.io/al1sant0s/springfield-server:v1.3
     ports:
       - "8000:8000"
     environment:
@@ -337,7 +337,7 @@ AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 AWS_DEFAULT_REGION=garage
 AWS_ENDPOINT_URL=http://garage:3900
 STORAGE_DEFAULT=s3://?bucket_name=tsto-bucket
-STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=192.168.1.115:8080&location=static/
+STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=$DOMAIN:$PORT&location=$STATIC_LOCATION
 
 ```
 
@@ -362,7 +362,7 @@ The last part is our S3 service configuration. The first four variables are for 
 STORAGE_DEFAULT defines the backend for the default storage as well as the name of our bucket (tsto-bucket in this case).
 
 Analogously, there is STORAGE_STATICFILES which defines the storage backend for static files. We provide extra options to it: the custom_domain
-and location, so the server may construct the appropriate static URL. These extra options are described in the specific page for S3 storage from [django-storages](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html). For the static files we are using another bucket rather than tsto-bucket called static-bucket. This bucket is different since its exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/). This is done so the user web browser can request the static files from the bucket. Otherwise, only the game server would have access to the static files. To reflect our new static configurations, we also updated our nginx settings.
+and location, so the server may construct the appropriate static URL. These extra options are described in the specific page for S3 storage from [django-storages](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html). For the static files we are using another bucket rather than tsto-bucket called static-bucket. This bucket is different since it's exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/). This is done so the user web browser can request the static files from the bucket. Otherwise, only the game server would have access to the static files. To reflect our new static configuration, we have also updated our nginx settings.
 
 ```
 	server {
@@ -372,12 +372,12 @@ and location, so the server may construct the appropriate static URL. These extr
 
 
 		location /static/ {
-			root					/data;
+			proxy_pass				http://localhost:3902;
+			proxy_set_header		Host static-bucket.web.garage.localhost;
 		}
 
 		location /dlc/ {
-			proxy_pass				http://localhost:3902;
-			proxy_set_header		Host static-bucket.web.garage.localhost;
+			root					/data;
 		}
 
 		location / {
@@ -442,7 +442,7 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 
 - [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Defaults to 30 minutes.
 
-- [CACHEOPS_REDIS_URL]: enables _django-cacheops_. Only set this variable in case you are using Redis as your caching backend. Usually it should be set with the same value as CACHE_DEFAULT_LOCATION.
+- [CACHEOPS_REDIS_URL]: enables _django-cacheops_. Only set this variable in case you are using Redis as your cache backend. Usually it should be set with the same value as CACHE_DEFAULT_LOCATION.
 
 - [CACHE_DEFAULT_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the cache backend. Defaults to _django.core.cache.backends.locmem.LocMemCache_.
 
@@ -472,7 +472,7 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 
 - [STORAGE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Defaults to _django.core.files.storage.filesystem.FileSystemStorage_.
 
-- [STORAGE_STATICFILES]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Defaults to _django.contrib.staticfiles.storage.StaticFilesStorage_.
+- [STORAGE_STATICFILES]: a string specified in the format described by _django-service-urls_ which determines the static storage backend. Defaults to _django.contrib.staticfiles.storage.StaticFilesStorage_.
   
 - [TOWNS_ROOT]: directory or path where town files will be stored. Defaults to `towns/`.
 
