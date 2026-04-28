@@ -142,7 +142,7 @@ A few things to consider.
 * STATIC_ROOT is where the static files from the server will be served at. Change it if necessary.
 * TOWNS_ROOT is where towns will be stored in. Change it if necessary.
 
-> For a full detailed list of the environment variables, jump to section #user-content-environment-variables.
+> For a full detailed list of the environment variables, jump to the [environment variables](#user-content-environment-variables) section.
 
 With nginx running and your compose and .env file ready, start your server running the following command
 in a terminal at the same location as your compose.yaml file.
