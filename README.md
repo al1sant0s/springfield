@@ -302,12 +302,12 @@ TOWNS_ROOT=./
 TSTO_API_KEY='insert-your-api-key-if-you-have-one'
 TSTO_API_TEAM_NAME=MyTeamNameHere
 
-
 # PostgreSQL configuration
 POSTGRES_DB=springfield
 POSTGRES_USER=springfield
 POSTGRES_PASSWORD=springfield
 DATABASE_DEFAULT=postgres://springfield:springfield@db:5432/springfield
+
 
 # Garage configuration
 AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
@@ -335,10 +335,23 @@ The TSTO API settings will be used for authentication when users request a code 
 The third part is our database configuration for PostgreSQL. We are setting an user, their password and database all with the same value 'springfield'.
 The variable DATABASE_DEFAULT defines the server database backend.
 
-The last part is our S3 service configuration. The first four variables are for establishing a connection with it. STORAGE_DEFAULT defines the backend for the default storage
-as well as the name of our bucket (tsto-bucket in this case). Analogously, STORAGE_STATICFILES defines the storage backend for static files. We provide extra options to it: the custom_domain
+The last part is our S3 service configuration. The first four variables are for establishing a connection with it.
+
+STORAGE_DEFAULT defines the backend for the default storage as well as the name of our bucket (tsto-bucket in this case).
+
+Analogously, there is STORAGE_STATICFILES which defines the storage backend for static files. We provide extra options to it: the custom_domain
 and location, so the server may construct the appropriate static URL. These extra options are described in the specific page for S3 storage from [django-storages](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html).
 
+Now that everything is done, run the commands to start and set the server up.
+
+```sh
+docker compose up -d
+docker compose exec springfield-server python manage.py migrate
+docker compose exec springfield-server python manage.py collectstatic
+docker compose exec springfield-server python manage.py createsuperuser
+```
+
+To confirm your server works correctly, run the [testing routines](#🩺).
 
 ### 🗃️ Picking a database
 
@@ -346,15 +359,9 @@ Django offers support for multiple [database engines](https://docs.djangoproject
 
 We recommend picking PostgreSQL as your database. If you decide to pick another database other than PostgreSQL or SQLite, you may need to install additional dependencies in your container so the server can talk with the specified database.
 
-### 
+## 🩺 Run tests
 
-### 
-
-### Set up all the se
-
-To use PostgreSQL, we will expand our compose file like so
-
-## Run tests
+Always run these tests when you fire your server.
 
 ```sh
 docker compose exec springfield-server python manage.py migrate
