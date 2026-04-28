@@ -351,7 +351,7 @@ docker compose exec springfield-server python manage.py collectstatic
 docker compose exec springfield-server python manage.py createsuperuser
 ```
 
-To confirm your server works correctly, run the [testing routines](#🩺).
+To confirm your server works correctly, run the [testing routines](#user-content--run-tests).
 
 ### 🗃️ Picking a database
 
