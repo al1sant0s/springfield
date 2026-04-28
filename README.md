@@ -393,8 +393,8 @@ If you are unable to use the TSTO API service to send emails for you, you can us
 SENDER_EMAIL and EMAIL_BACKEND.
 
 SENDER_EMAIL is used to specify whose email address sends emails to users. EMAIL_BACKEND contains the configuration for the server to connect
-with your email service. Check [django-service-urls documentation](https://pypi.org/project/django-service-urls/) for details on how to specify that.
-Here is a fake example to illustrate, using a gmail account to send emails.
+with your email service. Check django-service-urls [documentation](https://pypi.org/project/django-service-urls/) for details on how to specify that.
+Here is an example to illustrate, using a "fake" gmail account to send emails.
 
 **.env**
 ```.env
