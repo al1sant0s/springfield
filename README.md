@@ -52,7 +52,7 @@ Among all its features it includes support for:
 - [🗃️ Picking another database](#user-content--picking-another-database)
 - [⬆️ Updating the server](#user-content--updating-the-server)
 - [🩺 Run tests](#user-content--run-tests)
-- [⚙️ Environment variables](#user-content--environment-variables)
+- [⚙️ Environment variables](#user-content-️-environment-variables)
 
 
 ## 📋 Requirements
@@ -63,7 +63,7 @@ Some services are essential, whilst others are optional and can extend the serve
 
 The required services, which must be available in any configuration, are:
 
-- a web server to act as a reverse proxy to the server and the static and DLC files, i.e., nginx
+- a web server to act as a reverse proxy to the game server and to serve the static and DLC files, i.e., nginx
 
 - and a database service.
 
@@ -96,8 +96,12 @@ services:
     image: docker.io/al1sant0s/springfield-server:v1.2
     ports:
       - "8000:8000"
+    environment:
+      - GUNICORN_CMD_ARGS=--workers=4
     env_file:
       - .env
+    volumes:
+      - /data/static/:/data/static/
 
 ```
 
@@ -128,7 +132,7 @@ A simple nginx configuration for a local server, which listens on port 8080, may
 
 ```
 
-This configuration specifies that static files are served at `/data/static/` and DLC served at `/data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server, you will need to make one according to your own circumstances. For example, if your server and proxy are running on different machines, you shouldn't use `localhost` for the `proxy_pass` entry.
+This configuration specifies that static files are served at `/data/static/` and DLC served at `/data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server. You will need to make one according to your own circumstances. For example, if your server and proxy are running on different machines, you shouldn't use `localhost` for the `proxy_pass` entry.
 
 Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file. With the following minimal settings:
 
@@ -154,7 +158,7 @@ A few things to consider.
 * STATIC_ROOT is where the static files from the server will be served at. Change it if necessary.
 * TOWNS_ROOT is where towns will be stored in. Change it if necessary.
 
-> For a full detailed list of the environment variables, jump to the [environment variables](#user-content-environment-variables) section.
+> For a full detailed list of the environment variables, jump to the [environment variables](user-content-️-environment-variables) section.
 
 With nginx running and your compose and .env file ready, start your server running the following command
 in a terminal at the same location as your compose.yaml file.
@@ -208,7 +212,7 @@ Any external service can be installed in a variety of ways. To keep this guide t
 Install these additional services. Be aware that some of these services (like **garage** for example) require additional configuration that cannot be covered in this guide. You
 should definitely check their documentation too.
 
-With that said, let's expand our compose file like so.
+With that said, let's update our compose file like so.
 
 **`compose.yaml`**
 ```yaml
@@ -218,6 +222,8 @@ services:
     image: docker.io/al1sant0s/springfield-server:v1.2
     ports:
       - "8000:8000"
+    environment:
+      - GUNICORN_CMD_ARGS=--workers=4
     env_file:
       - .env
     depends_on:
@@ -389,7 +395,7 @@ To confirm your server works correctly, run the [testing routines](#user-content
 
 ## 📧 Sending emails with a custom email service
 
-If you are unable to use the TSTO API service to send emails for you, you can use another service for that. Remove the TSTO_API variables from your .env file and set two new variables:
+If you are unable to use the TSTO API service for sending emails for you, you can use another service for that. Remove the TSTO_API variables from your .env file and set two new variables:
 SENDER_EMAIL and EMAIL_BACKEND.
 
 SENDER_EMAIL is used to specify whose email address sends emails to users. EMAIL_BACKEND contains the configuration for the server to connect
