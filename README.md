@@ -398,8 +398,7 @@ docker compose exec springfield-server python manage.py test
 
 ## Environment variables
 
-Here is a list of all available environment variables which you can tweak in your .env file to adjust the server.
-Variables between square brackets [] are optional. Varables without square brackets [] are required and if they are not specified, the server will not work.
+Here is a list of all available environment variables, which you can tweak in your .env file to adjust the server. Variables between square brackets [] are optional. Variables without square brackets [] are required, and if they are not specified, the server will not work.
 
 - [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Defaults to 30 minutes.
 
@@ -417,23 +416,29 @@ Variables between square brackets [] are optional. Varables without square brack
 
 - DOMAIN: reverse proxy domain or ip address which redirects to the server.
 
-- EMAIL_BACKEND:
+- [EMAIL_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the email backend. Defaults to printing emails to console. Note that this is only used if SENDER_EMAIL is defined and TSTO_API variables are not.
 
 - PORT: reverse proxy port.
 
-- POSTGRES_DB
-- POSTGRES_PASSWORD
-- POSTGRES_USER
-- PROTOCOL
-- SECRET_KEY
-- SENDER_EMAIL
-- STATIC_LOCATION
-- STATIC_ROOT
-- STORAGE_DEFAULT
-- STORAGE_STATICFILES
-- TOWNS_ROOT
-- TSTO_API_KEY
-- TSTO_API_TEAM_NAME
+- PROTOCOL: reverse proxy protocol.
+
+- SECRET_KEY: the server secret key.
+
+- [SENDER_EMAIL]: email address where emails are dispatched from.
+
+- [STATIC_LOCATION]: static endpoint. Defaults to `static/`.
+
+- [STATIC_ROOT]: directory or path where static files will be stored. Defaults to `/data/static/`.
+
+- [STORAGE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Defaults to _django.core.files.storage.filesystem.FileSystemStorage_.
+
+- [STORAGE_STATICFILES]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Defaults to _django.contrib.staticfiles.storage.StaticFilesStorage_.
+  
+- [TOWNS_ROOT]: directory or path where town files will be stored. Defaults to `towns/`.
+
+- [TSTO_API_KEY]: self-explanatory.
+
+- [TSTO_API_TEAM_NAME]: self-explanatory.
 
 ## Author
 
