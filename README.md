@@ -46,7 +46,13 @@ Among all its features it includes support for:
 ## Table of contents
 
 - [📋 Requirements](#user-content--requirements)
-
+- [⚡ Usage](#user-content--usage)
+- [💪 Advanced usage](#user-content--advanced-usage)
+- [📧 Sending emails with a custom email service](#user-content--sending-emails-with-a-custom-email-service)
+- [🗃️ Picking another database](#user-content--picking-another-database)
+- [⬆️ Updating the server](#user-content--updating-the-server)
+- [🩺 Run tests](#user-content--run-tests)
+- [Environment variables](#user-content-environment-variables)
 
 
 ## 📋 Requirements
