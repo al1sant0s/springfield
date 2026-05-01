@@ -6,6 +6,7 @@ from springfield.settings import env
 
 import json
 import uuid
+import copy
 
 
 def getDirectionByPackage(request, platform):
@@ -13,17 +14,11 @@ def getDirectionByPackage(request, platform):
     directions_android = cache.get("directions_android")
     services = cache.get("services")
 
-    cache.set("directions_android", None)
-
-    if directions_android is None:
+    if directions_android is None or services is None:
 
         response = Path("director/responses/getdirectionbypackage.json")
         with open(response, "r") as f:
             directions_android  = json.load(f)
-
-        # Override platform.
-        directions_android["clientId"] = directions_android["clientId"].replace("platform", platform)
-        directions_android["mdmAppKey"] = directions_android["mdmAppKey"].replace("platform", platform)
 
         # Load settings and override urls.
         protocol = env("PROTOCOL")
@@ -48,7 +43,12 @@ def getDirectionByPackage(request, platform):
         "river.pin",
     ]
 
-    for service in update_services:
-        directions_android["serverData"][services[service]]["value"] += f"/{service}/{device_id}"
+    # Override platform.
+    new_directions_android = copy.deepcopy(directions_android)
+    new_directions_android["clientId"] = new_directions_android["clientId"].replace("platform", platform)
+    new_directions_android["mdmAppKey"] = new_directions_android["mdmAppKey"].replace("platform", platform)
 
-    return JsonResponse(directions_android)
+    for service in update_services:
+        new_directions_android["serverData"][services[service]]["value"] += f"/{service}/{device_id}"
+
+    return JsonResponse(new_directions_android)

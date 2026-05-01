@@ -67,9 +67,37 @@ def register(request):
     return render(request, "dashboard/register.html", {"register_form": register_form})
 
 
+def forgot_password(request):
+
+    forgot_form = RequestUserForm()
+
+    if request.user.is_authenticated:
+        return HttpResponseRedirect(reverse("dashboard:index"))
+
+    elif request.method == "POST":
+
+        forgot_form = RequestUserForm(request.POST)
+
+        if forgot_form.is_valid():
+
+            email = BaseUserManager.normalize_email(forgot_form.cleaned_data["email"])
+
+            # Verify if account does not exist.
+            if not UserId.objects.filter(email__iexact=email).exists():
+                messages.error(request, "No account was found with this email.")
+
+            else:
+                get_auth_code(email)
+                request.session["auth_email"] = email
+                return HttpResponseRedirect(reverse("dashboard:auth"))
+
+
+    return render(request, "dashboard/forgot-password.html", {"forgot_form": forgot_form})
+
+
 def auth(request):
 
-    if not request.session.get("auth_email", False):
+    if "auth_email" not in request.session:
         return HttpResponseRedirect(reverse("dashboard:login"))
 
     elif request.method == "POST":
@@ -102,37 +130,9 @@ def auth(request):
     return render(request, "dashboard/auth.html", {"auth_form": auth_form, "email": request.session["auth_email"]})
 
 
-def forgot_password(request):
-
-    forgot_form = RequestUserForm()
-
-    if request.user.is_authenticated:
-        return HttpResponseRedirect(reverse("dashboard:index"))
-
-    elif request.method == "POST":
-
-        forgot_form = RequestUserForm(request.POST)
-
-        if forgot_form.is_valid():
-
-            email = BaseUserManager.normalize_email(forgot_form.cleaned_data["email"])
-
-            # Verify if account does not exist.
-            if not UserId.objects.filter(email__iexact=email).exists():
-                messages.error(request, "No account was found with this email.")
-
-            else:
-                get_auth_code(email)
-                request.session["auth_email"] = email
-                return HttpResponseRedirect(reverse("dashboard:auth"))
-
-
-    return render(request, "dashboard/forgot-password.html", {"forgot_form": forgot_form})
-
-
 def reset_password(request):
 
-    if not request.session.get("auth_email", False) or not request.session.get("auth_username", False):
+    if "auth_email" not in request.session or "auth_username" not in request.session:
         return HttpResponseRedirect(reverse("dashboard:login"))
 
     elif request.method == "POST":
@@ -155,8 +155,8 @@ def reset_password(request):
                 user.save(update_fields=["username", "password"])
 
                 # User will have to request a new auth code to be able to revisit the reset password view.
-                request.session["auth_email"] = False
-                request.session["auth_username"] = False
+                del request.session["auth_email"]
+                del request.session["auth_username"]
 
                 return HttpResponseRedirect(reverse("dashboard:login"))
 

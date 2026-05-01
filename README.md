@@ -39,7 +39,7 @@ Among all its features it includes support for:
 
 - a beautiful user dashboard for managing your accounts,
 
-- versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (i.e. S3 bucket)
+- versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (e.g. S3 bucket)
 
 - and a lot of other cool things.
 
@@ -63,7 +63,7 @@ Some services are essential, whilst others are optional and can extend the serve
 
 The required services, which must be available in any configuration, are:
 
-- a web server to act as a reverse proxy to the game server and to serve the static and DLC files, i.e., nginx
+- a web server to act as a reverse proxy to the game server and to serve the static and DLC files, e.g., nginx
 
 - and a database service.
 
@@ -74,7 +74,7 @@ The optional services, which extend the server functionality, are:
 - Redis for caching (recommended),
 
 - any other kind of storage service listed in [django-storages](https://django-storages.readthedocs.io/en/latest/), just in case you prefer to
-  use another type of storage rather than local storage (i.e., S3 bucket),
+  use another type of storage rather than local storage (e.g., S3 bucket),
 
 - an email service to deliver emails with authentication codes. This is completely optional as you can also request permission to use [TSTO API](https://tsto.app/).
 
@@ -93,7 +93,7 @@ Create the following compose file somewhere in your file system. If necessary ad
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.4
+    image: docker.io/al1sant0s/springfield-server:v1.4.1
     ports:
       - "8000:8000"
     environment:
@@ -110,7 +110,7 @@ volumes:
 ```
 
 With this configuration the server will use a SQLite file as your database.
-It only requires that you provide a web server, i.e., nginx, to act as a reverse proxy and serve the DLC and static files for the dashboard.
+It only requires that you provide a web server, e.g., nginx, to act as a reverse proxy and serve the DLC and static files for the dashboard.
 
 A simple nginx configuration for a local server, which listens on port 8080, may be specified like so:
 
@@ -223,7 +223,7 @@ With that said, let's update our compose file like so.
 services:
 
   springfield-server:
-    image: docker.io/al1sant0s/springfield-server:v1.4
+    image: docker.io/al1sant0s/springfield-server:v1.4.1
     ports:
       - "8000:8000"
     environment:

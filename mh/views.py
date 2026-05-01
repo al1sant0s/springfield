@@ -136,14 +136,14 @@ def userstats(request):
         token.current_client_session_id = current_client_session_id
         token.save(update_fields=["current_client_session_id"])
         cache_entry = str(token.user.landtoken.land_token)
-        cached_town = cache.get(cache_entry, None)
+        cached_town = cache.get(cache_entry)
 
         # Save cached town.
-        if cached_town:
+        if cached_town is not None:
             protoland_request = LandData_pb2.LandMessage()
             protoland_request.ParseFromString(cached_town)
             save_town(token.user, protoland_request)
-            cache.set(cache_entry, None)
+            cache.delete(cache_entry)
 
         # Authorize land_token or remove it.
         if land_token.remove:
@@ -297,7 +297,7 @@ def protoWholeLandToken(request, mayhem_id):
         land_token.save()
 
         # Remove cached town from user.
-        cache.set(str(land_token.land_token), None)
+        cache.delete(str(land_token.land_token))
 
         proto_whole_land_token_response = WholeLandTokenData_pb2.WholeLandTokenResponse()
         proto_whole_land_token_response.token = str(land_token.land_token)
