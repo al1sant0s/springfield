@@ -3,16 +3,16 @@
   <a href="https://www.docker.com/" target="_blank">
     <img alt="Docker badge" src="https://img.shields.io/badge/docker-white?logo=docker">
   </a>
-  <a href="#" target="_blank">
+  <a href="https://www.djangoproject.com/" target="_blank">
     <img alt="Django badge" src="https://img.shields.io/badge/django-green?logo=django">
   </a>
-  <a href="https://www.docker.com/" target="_blank">
+  <a href="https://www.python.org/" target="_blank">
     <img alt="Python Badge" src="https://img.shields.io/badge/python-gray?logo=python&logoColor=yellow">
   </a>
-  <a href="#" target="_blank">
+  <a href="https://www.postgresql.org/" target="_blank">
     <img alt="Postgresql Badge" src="https://img.shields.io/badge/postgresql-beige?logo=postgresql">
   </a>
-  <a href="#" target="_blank">
+  <a href="https://redis.io/" target="_blank">
       <img alt="Redis Badge" src="https://img.shields.io/badge/redis-orange?logo=redis&logoColor=firebrick">
   </a>  
   <a href="#" target="_blank">
