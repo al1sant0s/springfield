@@ -17,6 +17,6 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        repository: peterevans/dockerhub-description
+        repository: al1sant0s/springfield
         short-description: ${{ github.event.repository.description }}
         enable-url-completion: true
