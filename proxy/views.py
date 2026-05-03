@@ -53,21 +53,19 @@ def check_tsto_api():
     tsto_api_available = cache.get("tsto_api_available")
 
     if tsto_api_available is None:
+        tsto_api_available = False
         tsto_api_key = env("TSTO_API_KEY", default=None)
         tsto_api_team_name = env("TSTO_API_TEAM_NAME", default=None)
-        response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
         timeout = env("CACHE_SECONDS", default=3600)
         cache.set("tsto_api_key", tsto_api_key, timeout=timeout)
         cache.set("tsto_api_team_name", tsto_api_team_name, timeout=timeout)
 
-        if response.status_code == 200 and response.json().get("valid", False) and tsto_api_key and tsto_api_team_name:
-            cache.set("tsto_api_available", True, timeout=timeout)
-            tsto_api_available = True
+        if tsto_api_key is not None and tsto_api_team_name is not None:
+            response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
+            if response.status_code == 200 and response.json().get("valid", False):
+                tsto_api_available = True
 
-        else:
-            cache.set("tsto_api_available", False, timeout=timeout)
-            tsto_api_available = False
-
+        cache.set("tsto_api_available", tsto_api_available, timeout=timeout)
 
     return tsto_api_available
 
@@ -92,21 +90,9 @@ def get_auth_code(email, send_email=True):
         else:
             username = user.username
 
-        # Send code through specified email backend.
         if send_email:
-            if env("SENDER_EMAIL", default=None):
-                send_templated_mail(
-                    template_name="auth_code",
-                    from_email=env("SENDER_EMAIL"),
-                    recipient_list=[email],
-                    context={
-                        "username": username,
-                        "code": code,
-                    },
-                )
-
             # Get code from TSTO API if available.
-            elif check_tsto_api():
+            if check_tsto_api():
                 response = requests.post("https://tsto.app/api/auth/sendCode/",
                     params={
                         "apikey": cache.get("tsto_api_key"),
@@ -121,6 +107,18 @@ def get_auth_code(email, send_email=True):
 
                     if content["status"] == 200:
                         code = content["code"]
+
+            # Send code through specified email backend.
+            elif env("SENDER_EMAIL", default=None):
+                send_templated_mail(
+                    template_name="auth_code",
+                    from_email=env("SENDER_EMAIL"),
+                    recipient_list=[email],
+                    context={
+                        "username": username,
+                        "code": code,
+                    },
+                )
 
 
         # Search for current active code in database.
