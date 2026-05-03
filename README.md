@@ -18,6 +18,9 @@
   <a href="#" target="_blank">
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
   </a>
+  <a href="#" target="_blank">
+    <img alt="License: MIT" src="https://github.com/al1sant0s/springfield/actions/workflows/docker-publish.yml/badge.svg" />
+  </a>
 </p>
 
 > A full featured server for the game: &#34;The Simpsons Tapped Out&#34;.
