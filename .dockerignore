@@ -2,6 +2,7 @@ Dockerfile
 compose.yaml
 .env
 .git
+.github
 *.pyc
 __pycache__
 redis-data
