@@ -23,10 +23,11 @@
   </a>
 </p>
 
-> A full featured server for the game: &#34;The Simpsons Tapped Out&#34;.
+> A full-featured server for the game: &#34;The Simpsons: Tapped Out&#34;.
 
-Get your old springfield back up and running again with this super customizable game server.
-Among all its features it includes support for:
+Get your old Springfield back up and running again with this super customizable game server.
+
+Among all its features, it includes support for:
 
 - multiple accounts,
 
@@ -42,7 +43,7 @@ Among all its features it includes support for:
 
 - a beautiful user dashboard for managing your accounts,
 
-- versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (e.g. S3 bucket)
+- versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (e.g., S3 bucket)
 
 - and a lot of other cool things.
 
@@ -62,7 +63,7 @@ Among all its features it includes support for:
 
 The server can be set up in a plethora of ways according to your preferences, but it relies on some external services to work.
 
-Some services are essential, whilst others are optional and can extend the server functionality.
+Some services are essential, while others are optional and can extend the server functionality.
 
 The required services, which must be available in any configuration, are:
 
@@ -81,7 +82,7 @@ The optional services, which extend the server functionality, are:
 
 - an email service to deliver emails with authentication codes. This is completely optional as you can also request permission to use [TSTO API](https://tsto.app/).
 
-Other independent services are not covered in this guide, like fail2ban for rate limiting with nginx and whatnot.
+Other independent services are not covered in this guide, like Fail2ban for rate limiting with nginx and whatnot.
 
 ## ⚡ Usage
 
@@ -407,15 +408,27 @@ To confirm your server works correctly, run the [testing routines](#user-content
 If you are unable to use the TSTO API service for sending emails for you, you can use another service for that. Remove the TSTO_API variables from your .env file and set two new variables:
 SENDER_EMAIL and EMAIL_BACKEND.
 
-SENDER_EMAIL is used to specify whose email address sends emails to users. EMAIL_BACKEND contains the configuration for the server to connect
-with your email service. Check django-service-urls [documentation](https://pypi.org/project/django-service-urls/) for details on how to specify that.
-Here is an example to illustrate, using a "fake" gmail account to send emails.
+SENDER_EMAIL is used to specify whose email address sends emails to users. EMAIL_BACKEND contains the configuration for the server to connect with your email service. Check django-service-urls [documentation](https://pypi.org/project/django-service-urls/) for details on how to specify that.
+
+Here is an example to illustrate, using a "fake" Gmail account to send emails. Note that at the moment of writing this, in order to send emails with Gmail, you need to set up an app password.
+This may change in the foreseeable future. Check the details as a precaution.
 
 **.env**
 ```.env
 SENDER_EMAIL=myaddress@gmail.com
 EMAIL_BACKEND=smtp+tls://myaddress%40gmail.com:abcd%20efgh%20ijkl%20mnop@smtp.gmail.com:587
 ```
+The default email message comes from a template file located at `/proxy/templates/templated_email/auth_code.email`. If you wish to replace the email message with one of your own, you can bind your email template file with the server's. To do this, include the following line in the volumes section from the springfield-server service in your compose file.
+
+**.compose.yaml**
+```.yaml
+volumes:
+	- /path/to/auth_code.email:/app/proxy/templates/templated_email/auth_code.email:z
+```
+
+The server uses [django-templated-email](https://pypi.org/project/django-templated-email/) for sending emails. It supports both plain text and HTML for structuring the email message. The template receives a context that includes two variables: username and code, which you may use in your custom email message.
+
+Be aware that you can also use both the **TSTO API** service and an email custom service as a fallback in case the API is not available. Just set up both of them in your `.env` file. The server will prioritize the **TSTO API** for authentication and use only the custom email service when the API becomes unavailable.
 
 ## 🗃️ Picking another database
 
@@ -428,11 +441,15 @@ In order to update the server, you must run the following sequence of commands.
 
 ```sh
 docker compose down
-docker compose up --pull always
+docker compose up -d --pull always
 docker compose exec springfield-server python manage.py makemigrations
 docker compose exec springfield-server python manage.py migrate
 ```
+
 This will shut down the server instance (if it is running at the time), recreate the containers with the latest images available, and perform new migrations (if necessary).
+
+> If you are running multiple servers connected to the same database. You should run `docker compose down` on all of them first. Then you should perform the previous four commands in one server.
+> After doing this, you may update and restart the rest of the servers by running `docker compose up -d --pull always` on each one.
 
 ## 🩺 Run tests
 
