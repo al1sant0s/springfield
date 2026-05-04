@@ -424,11 +424,15 @@ I highly recommend picking PostgreSQL as your database. If you decide to pick an
 
 ## ⬆️ Updating the server
 
-It's just convenient to run the migrate command every time you update the server.
+In order to update the server, you must run the following sequence of commands.
 
 ```sh
+docker compose down
+docker compose up --pull always
+docker compose exec springfield-server python manage.py makemigrations
 docker compose exec springfield-server python manage.py migrate
 ```
+This will shut down the server instance (if it is running at the time), recreate the containers with the latest images available, and perform new migrations (if necessary).
 
 ## 🩺 Run tests
 
