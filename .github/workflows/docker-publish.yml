@@ -7,7 +7,7 @@ name: Docker
 
 on:
   schedule:
-    - cron: '31 9 * * *'
+    - cron: '35 1 * * *'
   push:
     branches: [ "main" ]
     # Publish semver tags as releases.
@@ -25,15 +25,7 @@ env:
 jobs:
   build:
 
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      matrix:
-        include:
-          - platform: linux/amd64
-            runner: ubuntu-latest
-          - platform: linux/arm64
-            runner: ubuntu-24.04-arm  # Native ARM runner
-
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -84,7 +76,7 @@ jobs:
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           context: .
-          platforms: ${{ matrix.platform }}
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
