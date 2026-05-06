@@ -499,7 +499,9 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 - [STORAGE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Defaults to _django.core.files.storage.filesystem.FileSystemStorage_.
 
 - [STORAGE_STATICFILES]: a string specified in the format described by _django-service-urls_ which determines the static storage backend. Defaults to _django.contrib.staticfiles.storage.StaticFilesStorage_.
-  
+
+- [TIME_ZONE]: a string representing the time zone for this installation. See the [list of time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+
 - [TOWNS_ROOT]: directory or path where town files will be stored. Defaults to `towns/`.
 
 - [TSTO_API_KEY]: self-explanatory. No default value.
