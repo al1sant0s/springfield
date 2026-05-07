@@ -91,7 +91,6 @@ def get_auth_code(email, send_email=True):
             username = user.username
 
         if send_email:
-
             mail_sent = False
 
             # Get code from TSTO API if available.
@@ -107,7 +106,6 @@ def get_auth_code(email, send_email=True):
 
                 if response.status_code == 200:
                     content = response.json()
-
                     if content["status"] == 200:
                         code = content["code"]
                         mail_sent = True
