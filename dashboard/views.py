@@ -1,7 +1,6 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
-from django.core.files.storage import storages
 from django.core.files.base import ContentFile
 from django.contrib import messages
 from django.contrib.auth.views import LoginView, login_required
@@ -9,8 +8,7 @@ from django.contrib.auth.models import BaseUserManager
 
 from connect.models import UserId, DeviceToken
 from mh.models import LandToken
-from proxy.models import ProgRegCode
-from proxy.views import get_auth_code, search_friends
+from proxy.views import request_auth_code, validate_auth_code, search_friends
 from mh.views import save_town, load_town
 from avatar.views import get_avatar_url
 from friends.views import send_friend_request, cancel_friend_request, accept_friend_request, remove_friend
@@ -27,6 +25,7 @@ from protofiles import LandData_pb2
 from operator import itemgetter
 
 import google.protobuf
+import requests
 
 # Create your views here.
 
@@ -59,7 +58,7 @@ def register(request):
                 messages.error(request, "This email is already being used!")
 
             else:
-                get_auth_code(email)
+                request_auth_code(email)
                 request.session["auth_email"] = email
                 return HttpResponseRedirect(reverse("dashboard:auth"))
 
@@ -87,7 +86,7 @@ def forgot_password(request):
                 messages.error(request, "No account was found with this email.")
 
             else:
-                get_auth_code(email)
+                request_auth_code(email)
                 request.session["auth_email"] = email
                 return HttpResponseRedirect(reverse("dashboard:auth"))
 
@@ -101,27 +100,21 @@ def auth(request):
         return HttpResponseRedirect(reverse("dashboard:login"))
 
     elif request.method == "POST":
-
         auth_form = AuthCodeForm(request.POST)
-
         if auth_form.is_valid():
+            email = request.session["auth_email"]
+            code = auth_form.cleaned_data["code"]
+            status = validate_auth_code(email, code)
+            if status:
+                user, _ = UserId.objects.get_or_create(email=request.session["auth_email"], is_registered=True)
+                request.session["auth_username"] = user.username
+                return HttpResponseRedirect(reverse("dashboard:reset_password"))
 
-            try:
-                auth_code = ProgRegCode.objects.get(email=request.session["auth_email"])
-
-            except ProgRegCode.DoesNotExist:
+            elif status is None:
                 return HttpResponseRedirect(reverse("dashboard:login"))
 
             else:
-
-                if auth_form.cleaned_data["code"] == auth_code.code:
-                    auth_code.delete()
-                    user, _ = UserId.objects.get_or_create(email=request.session["auth_email"], is_registered=True)
-                    request.session["auth_username"] = user.username
-                    return HttpResponseRedirect(reverse("dashboard:reset_password"))
-
-                else:
-                    messages.error(request, "Wrong code.")
+                messages.error(request, "Wrong code.")
 
     else:
         auth_form = AuthCodeForm()

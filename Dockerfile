@@ -12,4 +12,4 @@ ENV PATH="/opt/conda/envs/django/bin:$PATH"
 
 EXPOSE 8000
 
-CMD ["gunicorn", "springfield.wsgi", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "springfield.wsgi", "--capture-output", "--error-logfile", "-", "--bind", "0.0.0.0:8000"]

@@ -1,13 +1,13 @@
-import datetime
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import BaseUserManager
+from django.core.cache import cache
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 
 from proxy.models import ProgRegCode
-from proxy.views import get_auth_code
+from proxy.views import check_tsto_api, request_auth_code, validate_auth_code
 
 from .models import UserId, DeviceToken
 from mh.models import LandToken
@@ -20,6 +20,7 @@ import hashlib
 import uuid
 import time
 import secrets
+import requests
 
 
 # Create your views here.
@@ -103,19 +104,18 @@ def auth(request, device_id):
         # Normal user registration.
         else:
 
-            auth_code = get_object_or_404(
-                ProgRegCode,
-                email=BaseUserManager.normalize_email(json_data["email"]),
-                code=json_data["cred"],
-                expiry_on__gt=timestamp
-            )
+            email = BaseUserManager.normalize_email(json_data["email"])
+            code = json_data["cred"]
+
+            if not validate_auth_code(email, code):
+                raise Http404
 
             token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
             user = token.user
 
-            # Found the auth_code?! Great, now look for user with this email.
+            # Authenticated?! Great, now look for user with this email.
             try:
-                token.user = UserId.objects.get(email=auth_code.email)
+                token.user = UserId.objects.get(email=email)
 
             # If a user with this email does not exist, it means we have to update the current user email associated with the token.
             # However, if our user is already registered, then we need to create a new user.
@@ -123,7 +123,7 @@ def auth(request, device_id):
                 if token.user.is_registered:
                     token.user = UserId()
 
-            token.user.email = auth_code.email
+            token.user.email = email
             token.user.is_registered = True
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
@@ -144,7 +144,6 @@ def auth(request, device_id):
                 "lnglv_token": token.access_token
             }
 
-            auth_code.delete()
             return JsonResponse(response)
 
     else:
@@ -162,10 +161,8 @@ def auth(request, device_id):
             return JsonResponse(response)
 
         else:
-
             # Generate auth code.
-            get_auth_code(BaseUserManager.normalize_email(email))
-
+            request_auth_code(BaseUserManager.normalize_email(email))
             return JsonResponse({"error_description": "REQUIRE_PASSWORD_OR_CODE"})
 
 

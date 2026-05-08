@@ -326,7 +326,6 @@ TOWNS_ROOT=./
 
 # TSTO API configuration
 TSTO_API_KEY='insert-your-api-key-if-you-have-one'
-TSTO_API_TEAM_NAME=MyTeamNameHere
 
 # PostgreSQL configuration
 POSTGRES_DB=springfield
@@ -505,8 +504,6 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 - [TOWNS_ROOT]: directory or path where town files will be stored. Defaults to `towns/`.
 
 - [TSTO_API_KEY]: self-explanatory. No default value.
-
-- [TSTO_API_TEAM_NAME]: self-explanatory. No default value.
 
 ## Author
 

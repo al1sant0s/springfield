@@ -80,7 +80,7 @@ class ConnectViewsTests(TestCase):
 
     def test_login_logout_user(self):
         """
-        User insert code and confirm their email.
+        User inserts code and confirms their email.
         After a successful login, user requests to be logged out.
         """
 

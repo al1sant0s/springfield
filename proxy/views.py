@@ -1,3 +1,4 @@
+from operator import concat
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.db.models import Q
 from django.utils import timezone
@@ -70,7 +71,7 @@ def check_tsto_api():
     return tsto_api_available
 
 
-def get_auth_code(email, send_email=True):
+def get_auth_code(email, username="user", send_email=True):
 
     # If a non expired auth code exists in the database already use it.
     # Otherwise get a new code.
@@ -80,47 +81,17 @@ def get_auth_code(email, send_email=True):
 
     else:
         code = get_random_string(6, allowed_chars="0123456789")
-
-        try:
-            user = UserId.objects.get(email=email)
-
-        except UserId.DoesNotExist:
-            username = "user"
-
-        else:
-            username = user.username
-
-        if send_email:
-            mail_sent = False
-
-            # Get code from TSTO API if available.
-            if check_tsto_api():
-                response = requests.post("https://tsto.app/api/auth/sendCode/",
-                    params={
-                        "apikey": cache.get("tsto_api_key"),
-                        "emailAddress": email,
-                        "teamName": cache.get("tsto_api_team_name"),
-                        "username": username
-                    }
-                )
-
-                if response.status_code == 200:
-                    content = response.json()
-                    if content["status"] == 200:
-                        code = content["code"]
-                        mail_sent = True
-
-            # Send code through specified email backend.
-            if not mail_sent and env("SENDER_EMAIL", default=None):
-                send_templated_mail(
-                    template_name="auth_code",
-                    from_email=env("SENDER_EMAIL"),
-                    recipient_list=[email],
-                    context={
-                        "username": username,
-                        "code": code,
-                    },
-                )
+        # Send code through specified email backend.
+        if send_email and env("SENDER_EMAIL", default=None):
+            send_templated_mail(
+                template_name="auth_code",
+                from_email=env("SENDER_EMAIL"),
+                recipient_list=[email],
+                context={
+                    "username": username,
+                    "code": code,
+                },
+            )
 
 
         # Search for current active code in database.
@@ -140,6 +111,63 @@ def get_auth_code(email, send_email=True):
 
 
         return auth_code
+
+
+def request_auth_code(email):
+
+    try:
+        user = UserId.objects.get(email=email)
+
+    except UserId.DoesNotExist:
+        username = "user"
+
+    else:
+        username = user.username
+
+    # Get code from TSTO API if available.
+    if check_tsto_api():
+        response = requests.post("https://tsto.app/api/auth/generateCode/",
+            params={"apikey": cache.get("tsto_api_key")},
+            data={"email": email, "username": username}
+        )
+        if response.status_code == 200:
+            content = response.json()
+            if content.get("status") == 200 and content.get("active"):
+                return True
+
+
+    get_auth_code(BaseUserManager.normalize_email(email), username=username)
+    return True
+
+
+def validate_auth_code(email, code):
+
+    if check_tsto_api():
+        response = requests.post("https://tsto.app/api/auth/validateCode/",
+            params={"apikey": cache.get("tsto_api_key")},
+            data={"email": email, "code": code}
+        )
+        if response.status_code == 200:
+            content = response.json()
+            if content.get("status") == 200:
+                if content.get("valid"):
+                    return True
+
+                elif content.get("active"):
+                    return False
+
+    try:
+        auth_code = ProgRegCode.objects.get(email=email, expiry_on__gt=timezone.now())
+
+    except ProgRegCode.DoesNotExist:
+        return None
+
+    else:
+        if auth_code.code == code:
+            auth_code.delete()
+            return True
+
+    return False
 
 
 # Create your views here.
@@ -254,10 +282,9 @@ def progreg_code(request):
         return HttpResponseBadRequest(f"Invalid JSON data: {e}")
 
     else:
-
+        # Generate auth code.
         if json_data["codeType"].lower() == "email":
-            # Generate auth code.
-            get_auth_code(BaseUserManager.normalize_email(json_data["email"]))
+            request_auth_code(json_data["email"])
             return HttpResponse()
 
         else:
