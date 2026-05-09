@@ -112,12 +112,12 @@ class ConnectViewsTests(TestCase):
         self.assertTrue(token.login_status, "Login have failed")
 
         # User requests a logout.
+        # DeviceToken gets deleted.
         response = self.client.get(
             reverse("connect:token", args=(device.device_id,)),
             query_params={"authenticator_type": "NUCLEUS", "grant_type": "remove_authenticator"}
         )
         self.assertEqual(response.status_code, 200, "Token view failed")
-        token.refresh_from_db()
 
         response_data = json.loads(response.content)
         self.assertEqual(type(response_data), dict)
@@ -127,7 +127,7 @@ class ConnectViewsTests(TestCase):
         self.assertIn("refresh_token", response_data)
         self.assertIn("refresh_token_expires_in", response_data)
         self.assertIn("id_token", response_data)
-        self.assertFalse(token.login_status, "Logout have failed")
+        self.assertFalse(DeviceToken.objects.filter(advertising_id=token.advertising_id).exists())
 
 
     def test_tokeninfo(self):

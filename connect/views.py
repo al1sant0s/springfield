@@ -1,13 +1,11 @@
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import BaseUserManager
-from django.core.cache import cache
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 
-from proxy.models import ProgRegCode
-from proxy.views import check_tsto_api, request_auth_code, validate_auth_code
+from proxy.views import request_auth_code, validate_auth_code
 
 from .models import UserId, DeviceToken
 from mh.models import LandToken
@@ -20,7 +18,6 @@ import hashlib
 import uuid
 import time
 import secrets
-import requests
 
 
 # Create your views here.
@@ -194,10 +191,8 @@ def get_token(request, device_id):
     }
 
     if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
-        # Delete all land tokens.
         LandToken.objects.filter(user=token.user).delete()
-        token.login_status = False
-        token.save(update_fields=["login_status"])
+        token.delete()
 
     return JsonResponse(response)
 
