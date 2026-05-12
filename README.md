@@ -90,7 +90,7 @@ The easiest and recommended way to get the server running is through the usage o
 in the file `environment.yaml` with your favorite Python package manager: pip, conda, etc.
 
 To make this guide easier to follow we will focus on Docker Compose. Let's start with the simplest possible configuration which just includes the server itself.
-Create the following compose file somewhere in your file system. If necessary adjust the ports field. If you have a good machine, you may want to increase the number of gunicorn workers (here it is set to 9).
+Create the following compose file somewhere in your file system. If necessary adjust the ports field.
 
 **`compose.yaml`**
 ```yaml
@@ -100,8 +100,6 @@ services:
     image: ghcr.io/al1sant0s/springfield:latest
     ports:
       - "8000:8000"
-    environment:
-      - GUNICORN_CMD_ARGS=--workers=9
     env_file:
       - .env
     volumes:
@@ -230,10 +228,20 @@ services:
     image: ghcr.io/al1sant0s/springfield:latest
     ports:
       - "8000:8000"
-    environment:
-      - GUNICORN_CMD_ARGS=--workers=9
     env_file:
       - .env
+    command: [
+        "gunicorn",
+        "springfield.wsgi",
+        "--capture-output",
+        "--access-logfile", "-",
+        "--error-logfile", "-",
+        "--bind", "0.0.0.0:8000",
+        "--worker-class", "gthread",
+        "--workers", "6",
+        "--threads", "8",
+        "--preload"
+    ]
     depends_on:
       db:
         condition: service_healthy
