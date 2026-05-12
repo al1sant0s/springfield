@@ -90,7 +90,7 @@ The easiest and recommended way to get the server running is through the usage o
 in the file `environment.yaml` with your favorite Python package manager: pip, conda, etc.
 
 To make this guide easier to follow we will focus on Docker Compose. Let's start with the simplest possible configuration which just includes the server itself.
-Create the following compose file somewhere in your file system. If necessary adjust the ports field. If you have a good machine, you may want to increase the number of gunicorn workers (here it is set to 4).
+Create the following compose file somewhere in your file system. If necessary adjust the ports field. If you have a good machine, you may want to increase the number of gunicorn workers (here it is set to 9).
 
 **`compose.yaml`**
 ```yaml
@@ -101,7 +101,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GUNICORN_CMD_ARGS=--workers=4
+      - GUNICORN_CMD_ARGS=--workers=9
     env_file:
       - .env
     volumes:
@@ -231,7 +231,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GUNICORN_CMD_ARGS=--workers=4
+      - GUNICORN_CMD_ARGS=--workers=9
     env_file:
       - .env
     depends_on:
@@ -326,6 +326,7 @@ TOWNS_ROOT=./
 
 # TSTO API configuration
 TSTO_API_KEY='insert-your-api-key-if-you-have-one'
+TSTO_API_TEAM_NAME=MyTeamNameHere
 
 # PostgreSQL configuration
 POSTGRES_DB=springfield
@@ -358,7 +359,7 @@ Moving on to the second part, we have our TSTO API configuration. If you have ob
 The TSTO API settings will be used for authentication when users request a code for login.
 
 The third part is our database configuration for PostgreSQL. We are setting an user, their password and database; all with the same value 'springfield'.
-The variable DATABASE_DEFAULT defines the server database backend.
+The variable DATABASE_DEFAULT defines the server database backend configuration.
 
 The last part is our S3 service configuration. The first four variables are for establishing a connection with it.
 
@@ -504,6 +505,8 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 - [TOWNS_ROOT]: directory or path where town files will be stored. Defaults to `towns/`.
 
 - [TSTO_API_KEY]: self-explanatory. No default value.
+
+- [TSTO_API_TEAM_NAME]: self-explanatory. No default value.
 
 ## Author
 

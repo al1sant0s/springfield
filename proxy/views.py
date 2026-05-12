@@ -128,7 +128,7 @@ def request_auth_code(email):
     if check_tsto_api():
         response = requests.post("https://tsto.app/api/auth/generateCode/",
             params={"apikey": cache.get("tsto_api_key")},
-            data={"email": email, "username": username}
+            data={"email": email, "username": username, "teamName": cache.get("tsto_api_team_name")}
         )
         if response.status_code == 200:
             content = response.json()
