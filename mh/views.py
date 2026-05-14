@@ -77,6 +77,7 @@ def gameplayconfig(request):
 
 
 @csrf_exempt
+@require_http_methods(["GET", "PUT"])
 def users(request):
 
     application_user_id = request.GET.get("applicationUserId")
@@ -112,6 +113,12 @@ def users(request):
             setattr(getattr(user_response, key), subkey, subvalue)
 
     return HttpResponse(user_response.SerializeToString(), content_type="application/x-protobuf")
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def users_delete(request, mayhem_id):
+    return JsonResponse({"status": "ok"})
 
 
 @csrf_exempt

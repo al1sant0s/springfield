@@ -7,6 +7,7 @@ urlpatterns = [
     path("games/lobby/time", views.get_current_time, name="time"),
     path("gameplayconfig", views.gameplayconfig, name="gameplayconfig"),
     path("users", views.users, name="users"),
+    path("users/<int:mayhem_id>/", views.users_delete, name="users_delete"),
     path("userstats", views.userstats, name="userstats"),
     path("clienttelemetry/", views.clienttelemetry, name="clienttelemetry"),
     path("games/bg_gameserver_plugin/trackinglog/", views.trackinglog, name="trackinglog"),
