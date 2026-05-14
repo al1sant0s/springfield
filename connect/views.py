@@ -166,7 +166,7 @@ def auth(request, device_id):
 @csrf_exempt
 def get_token(request, device_id):
 
-    token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
+    token = get_object_or_404(DeviceToken, Q(code=request.GET.get("code")) | Q(device_id=device_id) | Q(device_id_cache=device_id))
     pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
 
     id_token = {
@@ -199,11 +199,9 @@ def get_token(request, device_id):
 
 def tokeninfo(request, device_id):
 
-    access_token = request.GET.get("access_token")
-    token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id) | Q(access_token=access_token))
-
     # Update session keys and timestamps.
-    token.user.last_authenticated = timezone.now() 
+    token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id) | Q(access_token=request.GET.get("access_token")))
+    token.user.last_authenticated = timezone.now()
     token.user.session_key = secrets.token_urlsafe(32)
     token.user.save(update_fields=["last_authenticated", "session_key"])
 
