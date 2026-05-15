@@ -205,9 +205,14 @@ def tokeninfo(request, device_id):
     token.user.session_key = secrets.token_urlsafe(32)
     token.user.save(update_fields=["last_authenticated", "session_key"])
 
+    # Update device_id.
+    if token.device_id != device_id:
+        token.device_id_cache = token.device_id
+        token.device_id = device_id
+
     token.timestamp = token.user.last_authenticated
     token.session_key = token.user.session_key
-    token.save(update_fields=["timestamp", "session_key"])
+    token.save(update_fields=["device_id", "device_id_cache", "timestamp", "session_key"])
 
     # Make a land token if one does not already exist.
     land_token, _ = LandToken.objects.get_or_create(user=token.user)
