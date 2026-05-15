@@ -90,6 +90,7 @@ def get_auth_code(email, username="user", send_email=True):
                 context={
                     "username": username,
                     "code": code,
+                    "auth_code_minutes": env("AUTH_CODE_MINUTES", default=30),
                 },
             )
 
@@ -163,11 +164,7 @@ def validate_auth_code(email, code):
         return None
 
     else:
-        if auth_code.code == code:
-            auth_code.delete()
-            return True
-
-    return False
+        return auth_code.code == code
 
 
 # Create your views here.

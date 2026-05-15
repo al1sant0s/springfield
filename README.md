@@ -434,7 +434,7 @@ volumes:
 	- /path/to/auth_code.email:/app/proxy/templates/templated_email/auth_code.email:z
 ```
 
-The server uses [django-templated-email](https://pypi.org/project/django-templated-email/) for sending emails. It supports both plain text and HTML for structuring the email message. The template receives a context that includes two variables: username and code, which you may use in your custom email message.
+The server uses [django-templated-email](https://pypi.org/project/django-templated-email/) for sending emails. It supports both plain text and HTML for structuring the email message. The template receives a context that includes three variables: username, code and auth_code_minutes, which you may use in your custom email message.
 
 Be aware that you can also use both the **TSTO API** service and an email custom service as a fallback in case the API is not available. Just set up both of them in your `.env` file. The server will prioritize the **TSTO API** for authentication and use only the custom email service when the API becomes unavailable.
 
