@@ -160,7 +160,7 @@ TOWNS_ROOT=./towns/
 A few things to consider.
 
 * Pick a good **SECRET_KEY**.
-* Remember to change the DOMAIN, PORT and STATIC_LOCATION with your own values to reflect your nginx settings.
+* Remember to change the DOMAIN, PORT, PROTOCOL and STATIC_LOCATION with your own values to reflect your nginx settings. If you use a real domain, you must set PORT to either 80 (http) or 443 (https) along with the corresponding PROTOCOL.
 * STATIC_ROOT is where the static files from the server will be stored in. Change it if necessary.
 * TOWNS_ROOT is where towns will be stored in. Change it if necessary.
 

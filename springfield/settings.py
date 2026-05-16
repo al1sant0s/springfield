@@ -48,9 +48,12 @@ SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = [domain, "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
+    f"{protocol}://{domain}",
     f"{protocol}://{domain}:{port}",
-    f"{protocol}://localhost:{port}",
-    f"http://127.0.0.1:{port}"
+    f"http://localhost:{port}",
+    f"http://127.0.0.1:{port}",
+    "http://localhost",
+    "http://127.0.0.1"
 ]
 
 INTERNAL_IPS = ["localhost", "127.0.0.1"]
