@@ -25,7 +25,6 @@ from protofiles import LandData_pb2
 from operator import itemgetter
 
 import google.protobuf
-import requests
 
 # Create your views here.
 
@@ -325,6 +324,7 @@ def friends(request):
                 [
                     {
                         "avatar_url": get_avatar_url(user),
+                        "avatar_exists": user.avatar,
                         "username": user.username,
                         "invite_url": reverse("dashboard:friends_send_request", args=(user.user_id,))
 
@@ -339,6 +339,7 @@ def friends(request):
         [
             {
                 "avatar_url": get_avatar_url(invitation.from_user),
+                "avatar_exists": invitation.from_user.avatar,
                 "username": invitation.from_user.username,
                 "accept_url": reverse("dashboard:friends_accept_request", args=(invitation.from_user.user_id,)),
                 "reject_url": reverse("dashboard:friends_reject_request", args=(invitation.from_user.user_id,))
@@ -352,6 +353,7 @@ def friends(request):
         [
             {
                 "avatar_url": get_avatar_url(invitation.to_user),
+                "avatar_exists": invitation.to_user.avatar,
                 "username": invitation.to_user.username,
                 "cancel_url": reverse("dashboard:friends_cancel_request", args=(invitation.to_user.user_id,))
 
@@ -364,6 +366,7 @@ def friends(request):
         [
             {
                 "avatar_url": get_avatar_url(user),
+                "avatar_exists": user.avatar,
                 "username": user.username,
                 "last_active": user.last_authenticated,
                 "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,))

@@ -107,7 +107,11 @@
               <figcaption>
                 Avatar Picture
               </figcaption>
-              <img src={{ avatar_url }} alt="" width="100" height="100">
+              {% if avatar_exists %}
+                <img src={{ avatar_url }} alt="" width="100" height="100">
+              {% else %}
+                <img src="{% static 'dashboard/default-avatar.png' %}" alt="" width="100" height="100">
+              {% endif %}
             </figure>
             <p class="caption-paragraph">Requirements: PNG - 416x416 (or less) pixels.</p>
             {{ profile_form }}

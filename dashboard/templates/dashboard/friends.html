@@ -126,7 +126,11 @@
                 {% for match in search_matches %}
                   <tr>
                     <td class="avatar">
-                      <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                      {% if match.avatar_exists %}
+                        <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                      {% else %}
+                        <img src="{% static 'dashboard/default-avatar.png' %}" alt="" width="100" height="100">
+                      {% endif %}
                     </td>
                     <td>
                       {{ match.username }}
@@ -157,7 +161,11 @@
                 {% for match in received_requests %}
                   <tr>
                     <td class="avatar">
-                      <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                      {% if match.avatar_exists %}
+                        <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                      {% else %}
+                        <img src="{% static 'dashboard/default-avatar.png' %}" alt="" width="100" height="100">
+                      {% endif %}
                     </td>
                     <td>
                       {{ match.username }}
@@ -191,7 +199,11 @@
                 {% for match in sent_requests %}
                   <tr>
                     <td class="avatar">
-                      <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                      {% if match.avatar_exists %}
+                        <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                      {% else %}
+                        <img src="{% static 'dashboard/default-avatar.png' %}" alt="" width="100" height="100">
+                      {% endif %}
                     </td>
                     <td>
                       {{ match.username }}
@@ -227,7 +239,11 @@
                   {% for match in friends %}
                     <tr>
                       <td class="avatar">
-                        <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                        {% if match.avatar_exists %}
+                          <img src={{ match.avatar_url }} alt="" width="100" height="100">
+                        {% else %}
+                          <img src="{% static 'dashboard/default-avatar.png' %}" alt="" width="100" height="100">
+                        {% endif %}
                       </td>
                       <td>
                         {{ match.username }}

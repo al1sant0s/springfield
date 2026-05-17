@@ -295,8 +295,7 @@ fieldset {
 }
 
 .avatar img {
-  background: url("default-avatar.png") no-repeat center;
-  background-size: contain;
+  background-color: #e79563;
   border: 5px solid rebeccapurple;
   border-radius: 15px;
 }
