@@ -79,10 +79,14 @@ def forgot_password(request):
         if forgot_form.is_valid():
 
             email = BaseUserManager.normalize_email(forgot_form.cleaned_data["email"])
+            user = UserId.objects.filter(email__iexact=email).first()
 
             # Verify if account does not exist.
-            if not UserId.objects.filter(email__iexact=email).exists():
+            if not user:
                 messages.error(request, "No account was found with this email.")
+
+            elif user.is_superuser:
+                messages.error(request, "You are not allowed to change your password in here. Contact the server administrator!")
 
             else:
                 request_auth_code(email)
