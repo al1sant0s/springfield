@@ -80,10 +80,13 @@ def gameplayconfig(request):
 @require_http_methods(["GET", "PUT"])
 def users(request):
 
-    application_user_id = request.GET.get("applicationUserId")
-
-    if application_user_id != "":
-        user = get_object_or_404(UserId, user_id=application_user_id)
+    if request.method == "PUT":
+        user = get_object_or_404(UserId, user_id=request.GET.get("applicationUserId"))
+        user_response = AuthData_pb2.UsersResponseMessage()
+        user_response.user.userId = str(user.mayhem_id.int)
+        user_response.user.telemetryId = str(user.telemetry_id)
+        user_response.token.sessionKey = user.session_key
+        return HttpResponse(user_response.SerializeToString(), content_type="application/x-protobuf")
 
     else:
 
@@ -95,24 +98,9 @@ def users(request):
 
         else:
             user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
-
-
-    response = {
-        "user": {
-            "userId": str(user.mayhem_id.int),
-            "telemetryId": str(user.telemetry_id)
-        },
-        "token": {
-            "sessionKey": user.session_key
-        }
-    }
-
-    user_response = AuthData_pb2.UsersResponseMessage()
-    for key, value in response.items():
-        for subkey, subvalue in value.items():
-            setattr(getattr(user_response, key), subkey, subvalue)
-
-    return HttpResponse(user_response.SerializeToString(), content_type="application/x-protobuf")
+            root = ET.Element("Resources")
+            ET.SubElement(root, "URI").text = f"users/{user.mayhem_id.int}"
+            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
 
 @csrf_exempt
