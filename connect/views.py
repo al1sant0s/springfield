@@ -206,7 +206,13 @@ def tokeninfo(request, device_id):
     token.save(update_fields=["device_id", "device_id_cache", "timestamp", "session_key"])
 
     # Make a land token if one does not already exist.
-    land_token, _ = LandToken.objects.get_or_create(user=token.user)
+    # Remove previous land token if it exists and is marked for removal.
+    land_token, created = LandToken.objects.get_or_create(user=token.user)
+    if not created and land_token.remove:
+        land_token.land_token = uuid.uuid4()
+        land_token.authorized = False
+        land_token.remove = False
+
     land_token.retrieved = False
     land_token.save()
 

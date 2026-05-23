@@ -140,9 +140,12 @@ def userstats(request):
             save_town(token.user, protoland_request)
             cache.delete(cache_entry)
 
-        # Authorize land_token or remove it.
+        # Remove or authorize land token.
         if land_token.remove:
-            land_token.delete()
+            land_token.land_token = uuid.uuid4()
+            land_token.authorized = False
+            land_token.remove = False
+            land_token.save()
 
         elif land_token.retrieved:
             land_token.authorized = True
@@ -325,8 +328,14 @@ def deleteToken(request, mayhem_id):
     delete_token_request.ParseFromString(request.body)
     land_token = get_object_or_404(LandToken, land_token=uuid.UUID(delete_token_request.token))
 
+    # Remove land token if authorized, mark for removal otherwise.
+    # Note: it does not literally remove the instance from the database.
+    # Instead, the previous land token is invalidated by generating new data.
     if land_token.authorized:
-        land_token.delete()
+        land_token.land_token = uuid.uuid4()
+        land_token.authorized = False
+        land_token.remove = False
+        land_token.save()
 
     else:
         land_token.remove = True

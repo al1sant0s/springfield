@@ -463,9 +463,9 @@ class WholeLandTokenViewsTest(TestCase):
             content_type="application/x-protobuf"
         )
         self.assertEqual(response.status_code, 404)
-        self.assertTrue(LandToken.objects.filter(user=token.user).exists())
+        self.assertEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
 
-        # Call view with right land token and verify it deletes it.
+        # Call view with right land token and verify it removes it.
         delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
         delete_token_request.token = str(token.user.landtoken.land_token)
 
@@ -476,11 +476,12 @@ class WholeLandTokenViewsTest(TestCase):
             content_type="application/x-protobuf"
         )
         self.assertEqual(response.status_code, 200)
-        self.assertFalse(LandToken.objects.filter(user=token.user).exists())
+        self.assertNotEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
 
         # Create new unauthorized land token and check the removal procedure.
         # The land token should be marked for removal but it should only be removed
-        # once the user reach userstats.
+        # once the user reach userstats or tokeninfo.
+        LandToken.objects.filter(user=token.user).delete()
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
         self.assertEqual(response.status_code, 200)
 
@@ -501,7 +502,7 @@ class WholeLandTokenViewsTest(TestCase):
         # Marked for removal but it is not removed yet.
         token.user.refresh_from_db()
         self.assertTrue(token.user.landtoken.remove)
-        self.assertTrue(LandToken.objects.filter(user=token.user).exists())
+        self.assertEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
 
         response = self.client.post(
             reverse("mh:userstats"),
@@ -514,4 +515,34 @@ class WholeLandTokenViewsTest(TestCase):
         )
 
         # Now the land token has been removed.
-        self.assertFalse(LandToken.objects.filter(user=token.user).exists())
+        self.assertNotEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+
+        # Land token can also be removed in tokeninfo if it was marked for removal by deleteToken but did not reach userstats in the previous session.
+        LandToken.objects.filter(user=token.user).delete()
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        token.user.refresh_from_db()
+        self.assertFalse(token.user.landtoken.remove)
+
+        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+        delete_token_request.token = str(token.user.landtoken.land_token)
+
+        response = self.client.post(
+            reverse("mh:deleteToken",
+            args=(token.user.mayhem_id.int,)),
+            data=delete_token_request.SerializeToString(),
+            content_type="application/x-protobuf"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Marked for removal but it is not removed yet.
+        token.user.refresh_from_db()
+        self.assertTrue(token.user.landtoken.remove)
+        self.assertEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        # Now the land token has been removed.
+        self.assertNotEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
