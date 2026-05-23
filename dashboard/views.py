@@ -1,4 +1,4 @@
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.core.files.base import ContentFile
@@ -235,7 +235,7 @@ def index(request):
 
     context = {
         "town_form": town_form,
-        "town_url": reverse("mh:download_protoland", args=(request.user.mayhem_id.int,)),
+        "town_url": reverse("dashboard:download_town", args=(request.user.mayhem_id.int,)),
         "currency_form": currency_form,
         "avatar_url":  get_avatar_url(request.user),
         "avatar_exists": request.user.avatar,
@@ -457,3 +457,7 @@ def devices(request):
 def remove_device(request, advertising_id):
     get_object_or_404(DeviceToken, advertising_id=advertising_id).delete()
     return HttpResponseRedirect(reverse("dashboard:devices"))
+
+
+def download_town(request, mayhem_id):
+    return HttpResponse(load_town(request.user), content_type="application/x-protobuf")

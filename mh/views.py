@@ -93,7 +93,7 @@ def users(request):
         try:
             session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
 
-        except ValueError:
+        except TypeError, ValueError:
             return HttpResponseBadRequest("Invalid header: currentClientSessionId")
 
         else:
@@ -144,10 +144,9 @@ def userstats(request):
         if land_token.remove:
             land_token.delete()
 
-        else:
-            land_token.retrieved = True
+        elif land_token.retrieved:
             land_token.authorized = True
-            land_token.save(update_fields=["retrieved", "authorized"])
+            land_token.save(update_fields=["authorized"])
 
 
         return HttpResponse(status=409)
@@ -226,7 +225,7 @@ def friendData(request):
         try:
             session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
 
-        except ValueError:
+        except TypeError, ValueError:
             return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
 
         else:
@@ -343,52 +342,57 @@ def deleteToken(request, mayhem_id):
 @require_http_methods(["GET", "POST", "PUT"])
 def protoland(request, mayhem_id):
 
-    # Load town.
-    if request.method == "GET":
-        return HttpResponse(load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))), content_type="application/x-protobuf")
+    try:
+        land_token = uuid.UUID(request.headers.get("Land-Update-Token"))
+
+    except TypeError, ValueError:
+        return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
     else:
+        land_token = get_object_or_404(LandToken, land_token=land_token)
 
-        try:
-            land_token = uuid.UUID(request.headers.get("Land-Update-Token"))
 
-        except ValueError:
-            return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
+    # Load town.
+    if request.method == "GET":
+
+        if land_token.authorized:
+            return HttpResponse(load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))), content_type="application/x-protobuf")
+
+        # Ask for a new land token.
+        else:
+            root = ET.Element("error", attrib={"code": "409", "type": "INVALID_VALUE", "severity": "DEBUG"})
+            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+
+    else:
+        # Avoid user tampering with other towns.
+        if mayhem_id != land_token.user.mayhem_id.int:
+            return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
+
+        # Try to decompress.
+        if request.headers.get("Content-Encoding") == "gzip":
+            decompressed_data = gzip.decompress(request.body)
 
         else:
+            decompressed_data = request.body
 
-            land_token = get_object_or_404(LandToken, land_token=land_token)
+        # Update town.
+        protoland_request = LandData_pb2.LandMessage()
+        protoland_request.ParseFromString(decompressed_data) # type: ignore
 
-            # Avoid user tampering with other towns.
-            if mayhem_id != land_token.user.mayhem_id.int:
-                return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
+        # Save direct to disk with an authorized land token.
+        # Cache save from an unauthorized land token to memory to
+        # be saved at mh/userstats/.
+        if land_token.authorized:
+            save_town(land_token.user, protoland_request)
+            land_token.user.events = bytes()
+            land_token.user.save(update_fields=["events"])
 
-            # Try to decompress.
-            if request.headers.get("Content-Encoding") == "gzip":
-                decompressed_data = gzip.decompress(request.body)
-
-            else:
-                decompressed_data = request.body
-
-
-            # Update town.
-            protoland_request = LandData_pb2.LandMessage()
-            protoland_request.ParseFromString(decompressed_data) # type: ignore
-
-            # Save direct to disk with an authorized land token.
-            # Cache save from an unauthorized land token to memory to
-            # be saved at mh/userstats/.
-            if land_token.authorized:
-                save_town(land_token.user, protoland_request)
-                land_token.user.events = bytes()
-                land_token.user.save(update_fields=["events"])
-
-            else:
-                cache.set(str(land_token.land_token), protoland_request.SerializeToString(), timeout=300)
+        else:
+            cache.set(str(land_token.land_token), protoland_request.SerializeToString(), timeout=300)
 
 
-            root = ET.Element("WholeLandUpdateResponse")
-            return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+        root = ET.Element("WholeLandUpdateResponse")
+        return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
 
 
 def protocurrency(request, mayhem_id):
@@ -396,7 +400,7 @@ def protocurrency(request, mayhem_id):
     try:
         session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
 
-    except ValueError:
+    except TypeError, ValueError:
         return HttpResponseBadRequest("Missing or invalid header: currentClientSessionId")
 
     else:
@@ -425,7 +429,7 @@ def extraLandUpdate(request, mayhem_id):
     try:
         land_token = uuid.UUID(request.headers.get("Land-Update-Token"))
 
-    except ValueError:
+    except TypeError, ValueError:
         return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
     else:

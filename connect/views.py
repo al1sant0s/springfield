@@ -101,26 +101,22 @@ def auth(request, device_id):
         # Normal user registration.
         else:
 
+            token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
             email = BaseUserManager.normalize_email(json_data["email"])
             code = json_data["cred"]
 
             if not validate_auth_code(email, code):
                 raise Http404
 
-            token = get_object_or_404(DeviceToken, Q(device_id=device_id) | Q(device_id_cache=device_id))
-            user = token.user
-
             # Authenticated?! Great, now look for user with this email.
             try:
+                LandToken.objects.filter(user=token.user).update(authorized=False)
                 token.user = UserId.objects.get(email=email)
 
-            # If a user with this email does not exist, it means we have to update the current user email associated with the token.
-            # However, if our user is already registered, then we need to create a new user.
+            # If an user with this email does not exist, it means we have to update the current user email associated with the token.
             except UserId.DoesNotExist:
-                if token.user.is_registered:
-                    token.user = UserId()
+                token.user.email = email
 
-            token.user.email = email
             token.user.is_registered = True
             token.user.session_key = secrets.token_urlsafe(32)
             token.user.last_authenticated = timestamp
@@ -130,11 +126,6 @@ def auth(request, device_id):
             token.timestamp = timestamp
             token.login_status = True
             token.save()
-
-            # Point land_token to new user.
-            if user != token.user:
-                LandToken.objects.filter(user=token.user).delete()
-                LandToken.objects.filter(user=user).update(user=token.user)
 
             response = {
                 "code": token.code,

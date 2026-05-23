@@ -48,6 +48,9 @@ class UserStatsViewTests(TestCase):
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
         self.assertEqual(response.status_code, 200)
 
+        token.user.landtoken.retrieved = True
+        token.user.landtoken.save()
+
         response = self.client.post(
             reverse("mh:userstats"),
             headers={
@@ -58,6 +61,7 @@ class UserStatsViewTests(TestCase):
             }
         )
 
+        token.user.landtoken.refresh_from_db()
         self.assertTrue(token.user.landtoken.authorized)
         self.assertEqual(response.status_code, 409)
 
@@ -140,7 +144,10 @@ class ProtolandViewTests(TestCase):
         land_token = token.user.landtoken
 
         # Get town.
-        response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
+        response = self.client.get(
+            reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
+            headers={"Land-Update-Token": str(land_token.land_token)}
+        )
         self.assertEqual(response.status_code, 200)
 
         land_data = LandData_pb2.LandMessage()
@@ -169,10 +176,12 @@ class ProtolandViewTests(TestCase):
         self.assertContains(response, ET.tostring(ET.Element("WholeLandUpdateResponse")))
 
         # Get town again.
-        response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
+        response = self.client.get(
+            reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
+            headers={"Land-Update-Token": str(land_token.land_token)}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, land_data.SerializeToString())
-
 
         # Change some data and post town with unauthorized land token.
         land_token.authorized = False
@@ -194,7 +203,10 @@ class ProtolandViewTests(TestCase):
         self.assertContains(response, ET.tostring(ET.Element("WholeLandUpdateResponse")))
 
         # Get town again and make sure it was not saved yet.
-        response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
+        response = self.client.get(
+            reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
+            headers={"Land-Update-Token": str(land_token.land_token)}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, land_data.SerializeToString(), msg_prefix="Unauthorized land token should not save town")
         self.assertTrue(cache.get(str(land_token.land_token)))
@@ -212,7 +224,10 @@ class ProtolandViewTests(TestCase):
         self.assertEqual(response.status_code, 409)
 
         # Get town again and make sure it was saved this time.
-        response = self.client.get(reverse("mh:protoland", args=(token.user.mayhem_id.int,)))
+        response = self.client.get(
+            reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
+            headers={"Land-Update-Token": str(land_token.land_token)}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, land_data.SerializeToString())
         self.assertFalse(cache.get(str(land_token.land_token)))
@@ -238,6 +253,16 @@ class ProtolandViewTests(TestCase):
             }
         )
         self.assertEqual(response.status_code, 400)
+
+        # Attempt to get town with unauthorized land token.
+        land_token.authorized = False
+        land_token.save()
+        response = self.client.get(
+            reverse("mh:protoland", args=(token.user.mayhem_id.int,)),
+            headers={"Land-Update-Token": str(land_token.land_token)}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, ET.tostring(ET.Element("error", attrib={"code": "409", "type": "INVALID_VALUE", "severity": "DEBUG"})))
 
 
     def test_load_premium_currency(self):

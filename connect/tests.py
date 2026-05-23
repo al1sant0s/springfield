@@ -48,6 +48,7 @@ class TestDevice():
     def authenticate_token(self):
         self.client = Client()
         self.client.get(reverse("connect:tokeninfo", args=(self.get_device_token().device_id,)))
+        self.client.get(reverse("mh:protoWholeLandToken", args=(self.get_device_token().user.mayhem_id.int,)))
         self.client.post(
             reverse("mh:userstats"),
             headers={
