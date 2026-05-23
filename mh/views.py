@@ -291,6 +291,7 @@ def protoWholeLandToken(request, mayhem_id):
         land_token.land_token = uuid.uuid4()
         land_token.retrieved = True
         land_token.authorized = False
+        land_token.remove = False
         land_token.save()
 
         # Remove cached town from user.
