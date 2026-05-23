@@ -48,8 +48,8 @@ class UserStatsViewTests(TestCase):
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
         self.assertEqual(response.status_code, 200)
 
-        token.user.landtoken.retrieved = True
-        token.user.landtoken.save()
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(device.get_device_token().user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
 
         response = self.client.post(
             reverse("mh:userstats"),
@@ -372,27 +372,30 @@ class WholeLandTokenViewsTest(TestCase):
 
     def test_proto_whole_land_token(self):
 
-        # Create user, device and land token.
+        # Create user and device.
         device = TestDevice()
         device.authenticate_device()
         token = device.get_device_token()
 
-        # Check the token is unauthorized and not retrieved.
+        # Retrieve the token.
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(token.user.landtoken.retrieved)
+        self.assertFalse(token.user.landtoken.authorized)
+        self.assertFalse(token.user.landtoken.remove)
+
+        # Check the token is available for retrieval.
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
         self.assertEqual(response.status_code, 200)
 
-        self.assertFalse(token.user.landtoken.authorized)
+        token.user.landtoken.refresh_from_db()
         self.assertFalse(token.user.landtoken.retrieved)
 
-        # Retrieve the token and check it's retrieved and it cannot be retrieved again.
+        # Retrieve the token again.
         response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
         self.assertEqual(response.status_code, 200)
 
-        token.user.refresh_from_db()
-        self.assertFalse(token.user.landtoken.authorized)
-        self.assertTrue(token.user.landtoken.retrieved)
-
-        # Try to retrieve it again should not be possible until calling tokeninfo again.
+        # Try retrieving the token should not be possible until calling tokeninfo again.
         response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
         self.assertEqual(response.status_code, 403)
 
@@ -404,32 +407,29 @@ class WholeLandTokenViewsTest(TestCase):
 
         # If an authorized token exists then the user may choose if they want to overwrite it
         # or switch to other device to save their progress first.
-        device.authenticate_token()
-        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
-        self.assertEqual(response.status_code, 200) 
+        token.user.landtoken.authorized = True
+        token.user.landtoken.save()
 
         response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, ET.tostring(ET.Element("error", attrib={"code": "409", "type": "RESOURCE_ALREADY_EXISTS"})))
 
-        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
-        self.assertEqual(response.status_code, 200)
-
         response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)), query_params={"force": "1"})
         self.assertEqual(response.status_code, 200)
 
-        token.refresh_from_db()
+        token.user.landtoken.refresh_from_db()
         self.assertFalse(token.user.landtoken.authorized)
         self.assertTrue(token.user.landtoken.retrieved)
 
 
     def test_check_token(self):
 
-        # Create user, device and land token.
+        # Create user and device.
         device = TestDevice()
         device.authenticate_device()
-        device.authenticate_token()
+
         token = device.get_device_token()
+        LandToken.objects.create(user=token.user, retrieved=True, authorized=True)
 
         # Check that a retrieved token cannot be retrieved again.
         self.assertTrue(token.user.landtoken.retrieved)
@@ -446,11 +446,12 @@ class WholeLandTokenViewsTest(TestCase):
 
     def test_delete_token(self):
 
-        # Create user, device and land token.
+        # Create user and device.
         device = TestDevice()
         device.authenticate_device()
-        device.authenticate_token()
+
         token = device.get_device_token()
+        LandToken.objects.create(user=token.user, retrieved=True, authorized=True)
 
         # Call view with wrong body land token.
         delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
@@ -463,7 +464,7 @@ class WholeLandTokenViewsTest(TestCase):
             content_type="application/x-protobuf"
         )
         self.assertEqual(response.status_code, 404)
-        self.assertEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+        self.assertTrue(LandToken.objects.filter(user=token.user).exists())
 
         # Call view with right land token and verify it removes it.
         delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
@@ -475,19 +476,12 @@ class WholeLandTokenViewsTest(TestCase):
             data=delete_token_request.SerializeToString(),
             content_type="application/x-protobuf"
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertNotEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+        self.assertFalse(LandToken.objects.filter(user=token.user).exists())
 
         # Create new unauthorized land token and check the removal procedure.
         # The land token should be marked for removal but it should only be removed
         # once the user reach userstats or tokeninfo.
-        LandToken.objects.filter(user=token.user).delete()
-        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
-        self.assertEqual(response.status_code, 200)
-
-        token.user.refresh_from_db()
-        self.assertFalse(token.user.landtoken.remove)
-
+        LandToken.objects.create(user=token.user)
         delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
         delete_token_request.token = str(token.user.landtoken.land_token)
 
@@ -502,7 +496,7 @@ class WholeLandTokenViewsTest(TestCase):
         # Marked for removal but it is not removed yet.
         token.user.refresh_from_db()
         self.assertTrue(token.user.landtoken.remove)
-        self.assertEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+        self.assertTrue(LandToken.objects.filter(user=token.user).exists())
 
         response = self.client.post(
             reverse("mh:userstats"),
@@ -515,16 +509,10 @@ class WholeLandTokenViewsTest(TestCase):
         )
 
         # Now the land token has been removed.
-        self.assertNotEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+        self.assertFalse(LandToken.objects.filter(user=token.user).exists())
 
         # Land token can also be removed in tokeninfo if it was marked for removal by deleteToken but did not reach userstats in the previous session.
-        LandToken.objects.filter(user=token.user).delete()
-        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
-        self.assertEqual(response.status_code, 200)
-
-        token.user.refresh_from_db()
-        self.assertFalse(token.user.landtoken.remove)
-
+        LandToken.objects.create(user=token.user)
         delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
         delete_token_request.token = str(token.user.landtoken.land_token)
 
@@ -539,10 +527,10 @@ class WholeLandTokenViewsTest(TestCase):
         # Marked for removal but it is not removed yet.
         token.user.refresh_from_db()
         self.assertTrue(token.user.landtoken.remove)
-        self.assertEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+        self.assertTrue(LandToken.objects.filter(user=token.user).exists())
 
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
         self.assertEqual(response.status_code, 200)
 
         # Now the land token has been removed.
-        self.assertNotEqual(token.user.landtoken.land_token, LandToken.objects.get(user=token.user).land_token)
+        self.assertFalse(LandToken.objects.filter(user=token.user).exists())

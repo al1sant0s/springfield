@@ -142,10 +142,7 @@ def userstats(request):
 
         # Remove or authorize land token.
         if land_token.remove:
-            land_token.land_token = uuid.uuid4()
-            land_token.authorized = False
-            land_token.remove = False
-            land_token.save()
+            land_token.delete()
 
         elif land_token.retrieved:
             land_token.authorized = True
@@ -277,7 +274,7 @@ def friendData(request):
 def protoWholeLandToken(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-    land_token = get_object_or_404(LandToken, user=user)
+    land_token, _ = LandToken.objects.get_or_create(user=user)
 
     if land_token.retrieved:
         return HttpResponseForbidden("Land token retrieved")
@@ -330,13 +327,8 @@ def deleteToken(request, mayhem_id):
     land_token = get_object_or_404(LandToken, land_token=uuid.UUID(delete_token_request.token))
 
     # Remove land token if authorized, mark for removal otherwise.
-    # Note: it does not literally remove the instance from the database.
-    # Instead, the previous land token is invalidated by generating new data.
     if land_token.authorized:
-        land_token.land_token = uuid.uuid4()
-        land_token.authorized = False
-        land_token.remove = False
-        land_token.save()
+        land_token.delete()
 
     else:
         land_token.remove = True
@@ -365,7 +357,7 @@ def protoland(request, mayhem_id):
     # Load town.
     if request.method == "GET":
 
-        if land_token.authorized:
+        if land_token.retrieved and land_token.authorized:
             return HttpResponse(load_town(get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))), content_type="application/x-protobuf")
 
         # Ask for a new land token.

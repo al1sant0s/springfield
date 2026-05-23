@@ -142,9 +142,6 @@ class ConnectViewsTests(TestCase):
         response = self.client.get(reverse("connect:tokeninfo", args=(device.device_id,)))
         self.assertEqual(response.status_code, 200, "Tokeninfo view failed")
 
-        # Make sure a land token was made for the user.
-        self.assertTrue(LandToken.objects.filter(user=token.user).exists(), "LandToken should exist for the user")
-
         response_data = json.loads(response.content)
         self.assertEqual(type(response_data), dict)
         self.assertIn("client_id", response_data)
