@@ -274,7 +274,7 @@ def friendData(request):
 def protoWholeLandToken(request, mayhem_id):
 
     user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-    land_token, _ = LandToken.objects.get_or_create(user=user)
+    land_token = get_object_or_404(LandToken, user=user)
 
     if land_token.retrieved:
         return HttpResponseForbidden("Land token retrieved")

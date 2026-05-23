@@ -97,19 +97,13 @@ def get_auth_code(email, username="user", send_email=True):
 
         # Search for current active code in database.
         # If it cannot find one, create a new one.
-        auth_code, created = ProgRegCode.objects.get_or_create(
+        auth_code, _ = ProgRegCode.objects.update_or_create(
             email=email,
             defaults={
                 "code": code,
                 "expiry_on": timezone.now() + datetime.timedelta(minutes=env("AUTH_CODE_MINUTES", default=30))
             }
         )
-
-        if not created:
-            auth_code.code = code
-            auth_code.expiry_on = timezone.now() + datetime.timedelta(minutes=env("AUTH_CODE_MINUTES", default=30))
-            auth_code.save()
-
 
         return auth_code
 

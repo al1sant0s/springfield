@@ -377,36 +377,35 @@ class WholeLandTokenViewsTest(TestCase):
         device.authenticate_device()
         token = device.get_device_token()
 
-        # Retrieve the token.
-        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        # Request a new land token.
+        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(token.user.landtoken.retrieved)
+        self.assertFalse(token.user.landtoken.retrieved)
         self.assertFalse(token.user.landtoken.authorized)
         self.assertFalse(token.user.landtoken.remove)
 
-        # Check the token is available for retrieval.
+        # Retrieve the land token.
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(token.user.landtoken.retrieved)
+
+        # Retrieving the land token should not be possible until calling tokeninfo again.
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
+        self.assertEqual(response.status_code, 403)
+
+        # Retrieve the land token again.
         response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
         self.assertEqual(response.status_code, 200)
 
         token.user.landtoken.refresh_from_db()
         self.assertFalse(token.user.landtoken.retrieved)
 
-        # Retrieve the token again.
-        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
-        self.assertEqual(response.status_code, 200)
-
-        # Try retrieving the token should not be possible until calling tokeninfo again.
-        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
-        self.assertEqual(response.status_code, 403)
-
-        response = self.client.get(reverse("connect:tokeninfo", args=(token.device_id,)))
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.get(reverse("mh:protoWholeLandToken", args=(token.user.mayhem_id.int,)))
-        self.assertEqual(response.status_code, 200)
-
-        # If an authorized token exists then the user may choose if they want to overwrite it
+        # If an authorized land token exists then the user may choose if they want to overwrite it
         # or switch to other device to save their progress first.
+        token.user.landtoken.retrieved = False
         token.user.landtoken.authorized = True
         token.user.landtoken.save()
 
