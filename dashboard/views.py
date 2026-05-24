@@ -210,7 +210,7 @@ def index(request):
                     user.events = bytes()
                     user.save()
                     messages.success(request, "Uploaded town successfuly!", extra_tags="town")
-                    LandToken.objects.filter(user=request.user).delete()
+                    LandToken.objects.filter(user=request.user).update(authorized=False, remove=True)
                     return HttpResponseRedirect(reverse("dashboard:index"))
 
 
@@ -226,8 +226,8 @@ def index(request):
                 land_data.userData.money = currencies["money"]
                 save_town(request.user, land_data)
 
-                # Delete all land tokens.
-                LandToken.objects.filter(user=request.user).delete()
+                # Remove all land tokens.
+                LandToken.objects.filter(user=request.user).update(authorized=False, remove=True)
 
                 messages.success(request, "Currencies updated!", extra_tags="currency")
                 return HttpResponseRedirect(reverse("dashboard:index"))

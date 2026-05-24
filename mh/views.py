@@ -133,20 +133,21 @@ def userstats(request):
         cache_entry = str(token.user.landtoken.land_token)
         cached_town = cache.get(cache_entry)
 
-        # Save cached town.
-        if cached_town is not None:
-            protoland_request = LandData_pb2.LandMessage()
-            protoland_request.ParseFromString(cached_town)
-            save_town(token.user, protoland_request)
-            cache.delete(cache_entry)
-
         # Remove or authorize land token.
         if land_token.remove:
-            land_token.delete()
+            land_token.authorized = False
+            land_token.save(update_fields=["authorized"])
 
         elif land_token.retrieved:
             land_token.authorized = True
             land_token.save(update_fields=["authorized"])
+
+            # Save cached town.
+            if cached_town is not None:
+                protoland_request = LandData_pb2.LandMessage()
+                protoland_request.ParseFromString(cached_town)
+                save_town(token.user, protoland_request)
+                cache.delete(cache_entry)
 
 
         return HttpResponse(status=409)
@@ -324,15 +325,14 @@ def deleteToken(request, mayhem_id):
 
     delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
     delete_token_request.ParseFromString(request.body)
+
     land_token = get_object_or_404(LandToken, land_token=uuid.UUID(delete_token_request.token))
+    land_token.remove = True
 
-    # Remove land token if authorized, mark for removal otherwise.
     if land_token.authorized:
-        land_token.delete()
+        land_token.authorized = False
 
-    else:
-        land_token.remove = True
-        land_token.save(update_fields=["remove"])
+    land_token.save()
 
     delete_token_response = WholeLandTokenData_pb2.DeleteTokenResponse()
     delete_token_response.result = True
@@ -383,7 +383,7 @@ def protoland(request, mayhem_id):
 
         # Save direct to disk with an authorized land token.
         # Cache save from an unauthorized land token to memory to
-        # be saved at mh/userstats/.
+        # be saved at mh/userstats.
         if land_token.authorized:
             save_town(land_token.user, protoland_request)
             land_token.user.events = bytes()

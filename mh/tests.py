@@ -118,11 +118,11 @@ class UserStatsViewTests(TestCase):
 
     def test_delete_land_token_marked_for_removal(self):
         """
-        If a land token is marked for removal, it should be deleted in userstats.
+        If a land token is marked for removal, it should be deauthorized in userstats.
         """
         device = TestDevice()
         device.register_device_token()
-        land_token = LandToken.objects.create(user=device.token.user, remove=True)
+        LandToken.objects.create(user=device.token.user, authorized=True, remove=True)
 
         response = self.client.post(
             reverse("mh:userstats"),
@@ -134,7 +134,9 @@ class UserStatsViewTests(TestCase):
             }
         )
         self.assertEqual(response.status_code, 409)
-        self.assertFalse(LandToken.objects.filter(user=device.token.user).exists())
+        land_token = LandToken.objects.get(user=device.token.user)
+        self.assertFalse(land_token.authorized)
+        self.assertTrue(land_token.remove)
         self.assertIsNone(cache.get(str(land_token.land_token)))
 
 
@@ -393,7 +395,7 @@ class WholeLandTokenViewsTest(TestCase):
         response = self.client.get(reverse("mh:protoWholeLandToken", args=(device.token.user.mayhem_id.int,)))
         self.assertEqual(response.status_code, 200)
         land_token.refresh_from_db()
-        self.assertTrue(land_token)
+        self.assertTrue(land_token.retrieved)
 
         # If an authorized land token exists then the user may choose if they want to overwrite it
         # or switch to other device to save their progress first.
@@ -436,40 +438,11 @@ class WholeLandTokenViewsTest(TestCase):
         # Create user and device.
         device = TestDevice()
         device.register_device_token()
-        land_token = LandToken.objects.create(user=device.token.user, retrieved=True, authorized=True)
+        land_token = LandToken.objects.create(user=device.token.user, retrieved=True, authorized=False)
 
-        # Call view with wrong body land token.
-        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
-        delete_token_request.token = str(uuid.uuid4())
-
-        response = self.client.post(
-            reverse("mh:deleteToken",
-            args=(device.token.user.mayhem_id.int,)),
-            data=delete_token_request.SerializeToString(),
-            content_type="application/x-protobuf"
-        )
-        self.assertEqual(response.status_code, 404)
-        self.assertTrue(LandToken.objects.filter(user=device.token.user).exists())
-
-        # Call view with right land token and verify it removes it.
+        # The land token should be marked for removal.
         delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
         delete_token_request.token = str(land_token.land_token)
-
-        response = self.client.post(
-            reverse("mh:deleteToken",
-            args=(device.token.user.mayhem_id.int,)),
-            data=delete_token_request.SerializeToString(),
-            content_type="application/x-protobuf"
-        )
-        self.assertFalse(LandToken.objects.filter(user=device.token.user).exists())
-
-        # Create new unauthorized land token and check the removal procedure.
-        # The land token should be marked for removal but it should only be removed
-        # once the user reach userstats or tokeninfo.
-        land_token = LandToken.objects.create(user=device.token.user, retrieved=True, authorized=False)
-        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
-        delete_token_request.token = str(device.token.user.landtoken.land_token)
-
         response = self.client.post(
             reverse("mh:deleteToken",
             args=(device.token.user.mayhem_id.int,)),
@@ -477,7 +450,39 @@ class WholeLandTokenViewsTest(TestCase):
             content_type="application/x-protobuf"
         )
         self.assertEqual(response.status_code, 200)
-
-        # Marked for removal but it is not removed yet.
         land_token.refresh_from_db()
         self.assertTrue(land_token.remove)
+
+        # The land token should be marked for removal and be deauthorized if authorized.
+        land_token.authorized = True
+        land_token.remove = False
+        land_token.save()
+        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+        delete_token_request.token = str(land_token.land_token)
+        response = self.client.post(
+            reverse("mh:deleteToken",
+            args=(device.token.user.mayhem_id.int,)),
+            data=delete_token_request.SerializeToString(),
+            content_type="application/x-protobuf"
+        )
+        self.assertEqual(response.status_code, 200)
+        land_token.refresh_from_db()
+        self.assertTrue(land_token.remove)
+        self.assertFalse(land_token.authorized)
+
+        # Call view with wrong body land token.
+        land_token.authorized = True
+        land_token.remove = False
+        land_token.save()
+        delete_token_request = WholeLandTokenData_pb2.DeleteTokenRequest()
+        delete_token_request.token = str(uuid.uuid4())
+        response = self.client.post(
+            reverse("mh:deleteToken",
+            args=(device.token.user.mayhem_id.int,)),
+            data=delete_token_request.SerializeToString(),
+            content_type="application/x-protobuf"
+        )
+        self.assertEqual(response.status_code, 404)
+        land_token.refresh_from_db()
+        self.assertFalse(land_token.remove)
+        self.assertTrue(land_token.authorized)

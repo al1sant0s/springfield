@@ -110,7 +110,7 @@ def auth(request, device_id):
 
             # Authenticated?! Great, now look for user with this email.
             try:
-                LandToken.objects.filter(user=token.user).update(authorized=False)
+                LandToken.objects.filter(user=token.user).update(authorized=False, remove=True)
                 token.user = UserId.objects.get(email=email)
 
             # If an user with this email does not exist, it means we have to update the current user email associated with the token.
@@ -182,7 +182,7 @@ def get_token(request, device_id):
     }
 
     if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
-        LandToken.objects.filter(user=token.user).update(authorized=False)
+        LandToken.objects.filter(user=token.user).update(authorized=False, remove=True)
         token.delete()
 
     return JsonResponse(response)
@@ -206,8 +206,10 @@ def tokeninfo(request, device_id):
     token.save(update_fields=["device_id", "device_id_cache", "timestamp", "session_key"])
 
     # Renew land token.
-    LandToken.objects.filter(user=token.user, remove=True).delete()
-    LandToken.objects.update_or_create(user=token.user, defaults={'retrieved': False})
+    LandToken.objects.update_or_create(
+        user=token.user,
+        defaults= {"land_token": uuid.uuid4(), "retrieved": False, "authorized": False} if LandToken.objects.filter(user=token.user, remove=True).exists() else {"retrieved": False}
+    )
 
     response = {
         "client_id": "simpsons4-android-client",
