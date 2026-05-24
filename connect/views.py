@@ -110,7 +110,7 @@ def auth(request, device_id):
 
             # Authenticated?! Great, now look for user with this email.
             try:
-                LandToken.objects.filter(user=token.user).delete()
+                LandToken.objects.filter(user=token.user).update(authorized=False)
                 token.user = UserId.objects.get(email=email)
 
             # If an user with this email does not exist, it means we have to update the current user email associated with the token.
@@ -182,7 +182,7 @@ def get_token(request, device_id):
     }
 
     if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
-        LandToken.objects.filter(user=token.user).delete()
+        LandToken.objects.filter(user=token.user).update(authorized=False)
         token.delete()
 
     return JsonResponse(response)
