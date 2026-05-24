@@ -5,6 +5,8 @@ from django.utils.crypto import get_random_string
 from connect.models import UserId, DeviceToken
 from proxy.views import get_auth_code
 
+from mh.models import LandToken
+
 import base64
 import json
 import uuid
@@ -23,42 +25,18 @@ class TestDevice():
 
 
     def register_device_token(self, email=None, is_registered=False, login_status=False):
+        user = UserId(email=email, is_registered=is_registered)
+        user.save()
         self.token = DeviceToken(
             advertising_id=self.advertising_id,
-            user = UserId(email=email, is_registered=is_registered),
+            user=user,
             device_id=self.device_id,
             device_id_cache=self.device_id,
+            current_client_session_id=self.current_client_session_id,
+            session_key=user.session_key,
             login_status=login_status
         )
-        self.token.user.save()
         self.token.save()
-
-    def get_device_token(self):
-        return DeviceToken.objects.get(advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, str(self.advertising_id)))
-
-
-    def update_device_token(self, **kwargs):
-        token = self.get_device_token()
-
-        for key, value in kwargs.items():
-            setattr(token, key, value)
-
-        token.save(update_fields = kwargs.keys())
-
-
-    def authenticate_token(self):
-        self.client = Client()
-        self.client.get(reverse("connect:tokeninfo", args=(self.get_device_token().device_id,)))
-        self.client.get(reverse("mh:protoWholeLandToken", args=(self.get_device_token().user.mayhem_id.int,)))
-        self.client.post(
-            reverse("mh:userstats"),
-            headers={
-                "currentClientSessionId": str(self.current_client_session_id)
-            },
-            query_params={
-                "device_id": str(self.device_id)
-            }
-        )
 
 
 class ConnectViewsTests(TestCase):
@@ -187,3 +165,17 @@ class ConnectViewsTests(TestCase):
         self.assertIn("is_underage", response_data)
         self.assertIn("stopProcess", response_data)
         self.assertIn("telemetry_id", response_data)
+
+
+    def test_delete_land_token_marked_for_removal(self):
+        """
+        If a land token is marked for removal, it should be renewed in tokeninfo.
+        """
+
+        device = TestDevice()
+        device.register_device_token()
+        land_token = LandToken.objects.create(user=device.token.user, remove=True)
+
+        response = self.client.get(reverse("connect:tokeninfo", args=(device.device_id,)))
+        self.assertEqual(response.status_code, 200, "Tokeninfo view failed")
+        self.assertNotEqual(LandToken.objects.get(user=device.token.user).land_token, land_token.land_token, "Land token was not renewed")

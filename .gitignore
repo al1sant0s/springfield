@@ -221,3 +221,4 @@ __marimo__/
 .templates/
 towns/
 compose.yaml
+*.db
