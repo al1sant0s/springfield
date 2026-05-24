@@ -1,8 +1,8 @@
 from django.test import TestCase, Client
+from django.utils import timezone
 from django.urls import reverse
 from django.utils.crypto import get_random_string
-from connect.models import DeviceToken
-from mh.models import LandToken
+from connect.models import UserId, DeviceToken
 from proxy.views import get_auth_code
 
 import base64
@@ -19,7 +19,19 @@ class TestDevice():
         self.device_id = uuid.uuid4()
         self.current_client_session_id = uuid.uuid4()
         self.authenticator_login_type = authenticator_login_type
+        self.token = None
 
+
+    def register_device_token(self, email=None, is_registered=False, login_status=False):
+        self.token = DeviceToken(
+            advertising_id=self.advertising_id,
+            user = UserId(email=email, is_registered=is_registered),
+            device_id=self.device_id,
+            device_id_cache=self.device_id,
+            login_status=login_status
+        )
+        self.token.user.save()
+        self.token.save()
 
     def get_device_token(self):
         return DeviceToken.objects.get(advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, str(self.advertising_id)))
@@ -32,17 +44,6 @@ class TestDevice():
             setattr(token, key, value)
 
         token.save(update_fields = kwargs.keys())
-
-
-    def authenticate_device(self, initial_dict = dict()):
-        json_dict = {"advertisingId": str(self.advertising_id)}
-        json_dict.update(initial_dict)
-        json_data = json.dumps(json_dict)
-        query_params = {
-            "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
-            "authenticator_login_type": self.authenticator_login_type
-        }
-        return Client().get(reverse("connect:auth", args=(self.device_id,)), query_params=query_params)
 
 
     def authenticate_token(self):
@@ -69,8 +70,15 @@ class ConnectViewsTests(TestCase):
         in the database.
         """
 
+        # Perform user first connection.
         device = TestDevice()
-        response = device.authenticate_device()
+        json_dict = {"advertisingId": str(device.advertising_id)}
+        json_data = json.dumps(json_dict)
+        query_params = {
+            "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
+            "authenticator_login_type": device.authenticator_login_type
+        }
+        response = self.client.get(reverse("connect:auth", args=(device.device_id,)), query_params=query_params)
         self.assertEqual(response.status_code, 200, "Device authentication failed")
 
         response_data = json.loads(response.content)
@@ -79,31 +87,47 @@ class ConnectViewsTests(TestCase):
         self.assertIn("lnglv_token", response_data)
 
 
-    def test_login_logout_user(self):
+    def test_login_user(self):
         """
         User inserts code and confirms their email.
-        After a successful login, user requests to be logged out.
         """
 
         # Perform user first connection.
-        device = TestDevice()
-        response = device.authenticate_device()
-        token = device.get_device_token()
-        self.assertEqual(response.status_code, 200, "Device authentication failed")
+        device = TestDevice(authenticator_login_type="mobile_ea_account")
+        token = DeviceToken(
+            advertising_id=device.advertising_id,
+            user = UserId(),
+            device_id=device.device_id,
+            device_id_cache=device.device_id
+        )
+        token.user.save()
+        token.save()
 
         # Perform user register connection: request from game login screen.
         email = "testmail@django.com"
-
         code = get_auth_code(email, send_email=False).code
-        device.authenticator_login_type = "mobile_ea_account" # Switch to registered user.
 
         # User inserts wrong code.
-        response = device.authenticate_device(initial_dict={"email": email , "cred": "0"})
-        self.assertEqual(response.status_code, 404, "It should return 404 for wrong credential")
+        json_dict = {"advertisingId": str(device.advertising_id), "email": email , "cred": "0"}
+        json_data = json.dumps(json_dict)
+        query_params = {
+            "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
+            "authenticator_login_type": device.authenticator_login_type
+        }
+
+        response = self.client.get(reverse("connect:auth", args=(device.device_id,)), query_params=query_params)
+        self.assertEqual(response.status_code, 404, "Device authentication failed")
 
         # User inserts right code.
-        response = device.authenticate_device(initial_dict={"email": email , "cred": code})
-        self.assertEqual(response.status_code, 200, "It should return 200 for right credential")
+        json_dict.update({"email": email , "cred": code})
+        json_data = json.dumps(json_dict)
+        query_params = {
+            "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
+            "authenticator_login_type": device.authenticator_login_type
+        }
+
+        response = self.client.get(reverse("connect:auth", args=(device.device_id,)), query_params=query_params)
+        self.assertEqual(response.status_code, 200, "Device authentication failed")
         token.refresh_from_db()
 
         response_data = json.loads(response.content)
@@ -111,6 +135,16 @@ class ConnectViewsTests(TestCase):
         self.assertIn("code", response_data)
         self.assertIn("lnglv_token", response_data)
         self.assertTrue(token.login_status, "Login have failed")
+
+
+    def test_logout_user(self):
+        """
+        After a successful login, user requests to be logged out.
+        """
+
+        # Register and login user.
+        device = TestDevice(authenticator_login_type="mobile_ea_account")
+        device.register_device_token(email="testmail@django.com", is_registered=True, login_status=True)
 
         # User requests a logout.
         # DeviceToken gets deleted.
@@ -128,16 +162,14 @@ class ConnectViewsTests(TestCase):
         self.assertIn("refresh_token", response_data)
         self.assertIn("refresh_token_expires_in", response_data)
         self.assertIn("id_token", response_data)
-        self.assertFalse(DeviceToken.objects.filter(advertising_id=token.advertising_id).exists())
+        self.assertFalse(DeviceToken.objects.filter(advertising_id=device.advertising_id).exists())
 
 
     def test_tokeninfo(self):
 
         # Perform user first connection.
         device = TestDevice()
-        response = device.authenticate_device()
-        token = device.get_device_token()
-        self.assertEqual(response.status_code, 200, "Device authentication failed")
+        device.register_device_token()
 
         response = self.client.get(reverse("connect:tokeninfo", args=(device.device_id,)))
         self.assertEqual(response.status_code, 200, "Tokeninfo view failed")

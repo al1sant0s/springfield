@@ -28,7 +28,7 @@ class UserId(AbstractUser):
     last_authenticated = models.DateTimeField(default=timezone.now)
     friends = models.ManyToManyField("self", symmetrical=True)
     avatar = models.ImageField("Avatar Picture", storage=storages["staticfiles"], blank=True)
-    town = models.FileField("Town File", upload_to=env("TOWNS_ROOT", default="towns/"))
+    town = models.FileField("Town File", upload_to=env("TOWNS_ROOT", default="./towns/"))
     events = models.BinaryField()
  
     USERNAME_FIELD = "email"
@@ -92,8 +92,8 @@ class DeviceToken(models.Model):
     # This field exists to circuvent issues with headers with underscores like "access_token".
     # When /connect/tokeninfo is requested we will receive /<uuid:device_id>/connect/tokeninfo
     # and be able to find the DeviceToken. We can also use it in other apps.
-    device_id = models.UUIDField(unique=True)
-    device_id_cache = models.UUIDField(unique=True) # Fallback for tokeninfo when director is called again.
+    device_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    device_id_cache = models.UUIDField(default=uuid.uuid4, unique=True) # Fallback for tokeninfo when director is called again.
 
     # For mh endpoint POST method identification. Usable in friendData/origin
     current_client_session_id = models.UUIDField(null=True, blank=True)
@@ -103,5 +103,5 @@ class DeviceToken(models.Model):
     access_token = models.TextField()
     refresh_token = models.TextField()
     session_key = models.CharField(max_length=44, unique=True)
-    timestamp = models.DateTimeField("Token Creation/Update Time")
+    timestamp = models.DateTimeField("Token Creation/Update Time", default=timezone.now)
     login_status = models.BooleanField(default=False)
