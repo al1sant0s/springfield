@@ -389,7 +389,7 @@ def protoland(request, mayhem_id):
             land_token.user.events = bytes()
             land_token.user.save(update_fields=["events"])
 
-        else:
+        elif not land_token.remove:
             cache.set(str(land_token.land_token), protoland_request.SerializeToString(), timeout=300)
 
 
