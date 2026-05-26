@@ -1,7 +1,5 @@
 from django.db import models
 
-from connect.models import DeviceToken
-
 # Create your models here.
 
 class ProgRegCode(models.Model):

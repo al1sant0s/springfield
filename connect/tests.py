@@ -1,5 +1,4 @@
-from django.test import TestCase, Client
-from django.utils import timezone
+from django.test import TestCase
 from django.urls import reverse
 from django.utils.crypto import get_random_string
 from connect.models import UserId, DeviceToken

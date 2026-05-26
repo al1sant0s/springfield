@@ -1,4 +1,3 @@
-from operator import concat
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.db.models import Q
 from django.utils import timezone
