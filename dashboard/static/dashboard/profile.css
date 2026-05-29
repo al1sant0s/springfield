@@ -20,7 +20,7 @@ legend[for="id_profile_avatar"] {
 }
 
 .dangerous a {
-  color: #950000;
+  color: #4a0000;
 }
 
 .dangerous a:hover {
@@ -30,5 +30,5 @@ legend[for="id_profile_avatar"] {
 
 
 footer {
-  background: linear-gradient(to bottom, #4ea642, 50%, #0e360e, 90%, black, 95%, #ff4800);
+  background: linear-gradient(to bottom, #4ea642, 75%, #0e360e, 85%, black, 90%, #ff4800);
 }
