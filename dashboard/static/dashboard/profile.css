@@ -14,3 +14,21 @@
 legend[for="id_profile_avatar"] {
   display: none;
 }
+
+#delete-account {
+  margin-top: 1000px;
+}
+
+.dangerous a {
+  color: #950000;
+}
+
+.dangerous a:hover {
+  color: darkred;
+  text-shadow: 2px 2px 2px chocolate;
+}
+
+
+footer {
+  background: linear-gradient(to bottom, #4ea642, 50%, #0e360e, 90%, black, 95%, #ff4800);
+}
