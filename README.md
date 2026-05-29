@@ -324,6 +324,8 @@ CACHEOPS_REDIS_URL=$CACHE_DEFAULT_LOCATION
 CACHE_SECONDS=43200
 DEBUG=false
 DOMAIN=192.168.1.115
+LOGIN_ATTEMPTS=10
+LOGIN_FAIL_COOLOFF_TIME=10
 PORT=8080
 PROTOCOL=http
 SECRET_KEY='insert-your-secret-key-here'
@@ -355,7 +357,8 @@ STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&cu
 
 This .env file is way longer than the first one we saw before, so lets take it easy.
 
-In the first part of the file we are defining some new defaults for the lifetime of the authentication codes (AUTH_CODE_MINUTES) and the cache duration (CACHE_SECONDS).
+In the first part of the file we are defining some new defaults for the lifetime of the authentication codes (AUTH_CODE_MINUTES), the cache duration (CACHE_SECONDS),
+the maximum number of failed login attempts (LOGIN_ATTEMPTS) and the time in minutes the user will be locked out of their account once they exceed this limit within the period (LOGIN_FAIL_COOLOFF_TIME).
 
 We are specifying that our cache backend is powered by Redis (CACHE_DEFAULT_BACKEND) and pointing to its location (CACHE_DEFAULT_LOCATION).
 The variable CACHEOPS_REDIS_URL is also important here; it signals to our server that we want to enable an additional service for caching (actually it would be called an app in Django context), which depends on Redis. It's called [django-cacheops](https://pypi.org/project/django-cacheops/) and its main purpose is to support automatic or manual queryset caching.
@@ -474,23 +477,27 @@ Here is a list of all available environment variables, which you can tweak in yo
 Variables which specifies the backends for: cache, database, storages, etc; use _django-service-urls_ to specify multiple values with a single string.
 Consult the [documentation](https://pypi.org/project/django-service-urls/) to understand how to specify such values.
 
-- [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Defaults to 30 minutes.
+- [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Default: 30 minutes.
 
 - [CACHEOPS_REDIS_URL]: enables _django-cacheops_. Only set this variable in case you are using Redis as your cache backend. Usually it should be set with the same value as CACHE_DEFAULT_LOCATION.
 
-- [CACHE_DEFAULT_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the cache backend. Defaults to _django.core.cache.backends.locmem.LocMemCache_.
+- [CACHE_DEFAULT_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the cache backend. Default: _django.core.cache.backends.locmem.LocMemCache_.
 
-- [CACHE_DEFAULT_LOCATION]: a string specified in the format described by _django-service-urls_ which determines the cache service location. Defaults to _unique-snowflake_.
+- [CACHE_DEFAULT_LOCATION]: a string specified in the format described by _django-service-urls_ which determines the cache service location. Default: _unique-snowflake_.
 
-- [CACHE_SECONDS]: duration of cached values in seconds. Defaults to 3600 seconds.
+- [CACHE_SECONDS]: duration of cached values in seconds. Default: 3600 seconds.
 
-- [DATABASE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the database backend. Defaults to a SQLite file called database.db which is created in the working directory.
+- [DATABASE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the database backend. Default: a SQLite file called database.db which is created in the working directory.
 
 - DEBUG: boolean variable which determines if server runs in debug mode. This value must be set to false when the server is in a production environment.
 
 - DOMAIN: reverse proxy domain or ip address which redirects to the server.
 
-- [EMAIL_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the email backend. Defaults to printing emails to console. Note that this is only used if SENDER_EMAIL is defined and TSTO_API variables are not.
+- [EMAIL_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the email backend. Default: printing emails to console. Note that this is only used if SENDER_EMAIL is defined and TSTO_API variables are not.
+
+- [LOGIN_ATTEMPTS]: maximum number of failed login attempts permitted before temporarily blocking user access. Default: 3 attempts.
+
+- [LOGIN_FAIL_COOLOFF_TIME]: Duration (in minutes) that a user remains locked out after exceeding LOGIN_ATTEMPTS failed attempts. Default: 30 minutes.
 
 - PORT: reverse proxy port.
 
@@ -500,17 +507,17 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 
 - [SENDER_EMAIL]: email address where emails are dispatched from.
 
-- [STATIC_LOCATION]: static endpoint. Defaults to `static/`.
+- [STATIC_LOCATION]: static endpoint. Default: `static/`.
 
 - STATIC_ROOT: directory or path where static files will be stored.
 
-- [STORAGE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Defaults to _django.core.files.storage.filesystem.FileSystemStorage_.
+- [STORAGE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Default: _django.core.files.storage.filesystem.FileSystemStorage_.
 
-- [STORAGE_STATICFILES]: a string specified in the format described by _django-service-urls_ which determines the static storage backend. Defaults to _django.contrib.staticfiles.storage.StaticFilesStorage_.
+- [STORAGE_STATICFILES]: a string specified in the format described by _django-service-urls_ which determines the static storage backend. Default: _django.contrib.staticfiles.storage.StaticFilesStorage_.
 
 - [TIME_ZONE]: a string representing the time zone for this installation. See the [list of time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
 
-- [TOWNS_ROOT]: directory or path where town files will be stored. Defaults to `towns/`.
+- [TOWNS_ROOT]: directory or path where town files will be stored. Default: `towns/`.
 
 - [TSTO_API_KEY]: self-explanatory. No default value.
 

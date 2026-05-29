@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 import os
 import environ
@@ -77,6 +78,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "debug_toolbar",
+    "axes",
+]
+
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 MIDDLEWARE = [
@@ -89,6 +96,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "springfield.urls"
@@ -176,3 +184,13 @@ EMAIL_BACKEND = env("EMAIL_BACKEND", default="console://")
 # Setup cacheops.
 if env("CACHEOPS_REDIS_URL", default=None):
     INSTALLED_APPS.append("cacheops")
+
+# django-axes
+AXES_IPWARE_META_PRECEDENCE_ORDER = [
+    'HTTP_X_FORWARDED_FOR',
+    'REMOTE_ADDR',
+]
+
+AXES_FAILURE_LIMIT = env("LOGIN_ATTEMPTS", default=3)
+AXES_COOLOFF_TIME = timedelta(minutes=env("LOGIN_FAIL_COOLOFF_TIME", default=30))
+AXES_USE_ATTEMPT_EXPIRATION = True

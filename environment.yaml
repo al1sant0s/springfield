@@ -15,6 +15,7 @@ dependencies:
   - django-storages
   - boto3
   - gunicorn
+  - django-axes
   - pip
   - pip:
       - django-cacheops
