@@ -2,6 +2,8 @@ from django import forms
 
 from connect.models import UserId
 
+from hcaptcha.fields import hCaptchaField
+
 
 class UploadTownForm(forms.ModelForm):
     class Meta:
@@ -49,3 +51,8 @@ class UserProfileForm(forms.ModelForm):
 
 class SearchUserForm(forms.Form):
     search_text = forms.CharField(label="Search user")
+
+
+class DeleteUserForm(forms.Form):
+    email = forms.EmailField()
+    hcaptcha = hCaptchaField(label="")

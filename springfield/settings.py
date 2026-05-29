@@ -79,6 +79,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "debug_toolbar",
     "axes",
+    "hcaptcha",
 ]
 
 AUTHENTICATION_BACKENDS = [

@@ -1,4 +1,4 @@
-name: django
+name: django-public-server
 channels:
   - conda-forge
 dependencies:
@@ -18,6 +18,7 @@ dependencies:
   - django-axes
   - pip
   - pip:
+      - django-hCaptcha
       - django-cacheops
       - django-render-block
       - django-service-urls

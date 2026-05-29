@@ -8,7 +8,7 @@ RUN conda env create --file environment.yaml
 
 COPY . .
 
-ENV PATH="/opt/conda/envs/django/bin:$PATH"
+ENV PATH="/opt/conda/envs/django-public-server/bin:$PATH"
 
 EXPOSE 8000
 

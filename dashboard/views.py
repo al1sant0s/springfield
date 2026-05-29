@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.core.files.base import ContentFile
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
 
@@ -20,6 +21,7 @@ from .forms import AuthCodeForm
 from .forms import ResetPasswordForm
 from .forms import UserProfileForm
 from .forms import SearchUserForm
+from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
 from operator import itemgetter
@@ -461,3 +463,34 @@ def remove_device(request, advertising_id):
 
 def download_town(request, mayhem_id):
     return HttpResponse(load_town(request.user), content_type="application/x-protobuf")
+
+
+@login_required(login_url="dashboard:login")
+def delete_account(request):
+
+    if request.method == "POST":
+        delete_user_form = DeleteUserForm(request.POST)
+
+        if delete_user_form.is_valid():
+
+            if delete_user_form.cleaned_data["email"] == request.user.email:
+                request.user.town.delete()
+                request.user.avatar.delete()
+                request.user.delete()
+                logout(request)
+                return HttpResponseRedirect(reverse("dashboard:login"))
+
+            else:
+                messages.error(request, "The email inserted is wrong.")
+
+
+
+    else:
+        delete_user_form = DeleteUserForm()
+
+
+    context = {
+        "delete_user_form": delete_user_form,
+    }
+
+    return render(request, "dashboard/delete-account.html", context)
