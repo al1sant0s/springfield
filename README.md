@@ -495,7 +495,7 @@ Consult the [documentation](https://pypi.org/project/django-service-urls/) to un
 
 - [EMAIL_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the email backend. Default: printing emails to console. Note that this is only used if SENDER_EMAIL is defined and TSTO_API variables are not.
 
-- [LOGIN_ATTEMPTS]: maximum number of failed login attempts permitted before temporarily blocking user access. Default: None.
+- [LOGIN_ATTEMPTS]: maximum number of failed login attempts permitted before temporarily blocking user access. Default: 0 attempts.
 
 - [LOGIN_FAIL_COOLOFF_TIME]: Duration (in minutes) that a user remains locked out after exceeding LOGIN_ATTEMPTS failed attempts. Default: 30 minutes.
 
