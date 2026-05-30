@@ -275,6 +275,7 @@ class ProtolandViewTests(TestCase):
         self.assertContains(response, ET.tostring(ET.Element("error", attrib={"code": "409", "type": "INVALID_VALUE", "severity": "DEBUG"})))
 
         # Remove town.
+        device.token.user.refresh_from_db()
         device.token.user.town.delete()
 
     def test_load_premium_currency(self):
