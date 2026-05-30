@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete account | User dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪪</text></svg>">
+    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'dashboard/delete-account.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
+  </head>
+  <body>
+
+    <header>
+      <h1 class="corben-bold">Delete Account</h1>
+    </header>
+
+    <main>
+      <article>
+        <section>
+          <h2>⚠️ Warning: You are about to permanently delete your account.</h2>
+          <h3 class="highlight">This action <strong>cannot be undone</strong>.</h3>
+          <p>
+            If you are really sure about this, insert the code which was sent to your email address to proceed.
+          </p>
+          {% if messages %}
+            <ul class="messages">
+              {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <hr>
+          <form action="{% url 'dashboard:delete_account' %}" method="post">
+            {% csrf_token %}
+            {{ delete_user_form }}
+            <div>
+              <button class="submit">Delete</button>
+            </div>
+          </form>
+          <hr>
+          <div class="bottom-link">
+            <a href="{% url 'dashboard:index' %}">Back to dashboard</a>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <footer>
+      <p>
+        Server created by <a target="blank" href="https://github.com/al1sant0s">@al1sant0s</a>
+      </p>
+    </footer>
+
+  </body>
+</html>

@@ -2,7 +2,6 @@ from django import forms
 
 from connect.models import UserId
 
-
 class UploadTownForm(forms.ModelForm):
     class Meta:
         model = UserId
@@ -49,3 +48,7 @@ class UserProfileForm(forms.ModelForm):
 
 class SearchUserForm(forms.Form):
     search_text = forms.CharField(label="Search user")
+
+
+class DeleteUserForm(forms.Form):
+    code = forms.CharField(min_length=5, max_length=6)

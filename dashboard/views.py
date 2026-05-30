@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.core.files.base import ContentFile
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
 
@@ -20,6 +21,7 @@ from .forms import AuthCodeForm
 from .forms import ResetPasswordForm
 from .forms import UserProfileForm
 from .forms import SearchUserForm
+from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
 from operator import itemgetter
@@ -34,7 +36,11 @@ def login(request):
         return HttpResponseRedirect(reverse("dashboard:index"))
 
     else:
-        return LoginView.as_view(template_name="dashboard/login.html", next_page="dashboard:index")(request)
+
+        if request.method == "GET":
+            request.session["next"] = request.GET.get("next", "dashboard:index")
+
+        return LoginView.as_view(template_name="dashboard/login.html", next_page=request.session.get("next", "dashboard:index"))(request)
 
 
 def register(request):
@@ -461,3 +467,36 @@ def remove_device(request, advertising_id):
 
 def download_town(request, mayhem_id):
     return HttpResponse(load_town(request.user), content_type="application/x-protobuf")
+
+
+@login_required(login_url="dashboard:login")
+def delete_account(request):
+
+    if request.method == "POST":
+        delete_user_form = DeleteUserForm(request.POST)
+
+        if delete_user_form.is_valid():
+            status = validate_auth_code(request.user.email, delete_user_form.cleaned_data["code"])
+            if status:
+                request.user.town.delete()
+                request.user.avatar.delete()
+                request.user.delete()
+                logout(request)
+                return HttpResponseRedirect(reverse("dashboard:login"))
+
+            elif status is None:
+                return HttpResponseRedirect(reverse("dashboard:profile"))
+
+            else:
+                messages.error(request, "Wrong code.")
+
+
+    else:
+        request_auth_code(request.user.email)
+        delete_user_form = DeleteUserForm()
+
+    context = {
+        "delete_user_form": delete_user_form,
+    }
+
+    return render(request, "dashboard/delete-account.html", context)

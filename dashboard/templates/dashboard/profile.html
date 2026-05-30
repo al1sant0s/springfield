@@ -119,6 +119,13 @@
               <button class="submit" name="profile-form">Upload</button>
             </div>
           </form>
+          <hr id="delete-account">
+          <h2>Delete user account</h2>
+          <p>‼️ Warning! Be <strong class="danger-emphasis">very careful</strong> with this. This action is <strong class="danger-emphasis">irreversible</strong>.</p>
+          <hr>
+          <p class="dangerous bungee-inline-regular">
+            <a href="{% url 'dashboard:delete_account' %}">Delete my account</a>
+          </p>
         </section>
       </article>
     </main>
