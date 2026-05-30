@@ -110,7 +110,7 @@ def auth(request, device_id):
 
             # Authenticated?! Great, now look for user with this email.
             try:
-                LandToken.objects.filter(user=token.user).update(authorized=False, remove=True)
+                LandToken.objects.filter(user=token.user).update(authorized=False)
                 token.user = UserId.objects.get(email=email)
 
             # If an user with this email does not exist, it means we have to update the current user email associated with the token.
