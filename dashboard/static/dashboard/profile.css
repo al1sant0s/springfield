@@ -35,3 +35,7 @@ legend[for="id_profile_avatar"] {
   color: yellow;
   text-shadow: 2px 2px 2px chocolate;
 }
+
+.dangerous a:active {
+  background: linear-gradient(#600, 45%, #f21313);
+}
