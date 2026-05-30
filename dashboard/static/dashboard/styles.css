@@ -35,6 +35,12 @@ button {
   background-color: #ffb777;
 }
 
+.danger-emphasis {
+  font-weight: 700;
+  text-decoration: underline;
+  color: #6e0760;
+}
+
 /* Fonts */
 
 .corben-regular {

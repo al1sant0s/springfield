@@ -54,5 +54,5 @@ class SearchUserForm(forms.Form):
 
 
 class DeleteUserForm(forms.Form):
-    email = forms.EmailField()
+    code = forms.CharField(min_length=5, max_length=6)
     hcaptcha = hCaptchaField(label="")

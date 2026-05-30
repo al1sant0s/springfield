@@ -36,7 +36,11 @@ def login(request):
         return HttpResponseRedirect(reverse("dashboard:index"))
 
     else:
-        return LoginView.as_view(template_name="dashboard/login.html", next_page="dashboard:index")(request)
+
+        if request.method == "GET":
+            request.session["next"] = request.GET.get("next", "dashboard:index")
+
+        return LoginView.as_view(template_name="dashboard/login.html", next_page=request.session.get("next", "dashboard:index"))(request)
 
 
 def register(request):
@@ -472,22 +476,24 @@ def delete_account(request):
         delete_user_form = DeleteUserForm(request.POST)
 
         if delete_user_form.is_valid():
-
-            if delete_user_form.cleaned_data["email"] == request.user.email:
+            status = validate_auth_code(request.user.email, delete_user_form.cleaned_data["code"])
+            if status:
                 request.user.town.delete()
                 request.user.avatar.delete()
                 request.user.delete()
                 logout(request)
                 return HttpResponseRedirect(reverse("dashboard:login"))
 
-            else:
-                messages.error(request, "The email inserted is wrong.")
+            elif status is None:
+                return HttpResponseRedirect(reverse("dashboard:profile"))
 
+            else:
+                messages.error(request, "Wrong code.")
 
 
     else:
+        request_auth_code(request.user.email)
         delete_user_form = DeleteUserForm()
-
 
     context = {
         "delete_user_form": delete_user_form,
