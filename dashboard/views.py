@@ -1,6 +1,7 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -27,6 +28,7 @@ from protofiles import LandData_pb2
 from operator import itemgetter
 
 import google.protobuf
+import requests
 
 # Create your views here.
 
@@ -478,11 +480,36 @@ def delete_account(request):
         if delete_user_form.is_valid():
             status = validate_auth_code(request.user.email, delete_user_form.cleaned_data["code"])
             if status:
-                request.user.town.delete()
-                request.user.avatar.delete()
-                request.user.delete()
-                logout(request)
-                return HttpResponseRedirect(reverse("dashboard:login"))
+
+                # Send email notifying about account termination and data removal.
+                apikey = cache.get("tsto_api_key")
+                response = requests.post("https://tsto.app/api/account/wipeNotice",
+                    params={"apikey": apikey},
+                    data={
+                        "emailAddress": request.user.email,
+                        "wipedBy": request.user.username,
+                        "source": cache.get("tsto_api_team_name", default="TSTO API"),
+                        "deletedItems": [
+                            "Device data.",
+                            "Login tokens.",
+                            "Profile picture.",
+                            "Username.",
+                            "Email address.",
+                            "Advertisting ID.",
+                        ],
+                    }
+                )
+
+                # Delete only if the API confirms the user was notified via email.
+                # If the API is not configured, ignore the condition and delete the user anyways.
+                if not apikey or (response.status_code == 200 and response.json().get("success")):
+                    request.user.town.delete()
+                    request.user.avatar.delete()
+                    request.user.delete()
+                    logout(request)
+                    return HttpResponseRedirect(reverse("dashboard:login"))
+
+                messages.error(request, "A notification email could not be delivered. Try again!")
 
             elif status is None:
                 return HttpResponseRedirect(reverse("dashboard:profile"))
