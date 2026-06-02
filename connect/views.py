@@ -40,7 +40,7 @@ def auth(request, device_id):
         if request.GET.get("authenticator_login_type") == "mobile_anonymous":
 
             # Look up for advertisingId in database.
-            advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, json_data["advertisingId"])
+            advertising_id = uuid.uuid5(uuid.NAMESPACE_OID, json_data["advertisingId" if json_data["platform"] == "android" else "platformId"])
 
             # Grab existing DeviceToken. If it does not exist, make one.
             try:

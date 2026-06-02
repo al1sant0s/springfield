@@ -49,7 +49,7 @@ class ConnectViewsTests(TestCase):
 
         # Perform user first connection.
         device = TestDevice()
-        json_dict = {"advertisingId": str(device.advertising_id)}
+        json_dict = {"platform": "android", "advertisingId": str(device.advertising_id)}
         json_data = json.dumps(json_dict)
         query_params = {
             "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
@@ -85,7 +85,7 @@ class ConnectViewsTests(TestCase):
         code = get_auth_code(email, send_email=False).code
 
         # User inserts wrong code.
-        json_dict = {"advertisingId": str(device.advertising_id), "email": email , "cred": "0"}
+        json_dict = {"email": email , "cred": "0"}
         json_data = json.dumps(json_dict)
         query_params = {
             "sig": f"{(base64.b64encode(json_data.encode())).decode()}.{get_random_string(16)}",
