@@ -38,7 +38,7 @@ class LandTokenInLine(admin.StackedInline):
 
 
 class UserIdAdmin(admin.ModelAdmin):
-    list_display = ["username", "email", "last_login"]
+    list_display = ["username", "email", "last_authenticated"]
     list_filter = ["is_superuser", "is_registered"]
     fieldsets = [
         (
