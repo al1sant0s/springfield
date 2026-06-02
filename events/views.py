@@ -26,12 +26,12 @@ def pinEvents(request, device_id):
     else:
         decompressed_data = request.body
 
-
     json_data = json.loads(decompressed_data)
 
-    if "didm" in json_data[0] and "gaid" in json_data[0]["didm"]:
+    if "didm" in json_data[0] and ("gaid" in json_data[0]["didm"] or "idfv" in json_data[0]["didm"]):
 
-        token = get_object_or_404(DeviceToken, advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, json_data[0]["didm"]["gaid"]))
+        advertising_id = json_data[0]["didm"].get("gaid", json_data[0]["didm"].get("idfv"))
+        token = get_object_or_404(DeviceToken, advertising_id=uuid.uuid5(uuid.NAMESPACE_OID, advertising_id))
 
         # Update device_id.
         if token.device_id != device_id:
@@ -40,8 +40,13 @@ def pinEvents(request, device_id):
 
         if "custom" in json_data[0]:
 
-            token.manufacturer = json_data[0]["custom"].get("deviceBrand", "unknown")
-            token.device_model = json_data[0]["custom"].get("deviceModel", "unknown")
+            if "deviceBrand" in json_data[0]["custom"]:
+                token.manufacturer = json_data[0]["custom"].get("deviceBrand", "unknown")
+                token.device_model = json_data[0]["custom"].get("deviceModel", "unknown")
+
+            elif "deviceString" in json_data[0]["custom"]:
+                token.manufacturer = "Apple"
+                token.device_model = json_data[0]["custom"].get("deviceString", "unknown")
 
         token.timestamp = timezone.now()
         token.save(update_fields=["device_id", "device_id_cache", "manufacturer", "device_model", "timestamp"])
@@ -58,7 +63,7 @@ def pinEvents(request, device_id):
 def logEvent(request, device_id):
 
     json_data = json.loads(request.body)
-    advertising_id = json_data[0].get("advertiserID")
+    advertising_id = json_data[0].get("advertiserID", json_data[0].get("vendorId"))
 
     if advertising_id is not None:
         try:

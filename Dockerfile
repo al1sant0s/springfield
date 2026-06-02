@@ -1,4 +1,4 @@
-FROM condaforge/miniforge3:latest
+FROM condaforge/miniforge3:26.1.1-3
 
 WORKDIR /app
 
