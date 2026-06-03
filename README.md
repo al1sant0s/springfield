@@ -1,3 +1,8 @@
+# Heads up
+
+> This is the public-server branch of the server. Currently being hosted [here](https://discord.com/invite/rzP2qGjGww).
+> If you want to expand this server with your own preferences I recommend forking and picking the main branch as base.
+
 <h1 align="center">Welcome to Springfield 👋</h1>
 <p>
   <a href="https://www.docker.com/" target="_blank">
