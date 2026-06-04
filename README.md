@@ -356,7 +356,7 @@ AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 AWS_DEFAULT_REGION=garage
 AWS_ENDPOINT_URL=http://garage:3900
 STORAGE_DEFAULT=s3://?bucket_name=tsto-bucket
-STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=$DOMAIN:$PORT&location=$STATIC_LOCATION
+STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=$PROTOCOL:&custom_domain=$DOMAIN:$PORT&location=$STATIC_LOCATION
 
 ```
 
