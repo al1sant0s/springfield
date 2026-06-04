@@ -51,6 +51,6 @@ def getDirectionByPackage(request, platform):
     new_directions_android["mdmAppKey"] = new_directions_android["mdmAppKey"].replace("platform", platform)
 
     for service in update_services:
-        new_directions_android["serverData"][services[service]]["value"] += f"/{service}/{device_id}"
+        new_directions_android["serverData"][services[service]]["value"] += f"{service}/{device_id}"
 
     return JsonResponse(new_directions_android)
