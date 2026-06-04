@@ -24,7 +24,7 @@
     <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
   </a>
   <a href="#" target="_blank">
-    <img alt="License: MIT" src="https://github.com/al1sant0s/springfield/actions/workflows/docker-publish.yml/badge.svg" />
+    <img alt="License: MIT" src="https://github.com/al1sant0s/springfield/actions/workflows/docker-publish.yml/badge.svg?branch=public-server" />
   </a>
 </p>
 
