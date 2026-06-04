@@ -194,7 +194,7 @@ def protoClientConfig(request):
         # Avatar change url.
         for item in json_data:
             if item["clientConfigId"] == 52:
-                item["value"] = url_normalize(f"{protocol}://{domain}:{port}")
+                item["value"] = url_normalize(f"{protocol}://{domain}:{port}").removesuffix("/")
 
 
         clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()

@@ -27,7 +27,7 @@ def getDirectionByPackage(request, platform):
         port = env("PORT")
         timeout = env("CACHE_SECONDS", default=3600)
         services = {directions_android["serverData"][i]["key"]: i for i in range(len(directions_android["serverData"]))}
-        directions_url = url_normalize(f"{protocol}://{domain}:{port}")
+        directions_url = url_normalize(f"{protocol}://{domain}:{port}").removesuffix("/")
 
         for i in services.values():
             directions_android["serverData"][i]["value"] = directions_url
@@ -51,6 +51,6 @@ def getDirectionByPackage(request, platform):
     new_directions_android["mdmAppKey"] = new_directions_android["mdmAppKey"].replace("platform", platform)
 
     for service in update_services:
-        new_directions_android["serverData"][services[service]]["value"] += f"{service}/{device_id}"
+        new_directions_android["serverData"][services[service]]["value"] += f"/{service}/{device_id}"
 
     return JsonResponse(new_directions_android)

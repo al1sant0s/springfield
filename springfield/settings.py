@@ -53,6 +53,8 @@ CSRF_TRUSTED_ORIGINS = [
     url_normalize(f"{protocol}://{domain}:{port}"),
     url_normalize(f"http://localhost:{port}"),
     url_normalize(f"http://127.0.0.1:{port}"),
+    "http://localhost",
+    "http://127.0.0.1",
 ]
 
 INTERNAL_IPS = ["localhost", "127.0.0.1"]
