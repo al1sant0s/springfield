@@ -50,11 +50,11 @@ SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = [domain, "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
-    url_normalize(f"{protocol}://{domain}:{port}"),
-    url_normalize(f"http://localhost:{port}"),
-    url_normalize(f"http://127.0.0.1:{port}"),
+    url_normalize(f"{protocol}://{domain}:{port}").removesuffix("/"),
+    url_normalize(f"http://localhost:{port}").removesuffix("/"),
+    url_normalize(f"http://127.0.0.1:{port}").removesuffix("/"),
     "http://localhost",
-    "http://127.0.0.1",
+    "http://127.0.0.1"
 ]
 
 INTERNAL_IPS = ["localhost", "127.0.0.1"]
