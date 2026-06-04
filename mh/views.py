@@ -13,6 +13,7 @@ from connect.models import DeviceToken, UserId
 from mh.models import LandToken
 from pathlib import Path
 from protofiles import *
+from url_normalize import url_normalize
 
 import xml.etree.ElementTree as ET
 import json
@@ -193,7 +194,7 @@ def protoClientConfig(request):
         # Avatar change url.
         for item in json_data:
             if item["clientConfigId"] == 52:
-                item["value"] = f"{protocol}://{domain}:{port}"
+                item["value"] = url_normalize(f"{protocol}://{domain}:{port}")
 
 
         clientconfig_response = ClientConfigData_pb2.ClientConfigResponse()

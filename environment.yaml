@@ -16,6 +16,7 @@ dependencies:
   - boto3
   - gunicorn
   - django-axes
+  - url-normalize
   - pip
   - pip:
       - django-hCaptcha
