@@ -31,7 +31,7 @@ def search_friends(user, search_username):
     users = UserId.objects.filter(
         (
             Q(username__icontains=search_username) |
-            Q(email__icontains=search_username)
+            Q(email__iexact=search_username)
         ) &
         Q(is_registered=True) &
         Q(is_superuser=False)
@@ -43,7 +43,7 @@ def search_friends(user, search_username):
         sent_invitations__in=friend_query_set
     ).exclude(
         received_invitations__in=friend_query_set
-    )
+    )[:100]
 
     return users
 
