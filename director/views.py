@@ -3,6 +3,7 @@ from django.core.cache import cache
 from pathlib import Path
 
 from springfield.settings import env
+from url_normalize import url_normalize
 
 import json
 import uuid
@@ -26,9 +27,10 @@ def getDirectionByPackage(request, platform):
         port = env("PORT")
         timeout = env("CACHE_SECONDS", default=3600)
         services = {directions_android["serverData"][i]["key"]: i for i in range(len(directions_android["serverData"]))}
+        directions_url = url_normalize(f"{protocol}://{domain}:{port}").removesuffix("/")
 
         for i in services.values():
-            directions_android["serverData"][i]["value"] = f"{protocol}://{domain}:{port}"
+            directions_android["serverData"][i]["value"] = directions_url
 
         cache.set("directions_android", directions_android, timeout=timeout)
         cache.set("services", services, timeout=timeout)

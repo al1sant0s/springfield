@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+from url_normalize import url_normalize
 
 import os
 import environ
@@ -49,10 +50,9 @@ SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = [domain, "localhost", "127.0.0.1"]
 
 CSRF_TRUSTED_ORIGINS = [
-    f"{protocol}://{domain}",
-    f"{protocol}://{domain}:{port}",
-    f"http://localhost:{port}",
-    f"http://127.0.0.1:{port}",
+    url_normalize(f"{protocol}://{domain}:{port}").removesuffix("/"),
+    url_normalize(f"http://localhost:{port}").removesuffix("/"),
+    url_normalize(f"http://127.0.0.1:{port}").removesuffix("/"),
     "http://localhost",
     "http://127.0.0.1"
 ]
