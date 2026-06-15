@@ -2,6 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.core.cache import cache
+from django.core.files.storage import storages
 from django.core.files.base import ContentFile
 from django.contrib import messages
 from django.contrib.auth import logout
@@ -26,7 +27,6 @@ from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
 from operator import itemgetter
-from copy import deepcopy
 
 import google.protobuf
 import requests
@@ -258,8 +258,9 @@ def index(request):
 def profile(request):
 
     if request.method == "POST":
-        # This prevents Django from messing request.user.avatar up.
-        user = deepcopy(request.user)
+        # This prevents django from messing request.user.avatar up when deleting the current avatar.
+        avatar_name = request.user.avatar.name
+        username = request.user.username
         avatar_url = get_avatar_url(request.user)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
 
@@ -280,14 +281,18 @@ def profile(request):
                     success = False
 
                 else:
-                    user.avatar.delete()
+                    # Delete all possible avatar files and set avatar name to standard user identification.
+                    if avatar_name:
+                        storages["staticfiles"].delete(avatar_name)
+                    storages["staticfiles"].delete(f"{request.user.user_id}.png")
+                    storages["staticfiles"].delete(f"{request.user.user_id}.jpeg")
                     request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
                     avatar_url = get_avatar_url(request.user) # Grab new avatar URL.
                     messages.success(request, "Avatar image updated.")
 
 
             # Update username if it was edited.
-            if profile_form.cleaned_data["username"] != user.username:
+            if profile_form.cleaned_data["username"] != username:
                 if len(profile_form.cleaned_data["username"].strip()) < 5:
                     messages.error(request, "Username must have at least 5 characters.")
                     success = False
