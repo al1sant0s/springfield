@@ -268,8 +268,9 @@ def profile(request):
 
                 avatar_img = profile_form.cleaned_data["avatar"].image
                 avatar_ext = avatar_img.format.lower()
+                request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
 
-                if avatar_ext not in ["png", "jpg"]:
+                if avatar_ext not in ["png", "jpeg"]:
                     messages.error(request, "Image must be either png or jpg.")
                     success = False
 
@@ -279,7 +280,6 @@ def profile(request):
 
                 else:
                     UserId.objects.get(pk=request.user.pk).avatar.delete() # This prevents django from messing with request.user.avatar.
-                    request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
                     messages.success(request, "Avatar image updated.")
 
 
