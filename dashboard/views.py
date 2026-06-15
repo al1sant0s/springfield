@@ -26,7 +26,6 @@ from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
 from operator import itemgetter
-from copy import deepcopy
 
 import google.protobuf
 
