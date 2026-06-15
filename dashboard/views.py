@@ -257,14 +257,14 @@ def index(request):
 def profile(request):
 
     if request.method == "POST":
+        current_username = request.user.username
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
 
         if profile_form.is_valid():
-
             success = True
 
             # Update avatar picture if any was uploaded.
-            if profile_form.cleaned_data.get("avatar", False):
+            if request.FILES and profile_form.cleaned_data.get("avatar"):
 
                 avatar_img = profile_form.cleaned_data["avatar"].image
                 avatar_ext = avatar_img.format.lower()
@@ -278,20 +278,19 @@ def profile(request):
                     success = False
 
                 else:
+                    UserId.objects.get(pk=request.user.pk).avatar.delete() # This prevents django from messing with request.user.avatar.
                     request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
                     messages.success(request, "Avatar image updated.")
 
 
             # Update username if it was edited.
-            if profile_form.cleaned_data["username"] != request.user.username:
+            if profile_form.cleaned_data["username"] != current_username:
 
                 if len(profile_form.cleaned_data["username"].strip()) < 5:
                     messages.error(request, "Username must have at least 5 characters.")
                     success = False
 
                 else:
-                    request.user.username = profile_form.cleaned_data["username"]
-                    request.user.save(update_fields=["username"])
                     messages.success(request, "Username updated.")
 
 
@@ -313,7 +312,6 @@ def profile(request):
     }
 
     return render(request, "dashboard/profile.html", context)
-
 
 
 @login_required(login_url="dashboard:login")
