@@ -26,6 +26,7 @@ from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
 from operator import itemgetter
+from copy import deepcopy
 
 import google.protobuf
 import requests
@@ -258,7 +259,7 @@ def profile(request):
 
     if request.method == "POST":
         # This prevents Django from messing request.user.avatar up.
-        user = UserId.objects.get(pk=request.user.pk)
+        user = deepcopy(request.user)
         avatar_url = get_avatar_url(request.user)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
 

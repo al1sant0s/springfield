@@ -112,7 +112,7 @@
   {
     "clientConfigId": 28,
     "name": "MaxBuildingSoftCapEnabled",
-    "value": "1"
+    "value": "0"
   },
   {
     "clientConfigId": 29,
@@ -127,7 +127,7 @@
   {
     "clientConfigId": 31,
     "name": "MaxBuildingHardCapEnabled",
-    "value": "1"
+    "value": "0"
   },
   {
     "clientConfigId": 32,
@@ -462,7 +462,7 @@
   {
     "clientConfigId": 133,
     "name": "DeleteUserEnabled",
-    "value": "1"
+    "value": "0"
   },
   {
     "clientConfigId": 134,
