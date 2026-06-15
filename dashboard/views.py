@@ -25,6 +25,7 @@ from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
 from operator import itemgetter
+from copy import deepcopy
 
 import google.protobuf
 
@@ -255,19 +256,20 @@ def index(request):
 def profile(request):
 
     if request.method == "POST":
+        # This prevents Django from messing request.user.avatar up.
+        user = deepcopy(request.user)
+        avatar_url = get_avatar_url(request.user)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
 
         if profile_form.is_valid():
-
             success = True
 
             # Update avatar picture if any was uploaded.
-            if profile_form.cleaned_data.get("avatar", False):
-
+            if request.FILES and profile_form.cleaned_data.get("avatar"):
                 avatar_img = profile_form.cleaned_data["avatar"].image
                 avatar_ext = avatar_img.format.lower()
 
-                if avatar_ext not in ["png", "jpg"]:
+                if avatar_ext not in ["png", "jpeg"]:
                     messages.error(request, "Image must be either png or jpg.")
                     success = False
 
@@ -276,20 +278,19 @@ def profile(request):
                     success = False
 
                 else:
+                    user.avatar.delete()
                     request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
+                    avatar_url = get_avatar_url(request.user) # Grab new avatar URL.
                     messages.success(request, "Avatar image updated.")
 
 
             # Update username if it was edited.
-            if profile_form.cleaned_data["username"] != request.user.username:
-
+            if profile_form.cleaned_data["username"] != user.username:
                 if len(profile_form.cleaned_data["username"].strip()) < 5:
                     messages.error(request, "Username must have at least 5 characters.")
                     success = False
 
                 else:
-                    request.user.username = profile_form.cleaned_data["username"]
-                    request.user.save(update_fields=["username"])
                     messages.success(request, "Username updated.")
 
 
@@ -301,17 +302,17 @@ def profile(request):
 
     else:
         profile_form = UserProfileForm(instance=request.user)
+        avatar_url = get_avatar_url(request.user)
 
 
     context = {
         "profile_form": profile_form,
-        "avatar_url": get_avatar_url(request.user),
+        "avatar_url": avatar_url,
         "avatar_exists": request.user.avatar,
         "username": request.user.username
     }
 
     return render(request, "dashboard/profile.html", context)
-
 
 
 @login_required(login_url="dashboard:login")
@@ -321,12 +322,10 @@ def friends(request):
     search_matches = list()
 
     if request.method == "POST":
-
         search_form = SearchUserForm(request.POST)
         search_matches = list()
 
         if search_form.is_valid():
-
             username = search_form.cleaned_data["search_text"]
 
             # Sort by alphabetical order.
@@ -385,8 +384,6 @@ def friends(request):
         ],
         key=itemgetter("username")
     )
-
-
 
     context = {
         "search_form": search_form,
