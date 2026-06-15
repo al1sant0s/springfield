@@ -257,7 +257,9 @@ def index(request):
 def profile(request):
 
     if request.method == "POST":
-        current_username = request.user.username
+        # This prevents Django from messing request.user.avatar up.
+        user = UserId.objects.get(pk=request.user.pk)
+        avatar_url = get_avatar_url(request.user)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
 
         if profile_form.is_valid():
@@ -265,10 +267,8 @@ def profile(request):
 
             # Update avatar picture if any was uploaded.
             if request.FILES and profile_form.cleaned_data.get("avatar"):
-
                 avatar_img = profile_form.cleaned_data["avatar"].image
                 avatar_ext = avatar_img.format.lower()
-                request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
 
                 if avatar_ext not in ["png", "jpeg"]:
                     messages.error(request, "Image must be either png or jpg.")
@@ -279,13 +279,14 @@ def profile(request):
                     success = False
 
                 else:
-                    UserId.objects.get(pk=request.user.pk).avatar.delete() # This prevents django from messing with request.user.avatar.
+                    user.avatar.delete()
+                    request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
+                    avatar_url = get_avatar_url(request.user) # Grab new avatar URL.
                     messages.success(request, "Avatar image updated.")
 
 
             # Update username if it was edited.
-            if profile_form.cleaned_data["username"] != current_username:
-
+            if profile_form.cleaned_data["username"] != user.username:
                 if len(profile_form.cleaned_data["username"].strip()) < 5:
                     messages.error(request, "Username must have at least 5 characters.")
                     success = False
@@ -302,11 +303,12 @@ def profile(request):
 
     else:
         profile_form = UserProfileForm(instance=request.user)
+        avatar_url = get_avatar_url(request.user)
 
 
     context = {
         "profile_form": profile_form,
-        "avatar_url": get_avatar_url(request.user),
+        "avatar_url": avatar_url,
         "avatar_exists": request.user.avatar,
         "username": request.user.username
     }
@@ -321,12 +323,10 @@ def friends(request):
     search_matches = list()
 
     if request.method == "POST":
-
         search_form = SearchUserForm(request.POST)
         search_matches = list()
 
         if search_form.is_valid():
-
             username = search_form.cleaned_data["search_text"]
 
             # Sort by alphabetical order.
@@ -385,8 +385,6 @@ def friends(request):
         ],
         key=itemgetter("username")
     )
-
-
 
     context = {
         "search_form": search_form,
