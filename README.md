@@ -108,12 +108,9 @@ services:
     env_file:
       - .env
     volumes:
-      - server-data:/app/
+      - ./towns/:/app/towns/:z
+      - ./database.db:/app/database.db:z
       - /data/static/:$STATIC_ROOT:z
-
-volumes:
-  server-data:
-
 ```
 
 With this configuration the server will use a SQLite file as your database.
@@ -194,7 +191,7 @@ Second, you must collect the static files into `STATIC_ROOT`. Since `STATIC_ROOT
 docker compose exec springfield-server python manage.py collectstatic
 ```
 
-Additionaly, you should create an admin account for you. This isn't exactly required but it is recommended in case you need to manage the server directly
+Additionally, you should create an admin account for you. This isn't exactly required but it is recommended in case you need to manage the server directly
 with Django admin dashboard. Run the following command and answer the questions it prompts to you.
 
 ```sh
