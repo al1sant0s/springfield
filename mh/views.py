@@ -432,53 +432,62 @@ def extraLandUpdate(request, mayhem_id):
     try:
         land_token = uuid.UUID(request.headers.get("Land-Update-Token"))
 
+    # Fail and fall back to current client session id.
     except TypeError, ValueError:
-        return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
+        try:
+            session_uuid = uuid.UUID(request.headers.get("currentClientSessionId"))
+
+        except TypeError, ValueError:
+            return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
+
+        else:
+            user = get_object_or_404(DeviceToken, current_client_session_id=session_uuid).user
 
     else:
         user = get_object_or_404(LandToken, land_token=land_token).user
 
-        # Avoid user tampering with other towns.
-        if mayhem_id != user.mayhem_id.int:
-            return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
+
+    # Avoid user tampering with other towns.
+    if mayhem_id != user.mayhem_id.int:
+        return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
 
 
-        # Try to decompress.
-        if request.headers.get("Content-Encoding") == "gzip":
-            decompressed_data = gzip.decompress(request.body)
+    # Try to decompress.
+    if request.headers.get("Content-Encoding") == "gzip":
+        decompressed_data = gzip.decompress(request.body)
 
-        else:
-            decompressed_data = request.body
+    else:
+        decompressed_data = request.body
 
 
-        # Get list of events to update donuts.
-        # Each event is a list with an amount to increase/decrease donuts balance.
-        extraland_update_request = LandData_pb2.ExtraLandMessage()
-        extraland_update_request.ParseFromString(decompressed_data) # type: ignore
+    # Get list of events to update donuts.
+    # Each event is a list with an amount to increase/decrease donuts balance.
+    extraland_update_request = LandData_pb2.ExtraLandMessage()
+    extraland_update_request.ParseFromString(decompressed_data) # type: ignore
 
-        # There's also other stuff here like "reason" but we don't care about that.
-        # Only update the donuts balance.
-        processed_currency_delta = list()
-        donuts_amount = 0
-        for currency_delta in extraland_update_request.currencyDelta:
-            donuts_amount += int(currency_delta.amount)
-            processed_currency_delta.append(
-                LandData_pb2.ExtraLandMessage.CurrencyDelta(
-                    id=currency_delta.id,
-                    reason=currency_delta.reason,
-                    amount=currency_delta.amount
-                )
+    # There's also other stuff here like "reason" but we don't care about that.
+    # Only update the donuts balance.
+    processed_currency_delta = list()
+    donuts_amount = 0
+    for currency_delta in extraland_update_request.currencyDelta:
+        donuts_amount += int(currency_delta.amount)
+        processed_currency_delta.append(
+            LandData_pb2.ExtraLandMessage.CurrencyDelta(
+                id=currency_delta.id,
+                reason=currency_delta.reason,
+                amount=currency_delta.amount
             )
+        )
 
-        # Update donuts balance in database.
-        user.donuts_balance = F("donuts_balance") + donuts_amount
-        user.save(update_fields=["donuts_balance"])
+    # Update donuts balance in database.
+    user.donuts_balance = F("donuts_balance") + donuts_amount
+    user.save(update_fields=["donuts_balance"])
 
-        # Note: you need to use extend() method if you define the response first and edit a repeated field later.
-        # extraland_update_response = LandData_pb2.ExtraLandResponse()
-        # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
-        extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta=processed_currency_delta)
-        return HttpResponse(extraland_update_response.SerializeToString(), content_type="application/x-protobuf")
+    # Note: you need to use extend() method if you define the response first and edit a repeated field later.
+    # extraland_update_response = LandData_pb2.ExtraLandResponse()
+    # extraland_update_response.processedCurrencyDelta.extend(processed_currency_delta)
+    extraland_update_response = LandData_pb2.ExtraLandResponse(processedCurrencyDelta=processed_currency_delta)
+    return HttpResponse(extraland_update_response.SerializeToString(), content_type="application/x-protobuf")
 
 
 @csrf_exempt
