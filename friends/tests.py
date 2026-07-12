@@ -21,38 +21,42 @@ class TestFriendsManagement(TestCase):
         success_response = HttpResponse(status=success_status_code)
 
         # Sending a friend request to yourself is not allowed.
-        self.assertEqual(send_friend_request(device_01.token.user, device_01.token.user, success_response).status_code, 403)
+        self.assertEqual(send_friend_request(device_01.token.user, device_01.token.user, success_response).status_code, 403, "Sending a friend request to yourself is not allowed.")
 
         # Send a friend request for the first time.
-        self.assertEqual(send_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code)
+        self.assertEqual(send_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code, "Send a friend request for the first time.")
 
         # Verify the friend request really exists.
-        self.assertTrue(FriendInvitation.objects.filter(from_user=device_01.token.user, to_user=device_02.token.user).exists())
+        self.assertTrue(FriendInvitation.objects.filter(from_user=device_01.token.user, to_user=device_02.token.user).exists(), "Verify the friend request really exists.")
 
         # Send another friend request when one already exists.
-        self.assertEqual(send_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, 409)
+        self.assertEqual(send_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, 409, "Send another friend request when one already exists.")
 
         # Also from the other side.
-        self.assertEqual(send_friend_request(device_02.token.user, device_01.token.user, success_response).status_code, 409)
+        self.assertEqual(send_friend_request(device_02.token.user, device_01.token.user, success_response).status_code, 409, "Also from the other side.")
 
         # Cancel or reject friend request.
-        self.assertEqual(cancel_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code)
+        self.assertEqual(cancel_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code, "Cancel or reject friend request.")
 
         # Verify the friend request does not exist anymore.
-        self.assertFalse(FriendInvitation.objects.filter(from_user=device_01.token.user, to_user=device_02.token.user).exists())
+        self.assertFalse(FriendInvitation.objects.filter(from_user=device_01.token.user, to_user=device_02.token.user).exists(), "Verify the friend request does not exist anymore.")
 
         # Send a friend request for the second time.
-        self.assertEqual(send_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code)
+        self.assertEqual(send_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code, "Send a friend request for the second time.")
 
         # Trying to accept a friend request on behalf of the other user is not allowed.
-        self.assertEqual(accept_friend_request(device_02.token.user, device_01.token.user, success_response).status_code, 404)
+        self.assertEqual(accept_friend_request(device_02.token.user, device_01.token.user, success_response).status_code, 404, "Trying to accept a friend request on behalf of the other user is not allowed.")
 
         # Accept friend request.
-        self.assertEqual(accept_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code)
+        self.assertEqual(accept_friend_request(device_01.token.user, device_02.token.user, success_response).status_code, success_status_code, "Accept friend request.")
 
-        # Verify users are now friends.
-        self.assertTrue(device_01.token.user.friends.filter(pk=device_02.token.user.pk).exists())
-        self.assertTrue(device_02.token.user.friends.filter(pk=device_01.token.user.pk).exists())
+        # Verify the users are now friends.
+        self.assertTrue(device_01.token.user.friends.filter(pk=device_02.token.user.pk).exists(), "Verify the users are now friends.")
+        self.assertTrue(device_02.token.user.friends.filter(pk=device_01.token.user.pk).exists(), "Verify the users are now friends.")
 
         # Remove the friendship.
-        self.assertEqual(remove_friend(device_02.token.user, device_01.token.user, success_response).status_code, success_status_code)
+        self.assertEqual(remove_friend(device_02.token.user, device_01.token.user, success_response).status_code, success_status_code, "Remove the friendship.")
+
+        # Verify the users are no longer friends.
+        self.assertFalse(device_01.token.user.friends.filter(pk=device_02.token.user.pk).exists(), "Verify the users are no longer friends.")
+        self.assertFalse(device_02.token.user.friends.filter(pk=device_01.token.user.pk).exists(), "Verify the users are no longer friends.")

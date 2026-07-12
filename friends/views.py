@@ -60,7 +60,6 @@ def accept_friend_request(from_user, to_user, success_response):
 
 def remove_friend(from_user, to_user, success_response):
     from_user.friends.remove(to_user)
-    to_user.friends.remove(from_user)
     return success_response
 
 
