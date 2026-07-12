@@ -463,7 +463,7 @@ def devices(request):
 
 @login_required(login_url="dashboard:login")
 def remove_device(request, advertising_id):
-    get_object_or_404(DeviceToken, advertising_id=advertising_id).delete()
+    get_object_or_404(DeviceToken, user=request.user, advertising_id=advertising_id).delete()
     return HttpResponseRedirect(reverse("dashboard:devices"))
 
 

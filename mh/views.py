@@ -243,7 +243,6 @@ def friendData(request):
         land_data = LandData_pb2.LandMessage()
         land_data.ParseFromString(load_town(user))
 
-
         friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(friendId=str(user.mayhem_id.int))
         friend_data_pair.friendData.name = user.username
         friend_data_pair.authService = 0

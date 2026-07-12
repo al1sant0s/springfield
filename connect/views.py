@@ -113,9 +113,16 @@ def auth(request, device_id):
                 LandToken.objects.filter(user=token.user).update(authorized=False)
                 token.user = UserId.objects.get(email=email)
 
-            # If an user with this email does not exist, it means we have to update the current user email associated with the token.
+                # If an user with this email does not exist, two things may happen:
+                # ====================================================================================================
+                #   1. For an anonymous user, we may reuse the user instance by updating the current email address.
+                #   2. For an already registered user, we must instantiate a new UserId.
+                # ====================================================================================================
             except UserId.DoesNotExist:
-                token.user.email = email
+                if token.user.is_registered:
+                    token.user = UserId(email=email)
+                else:
+                    token.user.email = email
 
             token.user.is_registered = True
             token.user.session_key = secrets.token_urlsafe(32)
