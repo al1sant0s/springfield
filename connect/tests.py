@@ -71,14 +71,8 @@ class ConnectViewsTests(TestCase):
 
         # Perform user first connection.
         device = TestDevice(authenticator_login_type="mobile_ea_account")
-        token = DeviceToken(
-            advertising_id=device.advertising_id,
-            user = UserId(),
-            device_id=device.device_id,
-            device_id_cache=device.device_id
-        )
-        token.user.save()
-        token.save()
+        device.register_device_token()
+        token = DeviceToken.objects.first()
 
         # Perform user register connection: request from game login screen.
         email = "testmail@django.com"
@@ -122,6 +116,7 @@ class ConnectViewsTests(TestCase):
         # Register and login user.
         device = TestDevice(authenticator_login_type="mobile_ea_account")
         device.register_device_token(email="testmail@django.com", is_registered=True, login_status=True)
+        self.assertTrue(DeviceToken.objects.first().login_status)
 
         # User requests a logout.
         # DeviceToken gets deleted.
@@ -139,7 +134,7 @@ class ConnectViewsTests(TestCase):
         self.assertIn("refresh_token", response_data)
         self.assertIn("refresh_token_expires_in", response_data)
         self.assertIn("id_token", response_data)
-        self.assertFalse(DeviceToken.objects.filter(advertising_id=device.advertising_id).exists())
+        self.assertFalse(DeviceToken.objects.first().login_status)
 
 
     def test_tokeninfo(self):

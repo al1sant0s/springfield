@@ -167,6 +167,12 @@ def get_token(request, device_id):
     token = get_object_or_404(DeviceToken, Q(code=request.GET.get("code")) | Q(device_id=device_id) | Q(device_id_cache=device_id))
     pid_type = ["AUTHENTICATOR_ANONYMOUS", "NUCLEUS"]
 
+    # Log out user.
+    if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
+        LandToken.objects.filter(user=token.user).update(authorized=False, remove=True)
+        token.login_status = False
+        token.save(update_fields=["login_status"])
+
     id_token = {
         "aud":"simpsons4-android-client",
         "iss":"accounts.ea.com",
@@ -187,10 +193,6 @@ def get_token(request, device_id):
         "refresh_token_expires_in": 40630,
         "id_token": jwt.encode(id_token, "2Tok8RykmQD41uWDv5mI7JTZ7NIhcZAIPtiBm4Z5", algorithm="HS256")
     }
-
-    if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
-        LandToken.objects.filter(user=token.user).update(authorized=False, remove=True)
-        token.delete()
 
     return JsonResponse(response)
 
