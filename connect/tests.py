@@ -134,7 +134,7 @@ class ConnectViewsTests(TestCase):
         self.assertIn("refresh_token", response_data)
         self.assertIn("refresh_token_expires_in", response_data)
         self.assertIn("id_token", response_data)
-        self.assertFalse(DeviceToken.objects.first().login_status)
+        self.assertFalse(DeviceToken.objects.exists()) # Token is deleted.
 
 
     def test_tokeninfo(self):
