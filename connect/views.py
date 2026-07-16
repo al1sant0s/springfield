@@ -191,7 +191,14 @@ def get_token(request, device_id):
     # Log out user.
     if request.GET.get("authenticator_type", "") == "NUCLEUS" and request.GET.get("grant_type", "") == "remove_authenticator":
         LandToken.objects.filter(user=token.user).update(authorized=False, remove=True)
-        token.delete()
+
+        if token.user.is_registered and token.login_status:
+            token.delete()
+
+        else:
+            token.login_status = False
+            token.save(update_fields=["login_status"])
+
 
     return JsonResponse(response)
 
