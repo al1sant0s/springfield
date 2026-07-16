@@ -247,7 +247,6 @@ def friendData(request):
         friend_data_pair.friendData.name = user.username
         friend_data_pair.authService = 0
         friend_data_pair.externalId = str(user.user_id)
-
         friend_data_pair.friendData.dataVersion = land_data.friendData.dataVersion
         friend_data_pair.friendData.hasLemonTree = land_data.friendData.hasLemonTree
         friend_data_pair.friendData.language = land_data.friendData.language
@@ -259,15 +258,11 @@ def friendData(request):
         friend_data_pair.friendData.boardwalkTileCount = land_data.friendData.boardwalkTileCount
         friend_data_pair.friendData.lastPlayedTime = land_data.friendData.lastPlayedTime
         friend_data_pair.friendData.sharedVariableSet.variable.extend(list(land_data.friendData.sharedVariableSet.variable))
-
-
         friend_data_pairs.append(friend_data_pair)
-
 
 
     friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
     friend_data_response.friendData.extend(friend_data_pairs)
-
     return HttpResponse(friend_data_response.SerializeToString(), content_type="application/x-protobuf")
 
 
