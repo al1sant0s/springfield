@@ -43,7 +43,7 @@ def search_friends(user, search_username):
         sent_invitations__in=friend_query_set
     ).exclude(
         received_invitations__in=friend_query_set
-    )[:100]
+    )
 
     return users
 
@@ -240,7 +240,7 @@ def personas(request):
 
     our_user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
 
-    for user in search_friends(our_user, username):
+    for user in search_friends(our_user, username)[:100]:
 
         friends.append(
             {

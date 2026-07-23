@@ -70,7 +70,7 @@ def outbound(request, user_id):
     user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     entries = list()
 
-    for invitation in user.sent_invitations.all():
+    for invitation in user.sent_invitations.order_by("-invitation_date"):
         entries.append(
             {
                 "timestamp": int(invitation.invitation_date.timestamp() * 1000),
@@ -118,7 +118,7 @@ def inbound(request, user_id):
     user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
 
     entries = list()
-    for invitation in user.received_invitations.all():
+    for invitation in user.received_invitations.order_by("-invitation_date"):
         entries.append(
             {
                 "timestamp": int(invitation.invitation_date.timestamp()),
@@ -157,11 +157,10 @@ def inbound_accept(request, to_user_id, from_user_id):
 
 @require_GET
 def get_friends(request, user_id):
-
     user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
     entries = list()
 
-    for friend in user.friends.all():
+    for friend in user.friends.order_by(models.functions.Lower("username")):
         entries.append(
             {
                 "timestamp": int(timezone.now().timestamp()),
