@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.views import LoginView, login_required
 from django.contrib.auth.models import BaseUserManager
+from django.db.models.functions import Lower
 
 from connect.models import UserId, DeviceToken
 from mh.models import LandToken
@@ -26,7 +27,6 @@ from .forms import SearchUserForm
 from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
-from operator import itemgetter
 
 import google.protobuf
 import requests
@@ -336,61 +336,48 @@ def friends(request):
             username = search_form.cleaned_data["search_text"]
 
             # Sort by alphabetical order.
-            search_matches = sorted(
-                [
-                    {
-                        "avatar_url": get_avatar_url(user),
-                        "avatar_exists": user.avatar,
-                        "username": user.username,
-                        "invite_url": reverse("dashboard:friends_send_request", args=(user.user_id,))
+            search_matches = [
+                {
+                    "avatar_url": get_avatar_url(user),
+                    "avatar_exists": user.avatar,
+                    "username": user.username,
+                    "invite_url": reverse("dashboard:friends_send_request", args=(user.user_id,))
 
-                    } for user in search_friends(request.user, username)
-                ],
-                key=itemgetter("username")
-            )
-
+                } for user in search_friends(request.user, username)[:100]
+            ]
 
     # Get pending requests.
-    received_requests = sorted(
-        [
-            {
-                "avatar_url": get_avatar_url(invitation.from_user),
-                "avatar_exists": invitation.from_user.avatar,
-                "username": invitation.from_user.username,
-                "accept_url": reverse("dashboard:friends_accept_request", args=(invitation.from_user.user_id,)),
-                "reject_url": reverse("dashboard:friends_reject_request", args=(invitation.from_user.user_id,))
+    received_requests = [
+        {
+            "avatar_url": get_avatar_url(invitation.from_user),
+            "avatar_exists": invitation.from_user.avatar,
+            "username": invitation.from_user.username,
+            "accept_url": reverse("dashboard:friends_accept_request", args=(invitation.from_user.user_id,)),
+            "reject_url": reverse("dashboard:friends_reject_request", args=(invitation.from_user.user_id,))
 
-            } for invitation in request.user.received_invitations.all()
-        ],
-        key=itemgetter("username")
-    )
+        } for invitation in request.user.received_invitations.order_by("-invitation_date")
+    ]
 
-    sent_requests = sorted(
-        [
-            {
-                "avatar_url": get_avatar_url(invitation.to_user),
-                "avatar_exists": invitation.to_user.avatar,
-                "username": invitation.to_user.username,
-                "cancel_url": reverse("dashboard:friends_cancel_request", args=(invitation.to_user.user_id,))
+    sent_requests = [
+        {
+            "avatar_url": get_avatar_url(invitation.to_user),
+            "avatar_exists": invitation.to_user.avatar,
+            "username": invitation.to_user.username,
+            "cancel_url": reverse("dashboard:friends_cancel_request", args=(invitation.to_user.user_id,))
 
-            } for invitation in request.user.sent_invitations.all()
-        ],
-        key=itemgetter("username")
-    )
+        } for invitation in request.user.sent_invitations.order_by("-invitation_date")
+    ]
 
-    friends = sorted(
-        [
-            {
-                "avatar_url": get_avatar_url(user),
-                "avatar_exists": user.avatar,
-                "username": user.username,
-                "last_active": user.last_authenticated,
-                "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,))
+    friends = [
+        {
+            "avatar_url": get_avatar_url(user),
+            "avatar_exists": user.avatar,
+            "username": user.username,
+            "last_active": user.last_authenticated,
+            "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,))
 
-            } for user in request.user.friends.all()
-        ],
-        key=itemgetter("username")
-    )
+        } for user in request.user.friends.order_by(Lower("username"))
+    ]
 
     context = {
         "search_form": search_form,
