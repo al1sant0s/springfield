@@ -1,33 +1,12 @@
+import xml.etree.ElementTree as ET
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
-from django.core.cache import cache
-
 from connect.models import UserId, DeviceToken
-from springfield.settings import env
-from url_normalize import url_normalize
-
-import xml.etree.ElementTree as ET
-
-
-def get_avatar_url(user):
-
-    static_url = cache.get("static_url")
-
-    if static_url is None:
-        protocol = env("PROTOCOL")
-        domain = env("DOMAIN")
-        port = env("PORT")
-        static_location = env("STATIC_LOCATION", default="static/")
-        static_url = url_normalize(f"{protocol}://{domain}:{port}/{static_location}")
-        cache.set("static_url", static_url, timeout = env("CACHE_SECONDS", default=3600))
-
-    return f"{static_url}{user.avatar.name.lower()}"
-
 
 # Create your views here.
 
-def get_avatar(request):
 
+def get_avatar(request):
     access_token = request.headers.get("AuthToken")
 
     if access_token is not None:
@@ -39,11 +18,9 @@ def get_avatar(request):
 
 
 def get_avatars(request, users_ids):
-
     root = ET.Element("users")
 
     for user_id in users_ids.split(";"):
-
         user = ET.SubElement(root, "user")
         ET.SubElement(user, "userId").text = user_id
 
@@ -57,7 +34,8 @@ def get_avatars(request, users_ids):
             ET.SubElement(avatar, "link").text = ""
 
         else:
-            ET.SubElement(avatar, "link").text = get_avatar_url(user)
+            ET.SubElement(avatar, "link").text = user.avatar.url
 
-
-    return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+    return HttpResponse(
+        ET.tostring(root, "utf8", "xml"), content_type="application/xml"
+    )

@@ -1,3 +1,5 @@
+import google.protobuf
+
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
@@ -13,8 +15,12 @@ from connect.models import UserId, DeviceToken
 from mh.models import LandToken
 from proxy.views import request_auth_code, validate_auth_code, search_friends
 from mh.views import save_town, load_town
-from avatar.views import get_avatar_url
-from friends.views import send_friend_request, cancel_friend_request, accept_friend_request, remove_friend
+from friends.views import (
+    send_friend_request,
+    cancel_friend_request,
+    accept_friend_request,
+    remove_friend,
+)
 
 from .forms import UploadTownForm
 from .forms import EditCurrenciesForm
@@ -27,36 +33,31 @@ from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
 
-import google.protobuf
-
-# Create your views here.
 
 def login(request):
-
     if request.user.is_authenticated:
         return HttpResponseRedirect(reverse("dashboard:index"))
 
     else:
-
         if request.method == "GET":
             request.session["next"] = request.GET.get("next", "dashboard:index")
 
-        return LoginView.as_view(template_name="dashboard/login.html", next_page=request.session.get("next", "dashboard:index"))(request)
+        return LoginView.as_view(
+            template_name="dashboard/login.html",
+            next_page=request.session.get("next", "dashboard:index"),
+        )(request)
 
 
 def register(request):
-
     register_form = RequestUserForm()
 
     if request.user.is_authenticated:
         return HttpResponseRedirect(reverse("dashboard:index"))
 
     elif request.method == "POST":
-
         register_form = RequestUserForm(request.POST)
 
         if register_form.is_valid():
-
             email = BaseUserManager.normalize_email(register_form.cleaned_data["email"])
 
             # Verify if account already exists.
@@ -68,23 +69,19 @@ def register(request):
                 request.session["auth_email"] = email
                 return HttpResponseRedirect(reverse("dashboard:auth"))
 
-
     return render(request, "dashboard/register.html", {"register_form": register_form})
 
 
 def forgot_password(request):
-
     forgot_form = RequestUserForm()
 
     if request.user.is_authenticated:
         return HttpResponseRedirect(reverse("dashboard:index"))
 
     elif request.method == "POST":
-
         forgot_form = RequestUserForm(request.POST)
 
         if forgot_form.is_valid():
-
             email = BaseUserManager.normalize_email(forgot_form.cleaned_data["email"])
             user = UserId.objects.filter(email__iexact=email).first()
 
@@ -93,19 +90,22 @@ def forgot_password(request):
                 messages.error(request, "No account was found with this email.")
 
             elif user.is_superuser:
-                messages.error(request, "You are not allowed to change your password in here. Contact the server administrator!")
+                messages.error(
+                    request,
+                    "You are not allowed to change your password in here. Contact the server administrator!",
+                )
 
             else:
                 request_auth_code(email)
                 request.session["auth_email"] = email
                 return HttpResponseRedirect(reverse("dashboard:auth"))
 
-
-    return render(request, "dashboard/forgot-password.html", {"forgot_form": forgot_form})
+    return render(
+        request, "dashboard/forgot-password.html", {"forgot_form": forgot_form}
+    )
 
 
 def auth(request):
-
     if "auth_email" not in request.session:
         return HttpResponseRedirect(reverse("dashboard:login"))
 
@@ -116,7 +116,9 @@ def auth(request):
             code = auth_form.cleaned_data["code"]
             status = validate_auth_code(email, code)
             if status:
-                user, _ = UserId.objects.get_or_create(email=request.session["auth_email"], is_registered=True)
+                user, _ = UserId.objects.get_or_create(
+                    email=request.session["auth_email"], is_registered=True
+                )
                 request.session["auth_username"] = user.username
                 return HttpResponseRedirect(reverse("dashboard:reset_password"))
 
@@ -129,12 +131,14 @@ def auth(request):
     else:
         auth_form = AuthCodeForm()
 
-
-    return render(request, "dashboard/auth.html", {"auth_form": auth_form, "email": request.session["auth_email"]})
+    return render(
+        request,
+        "dashboard/auth.html",
+        {"auth_form": auth_form, "email": request.session["auth_email"]},
+    )
 
 
 def reset_password(request):
-
     if "auth_email" not in request.session or "auth_username" not in request.session:
         return HttpResponseRedirect(reverse("dashboard:login"))
 
@@ -142,9 +146,11 @@ def reset_password(request):
         password_form = ResetPasswordForm(request.POST)
 
         if password_form.is_valid():
-
             # Check if passwords match.
-            if password_form.cleaned_data["password"] != password_form.cleaned_data["same_password"]:
+            if (
+                password_form.cleaned_data["password"]
+                != password_form.cleaned_data["same_password"]
+            ):
                 messages.error(request, "The passwords don't match.")
 
             # Success! Update user password and username (if not empty).
@@ -164,30 +170,33 @@ def reset_password(request):
                 return HttpResponseRedirect(reverse("dashboard:login"))
 
     else:
-        password_form = ResetPasswordForm(initial={"username": request.session["auth_username"]})
+        password_form = ResetPasswordForm(
+            initial={"username": request.session["auth_username"]}
+        )
 
-
-    return render(request, "dashboard/reset-password.html", {"password_form": password_form})
+    return render(
+        request, "dashboard/reset-password.html", {"password_form": password_form}
+    )
 
 
 @login_required(login_url="dashboard:login")
 def index(request):
-
     # Pre-load currencies.
     land_data = LandData_pb2.LandMessage()
     land_data.ParseFromString(load_town(request.user))
     town_form = UploadTownForm()
-    currency_form = EditCurrenciesForm(instance=request.user, initial = {"money": land_data.userData.money})
+    currency_form = EditCurrenciesForm(
+        instance=request.user, initial={"money": land_data.userData.money}
+    )
 
     if request.method == "POST":
-
         if "town-form" in request.POST:
-
-            town_form = UploadTownForm(request.POST, request.FILES, instance=request.user)
+            town_form = UploadTownForm(
+                request.POST, request.FILES, instance=request.user
+            )
             town_ready = False
 
             if town_form.is_valid():
-
                 try:
                     land_data.ParseFromString(town_form.cleaned_data["town"].read())
 
@@ -195,7 +204,7 @@ def index(request):
                     # See if this might be a tstole.de backup.
                     try:
                         town_file = town_form.cleaned_data["town"]
-                        town_file.seek(0x0c)
+                        town_file.seek(0x0C)
                         land_data.ParseFromString(town_file.read())
 
                     # Reject file
@@ -213,20 +222,23 @@ def index(request):
                     land_data.id = str(mayhem_id)
                     land_data.friendData.name = request.user.username
                     user = town_form.save(commit=False)
-                    user.town = ContentFile(land_data.SerializeToString(), f"{mayhem_id}.pb")
+                    user.town = ContentFile(
+                        land_data.SerializeToString(), f"{mayhem_id}.pb"
+                    )
                     user.events = bytes()
                     user.save()
-                    messages.success(request, "Uploaded town successfuly!", extra_tags="town")
-                    LandToken.objects.filter(user=request.user).update(authorized=False, remove=True)
+                    messages.success(
+                        request, "Uploaded town successfuly!", extra_tags="town"
+                    )
+                    LandToken.objects.filter(user=request.user).update(
+                        authorized=False, remove=True
+                    )
                     return HttpResponseRedirect(reverse("dashboard:index"))
 
-
         elif "currency-form" in request.POST:
-
             currency_form = EditCurrenciesForm(request.POST, instance=request.user)
 
             if currency_form.is_valid():
-
                 # Update town file currencies.
                 currencies = currency_form.cleaned_data
                 currency_form.save()
@@ -234,36 +246,36 @@ def index(request):
                 save_town(request.user, land_data)
 
                 # Remove all land tokens.
-                LandToken.objects.filter(user=request.user).update(authorized=False, remove=True)
+                LandToken.objects.filter(user=request.user).update(
+                    authorized=False, remove=True
+                )
 
                 messages.success(request, "Currencies updated!", extra_tags="currency")
                 return HttpResponseRedirect(reverse("dashboard:index"))
 
-
-    context = {
-        "town_form": town_form,
-        "town_url": reverse("dashboard:download_town", args=(request.user.mayhem_id.int,)),
-        "currency_form": currency_form,
-        "avatar_url":  get_avatar_url(request.user),
-        "avatar_exists": request.user.avatar,
-        "username": request.user.username
-    }
-
-    return render(request, "dashboard/index.html", context)
+    return render(
+        request,
+        "dashboard/index.html",
+        {
+            "town_form": town_form,
+            "currency_form": currency_form,
+        },
+    )
 
 
 @login_required(login_url="dashboard:login")
 def profile(request):
-
     if request.method == "POST":
-        # This prevents django from messing request.user.avatar up when deleting the current avatar.
-        avatar_name = request.user.avatar.name
-        username = request.user.username
-        avatar_url = get_avatar_url(request.user)
-        profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user)
+        profile_form = UserProfileForm(
+            request.POST, request.FILES, instance=request.user
+        )
 
         if profile_form.is_valid():
-            success = True
+            # Update username.
+            if len(profile_form.cleaned_data["username"].strip()) == 0:
+                messages.error(
+                    request, "Username cannot contain only blank characters."
+                )
 
             # Update avatar picture if any was uploaded.
             if request.FILES and profile_form.cleaned_data.get("avatar"):
@@ -272,49 +284,32 @@ def profile(request):
 
                 if avatar_ext not in ["png", "jpeg"]:
                     messages.error(request, "Image must be either png or jpg.")
-                    success = False
 
                 elif avatar_img.width > 416 or avatar_img.height > 416:
-                    messages.error(request, "Image dimensions cannot exceed 416x416 pixels.")
-                    success = False
+                    messages.error(
+                        request, "Image dimensions cannot exceed 416x416 pixels."
+                    )
 
                 else:
-                    # Delete all possible avatar files and set avatar name to standard user identification.
-                    if avatar_name:
-                        storages["staticfiles"].delete(avatar_name)
-                    storages["staticfiles"].delete(f"{request.user.user_id}.png")
-                    storages["staticfiles"].delete(f"{request.user.user_id}.jpeg")
-                    request.user.avatar.name = f"{request.user.user_id}.{avatar_ext}"
-                    avatar_url = get_avatar_url(request.user) # Grab new avatar URL.
                     messages.success(request, "Avatar image updated.")
 
-
-            # Update username if it was edited.
-            if profile_form.cleaned_data["username"] != username:
-                if len(profile_form.cleaned_data["username"].strip()) < 5:
-                    messages.error(request, "Username must have at least 5 characters.")
-                    success = False
-
-                else:
-                    messages.success(request, "Username updated.")
-
+            else:
+                messages.success(request, "Username updated.")
 
             # No errors. Reset the page.
             if success:
                 profile_form.save()
                 return HttpResponseRedirect(reverse("dashboard:profile"))
 
-
     else:
         profile_form = UserProfileForm(instance=request.user)
         avatar_url = get_avatar_url(request.user)
-
 
     context = {
         "profile_form": profile_form,
         "avatar_url": avatar_url,
         "avatar_exists": request.user.avatar,
-        "username": request.user.username
+        "username": request.user.username,
     }
 
     return render(request, "dashboard/profile.html", context)
@@ -322,7 +317,6 @@ def profile(request):
 
 @login_required(login_url="dashboard:login")
 def friends(request):
-
     search_form = SearchUserForm()
     search_matches = list()
 
@@ -339,9 +333,11 @@ def friends(request):
                     "avatar_url": get_avatar_url(user),
                     "avatar_exists": user.avatar,
                     "username": user.username,
-                    "invite_url": reverse("dashboard:friends_send_request", args=(user.user_id,))
-
-                } for user in search_friends(request.user, username)[:100]
+                    "invite_url": reverse(
+                        "dashboard:friends_send_request", args=(user.user_id,)
+                    ),
+                }
+                for user in search_friends(request.user, username)[:100]
             ]
 
     # Get pending requests.
@@ -350,10 +346,14 @@ def friends(request):
             "avatar_url": get_avatar_url(invitation.from_user),
             "avatar_exists": invitation.from_user.avatar,
             "username": invitation.from_user.username,
-            "accept_url": reverse("dashboard:friends_accept_request", args=(invitation.from_user.user_id,)),
-            "reject_url": reverse("dashboard:friends_reject_request", args=(invitation.from_user.user_id,))
-
-        } for invitation in request.user.received_invitations.order_by("-invitation_date")
+            "accept_url": reverse(
+                "dashboard:friends_accept_request", args=(invitation.from_user.user_id,)
+            ),
+            "reject_url": reverse(
+                "dashboard:friends_reject_request", args=(invitation.from_user.user_id,)
+            ),
+        }
+        for invitation in request.user.received_invitations.order_by("-invitation_date")
     ]
 
     sent_requests = [
@@ -361,9 +361,11 @@ def friends(request):
             "avatar_url": get_avatar_url(invitation.to_user),
             "avatar_exists": invitation.to_user.avatar,
             "username": invitation.to_user.username,
-            "cancel_url": reverse("dashboard:friends_cancel_request", args=(invitation.to_user.user_id,))
-
-        } for invitation in request.user.sent_invitations.order_by("-invitation_date")
+            "cancel_url": reverse(
+                "dashboard:friends_cancel_request", args=(invitation.to_user.user_id,)
+            ),
+        }
+        for invitation in request.user.sent_invitations.order_by("-invitation_date")
     ]
 
     friends = [
@@ -372,20 +374,20 @@ def friends(request):
             "avatar_exists": user.avatar,
             "username": user.username,
             "last_active": user.last_authenticated,
-            "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,))
-
-        } for user in request.user.friends.order_by(Lower("username"))
+            "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,)),
+        }
+        for user in request.user.friends.order_by(Lower("username"))
     ]
 
     context = {
         "search_form": search_form,
-        "avatar_url":  get_avatar_url(request.user),
+        "avatar_url": get_avatar_url(request.user),
         "avatar_exists": request.user.avatar,
         "username": request.user.username,
         "search_matches": search_matches,
         "received_requests": received_requests,
         "sent_requests": sent_requests,
-        "friends": friends
+        "friends": friends,
     }
 
     return render(request, "dashboard/friends.html", context)
@@ -395,54 +397,66 @@ def friends(request):
 def friends_send_request(request, to_user_id):
     from_user = request.user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
-    return send_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+    return send_friend_request(
+        from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends"))
+    )
 
 
 @login_required(login_url="dashboard:login")
 def friends_cancel_request(request, to_user_id):
     from_user = request.user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
-    return cancel_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+    return cancel_friend_request(
+        from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends"))
+    )
 
 
 @login_required(login_url="dashboard:login")
 def friends_accept_request(request, from_user_id):
     from_user = get_object_or_404(UserId, user_id=from_user_id)
     to_user = request.user
-    return accept_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+    return accept_friend_request(
+        from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends"))
+    )
 
 
 @login_required(login_url="dashboard:login")
 def friends_reject_request(request, from_user_id):
     from_user = get_object_or_404(UserId, user_id=from_user_id)
     to_user = request.user
-    return cancel_friend_request(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+    return cancel_friend_request(
+        from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends"))
+    )
 
 
 @login_required(login_url="dashboard:login")
 def friends_remove(request, to_user_id):
     from_user = request.user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
-    return remove_friend(from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends")))
+    return remove_friend(
+        from_user, to_user, HttpResponseRedirect(reverse("dashboard:friends"))
+    )
 
 
 @login_required(login_url="dashboard:login")
 def devices(request):
-
     user_devices = [
         {
             "manufacturer": token.manufacturer,
             "model": token.device_model,
             "last_active": token.timestamp,
-            "remove_url": reverse("dashboard:remove_device", args=(token.advertising_id,))
-        } for token in request.user.devicetoken_set.all()
+            "remove_url": reverse(
+                "dashboard:remove_device", args=(token.advertising_id,)
+            ),
+        }
+        for token in request.user.devicetoken_set.all()
     ]
 
     context = {
-        "avatar_url":  get_avatar_url(request.user),
+        "avatar_url": get_avatar_url(request.user),
         "avatar_exists": request.user.avatar,
         "username": request.user.username,
-        "devices": user_devices
+        "devices": user_devices,
     }
 
     return render(request, "dashboard/devices.html", context)
@@ -450,7 +464,9 @@ def devices(request):
 
 @login_required(login_url="dashboard:login")
 def remove_device(request, advertising_id):
-    get_object_or_404(DeviceToken, user=request.user, advertising_id=advertising_id).delete()
+    get_object_or_404(
+        DeviceToken, user=request.user, advertising_id=advertising_id
+    ).delete()
     return HttpResponseRedirect(reverse("dashboard:devices"))
 
 
@@ -460,12 +476,13 @@ def download_town(request, mayhem_id):
 
 @login_required(login_url="dashboard:login")
 def delete_account(request):
-
     if request.method == "POST":
         delete_user_form = DeleteUserForm(request.POST)
 
         if delete_user_form.is_valid():
-            status = validate_auth_code(request.user.email, delete_user_form.cleaned_data["code"])
+            status = validate_auth_code(
+                request.user.email, delete_user_form.cleaned_data["code"]
+            )
             if status:
                 request.user.town.delete()
                 request.user.avatar.delete()
@@ -478,7 +495,6 @@ def delete_account(request):
 
             else:
                 messages.error(request, "Wrong code.")
-
 
     else:
         request_auth_code(request.user.email)

@@ -42,13 +42,9 @@
               <button class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
-        {% if avatar_exists %}
-        <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
-        {% else %}
-          <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
-        {% endif %}
+        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
         <li class="nav-username">
-          <p>{{ username }}</p>
+          <p>{{ request.user.username }}</p>
         </li>
       </ul>
     </nav>
@@ -57,13 +53,9 @@
       <ul>
         <a href="#" class="close-btn">✕</a>
         <ul class="nav-user-info">
-          {% if avatar_exists %}
-            <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
-          {% else %}
-            <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
-          {% endif %}
+          <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
           <li class="nav-username">
-            <p>{{ username }}</p>
+            <p>{{ request.user.username }}</p>
           </li>
         </ul>
         <li>
@@ -105,9 +97,11 @@
           <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
             {% csrf_token %}
             {{ town_form }}
-            <div class="bottom-link">
-              <a href="{{ town_url }}">Download your town file</a>
-            </div>
+              {% if request.user.town %}
+                <div class="bottom-link">
+                  <a href="{{ request.user.town.url }}" download>Download your town file</a>
+                </div>
+              {% endif %}
             <div>
               <button class="submit" name="town-form">Upload</button>
             </div>

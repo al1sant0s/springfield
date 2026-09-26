@@ -33,6 +33,8 @@ environ.Env.read_env(BASE_DIR / ".env")
 DEBUG = env("DEBUG")
 SECRET_KEY = env("SECRET_KEY")
 
+SERVER_BASE_URL = env("SERVER_BASE_URL", default="http://localhost:8000").rstrip("/")
+
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "::1"])
 
 CSRF_TRUSTED_ORIGINS = env.list(
@@ -172,9 +174,7 @@ MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
 
 # Django-cacheops
 if CACHEOPS_REDIS:
-    CACHEOPS_DEGRADE_ON_FAILURE = (
-        True
-    )
+    CACHEOPS_DEGRADE_ON_FAILURE = True
     CACHEOPS = {
         "connect.*": {"ops": "all", "timeout": 60 * 60},
         "mh.*": {"ops": "all", "timeout": 60 * 60},

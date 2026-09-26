@@ -1,20 +1,62 @@
-from django.db import models, transaction
-from django.forms import ValidationError
-from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
-
-from springfield.settings import env
-
-from pathlib import Path
-
 import uuid
 import secrets
+from pathlib import Path
+from PIL import Image
 
-# Create your models here.
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
+from django.templatetags.static import static
+
+
+def validate_avatar(file):
+    # 1. Size check
+    if file.size > 1048576:
+        raise ValidationError("File size exceeds 1MB limit.")
+
+    # 2. Extension check
+    if Path(file.name).suffix.lower() not in [".png", ".jpg", ".jpeg"]:
+        raise ValidationError("File extension must be .png, .jpg, or .jpeg.")
+
+    # 3. Content checks
+    try:
+        with Image.open(file) as img:
+            if img.format not in ["PNG", "JPEG"]:
+                raise ValidationError(
+                    "Unsupported image format. Please upload a valid PNG or JPEG."
+                )
+
+            if img.width > 416 or img.height > 416:
+                raise ValidationError("Image dimensions cannot exceed 416x416 pixels.")
+
+            img.verify()
+
+    except (IOError, SyntaxError):
+        raise ValidationError("The uploaded file is not a valid image or is corrupted.")
+
+    finally:
+        file.seek(0)
+
+
+def validate_town(file):
+    if file.size > 5242880:
+        raise ValidationError("File size exceeds 5MB limit.")
 
 
 class UserId(AbstractUser):
-    username = models.CharField(max_length=16, blank=True, unique=True)
+    username = models.CharField(
+        max_length=16,
+        blank=True,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r"^[a-zA-Z0-9_]{5,16}$",
+                message="Username must be between 5 and 16 characters and contain only letters, numbers, and underscores.",
+            )
+        ],
+    )
     email = models.EmailField(unique=True)
     is_registered = models.BooleanField(default=False)
     persona_id = models.BigIntegerField(unique=True, blank=True, null=True)
@@ -23,11 +65,18 @@ class UserId(AbstractUser):
     telemetry_id = models.BigIntegerField(unique=True, blank=True, null=True)
     mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
     session_key = models.CharField(max_length=44, unique=True)
-    donuts_balance = models.PositiveIntegerField("Donuts", default=50)
+    donuts_balance = models.PositiveIntegerField("Donuts", default=0)
     last_authenticated = models.DateTimeField(default=timezone.now)
     friends = models.ManyToManyField("self", symmetrical=True, blank=True)
-    avatar = models.ImageField("Avatar Picture", upload_to="avatars/", blank=True)
-    town = models.FileField("Town File", upload_to="towns/", blank=True)
+    avatar = models.ImageField(
+        "Avatar Picture",
+        upload_to="avatars/",
+        blank=True,
+        validators=[validate_avatar],
+    )
+    town = models.FileField(
+        "Town File", upload_to="towns/", blank=True, validators=[validate_town]
+    )
     events = models.BinaryField(default=b"", blank=True)
 
     USERNAME_FIELD = "email"
@@ -36,15 +85,11 @@ class UserId(AbstractUser):
     def __str__(self):
         return self.username
 
-    def clean(self):
-        super().clean()
-        if self.town and self.town.size > 5242880:
-            raise ValidationError({"town": "File size exceeds 5MB limit"})
+    @property
+    def avatar_url(self):
         if self.avatar:
-            if self.avatar.size > 1048576:
-                raise ValidationError({"avatar": "File size exceeds 1MB limit"})
-            if Path(self.avatar.name).suffix.lower() not in [".png", ".jpg", ".jpeg"]:
-                raise ValidationError({"avatar": "Image must be either PNG or JPG."})
+            return self.avatar.url
+        return static("dashboard/default-avatar.png")
 
     @transaction.atomic
     def save(self, *args, **kwargs):
