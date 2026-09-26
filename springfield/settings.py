@@ -10,58 +10,46 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
 from datetime import timedelta
-from url_normalize import url_normalize
-
-import os
+from pathlib import Path
 import environ
 
+# ==============================================================================
+# 1. BASE & ENVIRONMENT SETUP
+# ==============================================================================
 
-# Initialize environment variables
-env = environ.Env(
-    # Set project defaults and casting types
-    DEBUG=(bool, False),
-)
-
-
-# Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Take environment variables from .env file
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+env = environ.Env(
+    DEBUG=(bool, False),
+)
+environ.Env.read_env(BASE_DIR / ".env")
 
-# False if not in os.environ because of casting above
+
+# ==============================================================================
+# 2. SECURITY & NETWORK
+# ==============================================================================
+
 DEBUG = env("DEBUG")
-
-# Grab server url from environment variables and inject it into ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS.
-protocol = env("PROTOCOL")
-domain = env("DOMAIN")
-port = env("PORT")
-
-# Raises Django"s ImproperlyConfigured
-# exception if SECRET_KEY not in os.environ
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env("SECRET_KEY")
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "::1"])
 
-ALLOWED_HOSTS = [domain, "localhost", "127.0.0.1"]
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS", default=["http://localhost:8000", "http://127.0.0.1:8000"]
+)
 
-CSRF_TRUSTED_ORIGINS = [
-    url_normalize(f"{protocol}://{domain}:{port}").removesuffix("/"),
-    url_normalize(f"http://localhost:{port}").removesuffix("/"),
-    url_normalize(f"http://127.0.0.1:{port}").removesuffix("/"),
-    "http://localhost",
-    "http://127.0.0.1"
-]
+INTERNAL_IPS = env.list("INTERNAL_IPS", default=["127.0.0.1", "::1"])
 
-INTERNAL_IPS = ["localhost", "127.0.0.1"]
 
-# Application definition
+# ==============================================================================
+# 3. APPLICATION DEFINITION & CORE ARCHITECTURE
+# ==============================================================================
+
+CACHEOPS_REDIS = env("CACHEOPS_REDIS", default=None)
 
 INSTALLED_APPS = [
+    # Springfield Apps
     "connect.apps.ConnectConfig",
     "director.apps.DirectorConfig",
     "events.apps.EventsConfig",
@@ -71,20 +59,20 @@ INSTALLED_APPS = [
     "friends.apps.FriendsConfig",
     "avatar.apps.AvatarConfig",
     "dashboard.apps.DashboardConfig",
+    # Django Contrib Apps
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Third-Party Apps
     "debug_toolbar",
     "axes",
 ]
 
-AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesStandaloneBackend",
-    "django.contrib.auth.backends.ModelBackend",
-]
+if CACHEOPS_REDIS:
+    INSTALLED_APPS.append("cacheops")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -100,6 +88,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "springfield.urls"
+WSGI_APPLICATION = "springfield.wsgi.application"
 
 TEMPLATES = [
     {
@@ -116,63 +105,37 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "springfield.wsgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    "default": env("DATABASE_DEFAULT", default=f"sqlite://{Path(Path.cwd(), 'database.db')}")
-}
-
-
-# Password validation
-# https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
-
-
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = env("TIME_ZONE", default="UTC")
-
-USE_I18N = True
-
-USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/6.0/howto/static-files/
-
-STATIC_URL = env("STATIC_LOCATION", default="static/")
-
-STATIC_ROOT = env("STATIC_ROOT")
+# ==============================================================================
+# 4. AUTHENTICATION & USER MANAGEMENT
+# ==============================================================================
 
 AUTH_USER_MODEL = "connect.UserId"
 
-CACHES = {
-    "default": {
-        "BACKEND": env("CACHE_DEFAULT_BACKEND", default="django.core.cache.backends.locmem.LocMemCache"),
-        "LOCATION": env("CACHE_DEFAULT_LOCATION", default="unique-snowflake"),
-    }
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+
+# ==============================================================================
+# 5. SERVICE BACKENDS (DB, CACHE, STORAGE, EMAIL)
+# ==============================================================================
+
+DATABASES = {
+    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'database.db'}")
 }
+
+CACHES = {"default": env("CACHE_URL", default="memory://")}
 
 STORAGES = {
     "default": env("STORAGE_DEFAULT", default="fs://?allow_overwrite=true"),
@@ -181,16 +144,49 @@ STORAGES = {
 
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="console://")
 
-# Setup cacheops.
-if env("CACHEOPS_REDIS_URL", default=None):
-    INSTALLED_APPS.append("cacheops")
 
-# django-axes
+# ==============================================================================
+# 6. INTERNATIONALIZATION
+# ==============================================================================
+
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = env("TIME_ZONE", default="UTC")
+USE_I18N = True
+USE_TZ = True
+
+
+# ==============================================================================
+# 7. STATIC & MEDIA FILES
+# ==============================================================================
+
+STATIC_URL = env("STATIC_URL", default="static/")
+STATIC_ROOT = env("STATIC_ROOT", default=str(BASE_DIR / "staticfiles"))
+
+MEDIA_URL = env("MEDIA_URL", default="media/")
+MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
+
+
+# ==============================================================================
+# 8. THIRD-PARTY APP CONFIGURATIONS
+# ==============================================================================
+
+# Django-cacheops
+if CACHEOPS_REDIS:
+    CACHEOPS_DEGRADE_ON_FAILURE = (
+        True
+    )
+    CACHEOPS = {
+        "connect.*": {"ops": "all", "timeout": 60 * 60},
+        "mh.*": {"ops": "all", "timeout": 60 * 60},
+        "friends.*": {"ops": "all", "timeout": 60 * 60},
+        "proxy.*": {"ops": "all", "timeout": 60 * 60},
+    }
+
+# Django-Axes
 AXES_IPWARE_META_PRECEDENCE_ORDER = [
     "HTTP_X_FORWARDED_FOR",
     "REMOTE_ADDR",
 ]
-
 AXES_FAILURE_LIMIT = env("LOGIN_ATTEMPTS", default=0)
 AXES_COOLOFF_TIME = timedelta(minutes=env("LOGIN_FAIL_COOLOFF_TIME", default=30))
 AXES_USE_ATTEMPT_EXPIRATION = True
