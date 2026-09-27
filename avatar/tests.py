@@ -103,6 +103,26 @@ class AvatarViewsTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
+    def test_download_avatar_jpeg(self):
+        buf = io.BytesIO()
+        Image.new("RGB", (32, 32), (0, 255, 0)).save(buf, format="JPEG")
+        jpeg_user = UserId.objects.create(
+            username="jpeg_user",
+            email="jpeg_user@example.com",
+            avatar=SimpleUploadedFile(
+                "custom_avatar.jpg", buf.getvalue(), content_type="image/jpeg"
+            ),
+        )
+        try:
+            url = reverse("avatar:download_avatar", args=(jpeg_user.user_id,))
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response["Content-Type"], "image/jpeg")
+            self.assertEqual(response.content, buf.getvalue())
+        finally:
+            if jpeg_user.avatar:
+                jpeg_user.avatar.delete(save=False)
+
     def test_get_avatars_multiple_and_trailing_semicolon(self):
         users_ids = (
             f"{self.user_with_avatar.user_id};{self.user_without_avatar.user_id};"

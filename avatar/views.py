@@ -1,3 +1,4 @@
+import mimetypes
 import xml.etree.ElementTree as ET
 from django.core.files.storage import default_storage
 from django.db import models
@@ -25,7 +26,8 @@ def download_avatar(request, user_id):
     ):
         raise Http404
 
-    return HttpResponse(target_user.avatar.read(), content_type="image/png")
+    content_type = mimetypes.guess_type(target_user.avatar.name)[0] or "image/png"
+    return HttpResponse(target_user.avatar.read(), content_type=content_type)
 
 
 def get_avatar(request):
