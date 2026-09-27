@@ -396,8 +396,6 @@ def delete_account(request):
                 request.user.email, delete_user_form.cleaned_data["code"]
             )
             if status:
-                request.user.town.delete()
-                request.user.avatar.delete()
                 request.user.delete()
                 logout(request)
                 return HttpResponseRedirect(reverse("dashboard:login"))
