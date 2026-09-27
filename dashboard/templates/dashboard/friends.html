@@ -85,10 +85,18 @@
         <section class="wide-section">
           <h2>Friends hub</h2>
           <p>Send, accept or reject friend requests here.</p>
-          {% if messages %}
+          {% if messages or search_form.errors %}
             <ul class="messages">
               {% for message in messages %}
                 <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+              {% for error in search_form.non_field_errors %}
+                <li class="error">{{ error }}</li>
+              {% endfor %}
+              {% for field in search_form %}
+                {% for error in field.errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
               {% endfor %}
             </ul>
           {% endif %}

@@ -84,12 +84,20 @@
       <article>
         <section>
           <h2>Upload town file</h2>
-          {% if messages %}
+          {% if messages or town_form.errors %}
             <ul class="messages">
               {% for message in messages %}
                 {% if "town" in message.tags %}
                   <li class="{{ message.tags }}">{{ message }}</li>
                 {% endif %}
+              {% endfor %}
+              {% for error in town_form.non_field_errors %}
+                <li class="error">{{ error }}</li>
+              {% endfor %}
+              {% for field in town_form %}
+                {% for error in field.errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
               {% endfor %}
             </ul>
           {% endif %}
@@ -107,12 +115,20 @@
             </div>
           </form>
           <h2>- Edit currencies +</h2>
-            {% if messages %}
+            {% if messages or currency_form.errors %}
               <ul class="messages">
                 {% for message in messages %}
                   {% if "currency" in message.tags %}
                     <li class="{{ message.tags }}">{{ message }}</li>
                   {% endif %}
+                {% endfor %}
+                {% for error in currency_form.non_field_errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
+                {% for field in currency_form %}
+                  {% for error in field.errors %}
+                    <li class="error">{{ error }}</li>
+                  {% endfor %}
                 {% endfor %}
               </ul>
             {% endif %}

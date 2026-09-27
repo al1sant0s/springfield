@@ -23,10 +23,18 @@
           <h2>Account details</h2>
           <p>Insert the code which was sent to the following email address:</p>
           <p class="highlight">&ldquo;{{ email }}&rdquo;</p>
-          {% if messages %}
+          {% if messages or auth_form.errors %}
             <ul class="messages">
               {% for message in messages %}
                 <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+              {% for error in auth_form.non_field_errors %}
+                <li class="error">{{ error }}</li>
+              {% endfor %}
+              {% for field in auth_form %}
+                {% for error in field.errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
               {% endfor %}
             </ul>
           {% endif %}

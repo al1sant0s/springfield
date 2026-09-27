@@ -85,6 +85,13 @@
         <section class="wide-section">
             <h2>Connected devices</h2>
             <p>If you do not recognize a device here, remove it!</p>
+            {% if messages %}
+              <ul class="messages">
+                {% for message in messages %}
+                  <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
             <hr>
             {% if devices %}
               <table class="long-table">

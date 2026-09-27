@@ -142,28 +142,27 @@ def reset_password(request):
         password_form = ResetPasswordForm(request.POST)
 
         if password_form.is_valid():
-            # Check if passwords match.
-            if (
-                password_form.cleaned_data["password"]
-                != password_form.cleaned_data["same_password"]
-            ):
-                messages.error(request, "The passwords don't match.")
+            user = get_object_or_404(UserId, email=request.session["auth_email"])
+            new_username = password_form.cleaned_data["username"]
 
-            # Success! Update user password and username (if not empty).
-            else:
-                user = get_object_or_404(UserId, email=request.session["auth_email"])
+            # Only check if user actually changed their username
+            if new_username != user.username:
+                if UserId.objects.filter(username__iexact=new_username).exists():
+                    messages.error(request, "This username is already taken.")
+                    return render(
+                        request,
+                        "dashboard/reset-password.html",
+                        {"password_form": password_form},
+                    )
+                user.username = new_username
 
-                if password_form.cleaned_data["username"] != ".null":
-                    user.username = password_form.cleaned_data["username"]
+            user.set_password(password_form.cleaned_data["password"])
+            user.save(update_fields=["username", "password"])
 
-                user.set_password(password_form.cleaned_data["password"])
-                user.save(update_fields=["username", "password"])
-
-                # User will have to request a new auth code to be able to revisit the reset password view.
-                del request.session["auth_email"]
-                del request.session["auth_username"]
-
-                return HttpResponseRedirect(reverse("dashboard:login"))
+            # User will have to request a new auth code to be able to revisit the reset password view.
+            request.session.pop("auth_email", None)
+            request.session.pop("auth_username", None)
+            return HttpResponseRedirect(reverse("dashboard:login"))
 
     else:
         password_form = ResetPasswordForm(
@@ -296,11 +295,9 @@ def friends(request):
         search_matches = list()
 
     # Get pending requests.
-    received_requests = (
-        request.user.received_invitations.select_related("from_user").order_by(
-            "-invitation_date"
-        )
-    )
+    received_requests = request.user.received_invitations.select_related(
+        "from_user"
+    ).order_by("-invitation_date")
 
     sent_requests = request.user.sent_invitations.select_related("to_user").order_by(
         "-invitation_date"

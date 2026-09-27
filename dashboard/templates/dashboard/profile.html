@@ -85,10 +85,18 @@
         <section>
           <h2>Edit user profile</h2>
           <p>Change your avatar picture and username.</p>
-          {% if messages %}
+          {% if messages or profile_form.errors %}
             <ul class="messages">
               {% for message in messages %}
                 <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+              {% for error in profile_form.non_field_errors %}
+                <li class="error">{{ error }}</li>
+              {% endfor %}
+              {% for field in profile_form %}
+                {% for error in field.errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
               {% endfor %}
             </ul>
           {% endif %}
