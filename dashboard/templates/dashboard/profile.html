@@ -43,11 +43,7 @@
               <button class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
-        {% if avatar_exists %}
-        <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
-        {% else %}
-          <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
-        {% endif %}
+        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
         <li class="nav-username">
           <p>{{ username }}</p>
         </li>

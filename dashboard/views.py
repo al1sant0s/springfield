@@ -1,10 +1,6 @@
-import google.protobuf
-
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
-from django.core.files.base import ContentFile
-from django.core.files.storage import storages
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.views import LoginView, login_required
@@ -181,85 +177,77 @@ def reset_password(request):
 
 @login_required(login_url="dashboard:login")
 def index(request):
-    # Pre-load currencies.
-    land_data = LandData_pb2.LandMessage()
-    land_data.ParseFromString(load_town(request.user))
-    town_form = UploadTownForm()
-    currency_form = EditCurrenciesForm(
-        instance=request.user, initial={"money": land_data.userData.money}
-    )
-
     if request.method == "POST":
         if "town-form" in request.POST:
             town_form = UploadTownForm(
                 request.POST, request.FILES, instance=request.user
             )
-            town_ready = False
-
             if town_form.is_valid():
-                try:
-                    land_data.ParseFromString(town_form.cleaned_data["town"].read())
-
-                except google.protobuf.message.DecodeError:
-                    # See if this might be a tstole.de backup.
-                    try:
-                        town_file = town_form.cleaned_data["town"]
-                        town_file.seek(0x0C)
-                        land_data.ParseFromString(town_file.read())
-
-                    # Reject file
-                    except google.protobuf.message.DecodeError:
-                        messages.error(request, "Invalid town file!", extra_tags="town")
-
-                    else:
-                        town_ready = True
-
-                else:
-                    town_ready = True
-
-                if town_ready:
-                    mayhem_id = request.user.mayhem_id.int
-                    land_data.id = str(mayhem_id)
-                    land_data.friendData.name = request.user.username
-                    user = town_form.save(commit=False)
-                    user.town = ContentFile(
-                        land_data.SerializeToString(), f"{mayhem_id}.pb"
-                    )
-                    user.events = bytes()
-                    user.save()
-                    messages.success(
-                        request, "Uploaded town successfuly!", extra_tags="town"
-                    )
-                    LandToken.objects.filter(user=request.user).update(
-                        authorized=False, remove=True
-                    )
-                    return HttpResponseRedirect(reverse("dashboard:index"))
-
-        elif "currency-form" in request.POST:
-            currency_form = EditCurrenciesForm(request.POST, instance=request.user)
-
-            if currency_form.is_valid():
-                # Update town file currencies.
-                currencies = currency_form.cleaned_data
-                currency_form.save()
-                land_data.userData.money = currencies["money"]
-                save_town(request.user, land_data)
-
-                # Remove all land tokens.
+                town_form.save()
                 LandToken.objects.filter(user=request.user).update(
                     authorized=False, remove=True
                 )
-
-                messages.success(request, "Currencies updated!", extra_tags="currency")
+                messages.success(
+                    request, "Uploaded town successfully!", extra_tags="town"
+                )
                 return HttpResponseRedirect(reverse("dashboard:index"))
+
+            # Lazy load currency form to avoid unnecessary database queries if the town form is valid.
+            land_data = LandData_pb2.LandMessage()
+            land_data.ParseFromString(load_town(request.user))
+            currency_form = EditCurrenciesForm(
+                instance=request.user, initial={"money": land_data.userData.money}
+            )
+
+        elif "currency-form" in request.POST:
+            land_data = LandData_pb2.LandMessage()
+            land_data.ParseFromString(load_town(request.user))
+            currency_form = EditCurrenciesForm(
+                request.POST,
+                instance=request.user,
+                initial={"money": land_data.userData.money},
+            )
+            if currency_form.is_valid():
+                if currency_form.has_changed():
+                    if "money" in currency_form.changed_data:
+                        land_data.userData.money = currency_form.cleaned_data["money"]
+                        save_town(request.user, land_data.SerializeToString())
+
+                    if "donuts_balance" in currency_form.changed_data:
+                        currency_form.save()
+
+                    LandToken.objects.filter(user=request.user).update(
+                        authorized=False, remove=True
+                    )
+
+                    messages.success(
+                        request, "Currencies updated!", extra_tags="currency"
+                    )
+
+                else:
+                    messages.info(
+                        request, "No changes were made.", extra_tags="currency"
+                    )
+
+                return HttpResponseRedirect(reverse("dashboard:index"))
+
+            town_form = UploadTownForm()
+
+        else:
+            return HttpResponseRedirect(reverse("dashboard:index"))
+
+    else:
+        town_form = UploadTownForm()
+        land_data = LandData_pb2.LandMessage()
+        land_data.ParseFromString(load_town(request.user))
+        currency_form = EditCurrenciesForm(
+            instance=request.user, initial={"money": land_data.userData.money}
+        )
 
     return render(
         request,
         "dashboard/index.html",
-        {
-            "town_form": town_form,
-            "currency_form": currency_form,
-        },
+        {"town_form": town_form, "currency_form": currency_form},
     )
 
 
@@ -269,50 +257,24 @@ def profile(request):
         profile_form = UserProfileForm(
             request.POST, request.FILES, instance=request.user
         )
-
         if profile_form.is_valid():
-            # Update username.
-            if len(profile_form.cleaned_data["username"].strip()) == 0:
-                messages.error(
-                    request, "Username cannot contain only blank characters."
-                )
-
-            # Update avatar picture if any was uploaded.
-            if request.FILES and profile_form.cleaned_data.get("avatar"):
-                avatar_img = profile_form.cleaned_data["avatar"].image
-                avatar_ext = avatar_img.format.lower()
-
-                if avatar_ext not in ["png", "jpeg"]:
-                    messages.error(request, "Image must be either png or jpg.")
-
-                elif avatar_img.width > 416 or avatar_img.height > 416:
-                    messages.error(
-                        request, "Image dimensions cannot exceed 416x416 pixels."
-                    )
-
-                else:
+            if profile_form.has_changed():
+                if "avatar" in profile_form.changed_data:
                     messages.success(request, "Avatar image updated.")
 
-            else:
-                messages.success(request, "Username updated.")
+                if "username" in profile_form.changed_data:
+                    messages.success(request, "Username updated.")
 
-            # No errors. Reset the page.
-            if success:
                 profile_form.save()
-                return HttpResponseRedirect(reverse("dashboard:profile"))
+            else:
+                messages.info(request, "No changes were made.")
+
+            return HttpResponseRedirect(reverse("dashboard:profile"))
 
     else:
         profile_form = UserProfileForm(instance=request.user)
-        avatar_url = get_avatar_url(request.user)
 
-    context = {
-        "profile_form": profile_form,
-        "avatar_url": avatar_url,
-        "avatar_exists": request.user.avatar,
-        "username": request.user.username,
-    }
-
-    return render(request, "dashboard/profile.html", context)
+    return render(request, "dashboard/profile.html", {"profile_form": profile_form})
 
 
 @login_required(login_url="dashboard:login")

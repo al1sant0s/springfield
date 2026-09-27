@@ -2,6 +2,7 @@ import uuid
 import secrets
 from pathlib import Path
 from PIL import Image
+from google.protobuf.message import DecodeError
 
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
@@ -9,6 +10,8 @@ from django.db import models, transaction
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.templatetags.static import static
+
+from protofiles import LandData_pb2
 
 
 def validate_avatar(file):
@@ -41,8 +44,28 @@ def validate_avatar(file):
 
 
 def validate_town(file):
+    # 1. Size check
     if file.size > 5242880:
         raise ValidationError("File size exceeds 5MB limit.")
+
+    # 2. Content checks
+    try:
+        data = file.read()
+        land_data = LandData_pb2.LandMessage()
+        land_data.ParseFromString(data)
+
+    except DecodeError:
+        try:
+            # Fallback for tstole.de backups (starts at 12-byte offset 0x0C)
+            land_data.ParseFromString(data[0x0C:])
+
+        except DecodeError:
+            raise ValidationError(
+                "Invalid town file. The uploaded file is corrupted or not a valid Springfield town file."
+            )
+
+    finally:
+        file.seek(0)
 
 
 class UserId(AbstractUser):

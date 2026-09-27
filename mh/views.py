@@ -39,7 +39,7 @@ def starting_town(user):
 
 
 def save_town(user, land_data):
-    user.town = ContentFile(land_data.SerializeToString(), f"{user.mayhem_id.int}.pb")
+    user.town = ContentFile(land_data, f"{user.mayhem_id.int}.pb")
     user.events = bytes()
     user.save(update_fields=["town", "events"])
     return True
@@ -162,9 +162,7 @@ def userstats(request):
             cache_entry = str(land_token.land_token)
             cached_town = cache.get(cache_entry)
             if cached_town is not None:
-                protoland_request = LandData_pb2.LandMessage()
-                protoland_request.ParseFromString(cached_town)
-                save_town(token.user, protoland_request)
+                save_town(token.user, cached_town)
                 cache.delete(cache_entry)
 
         return HttpResponse(status=409)
@@ -423,18 +421,14 @@ def protoland(request, mayhem_id):
         else:
             decompressed_data = request.body
 
-        # Update town.
-        protoland_request = LandData_pb2.LandMessage()
-        protoland_request.ParseFromString(decompressed_data)  # Validate town content.
-
         # Save direct to disk with an authorized land token.
         # Cache save from an unauthorized land token to memory to
         # be saved at mh/userstats.
         if land_token.authorized:
-            save_town(land_token.user, protoland_request)
+            save_town(land_token.user, decompressed_data)
 
         elif not land_token.remove:
-            cache.set(str(land_token.land_token), protoland_request.SerializeToString())
+            cache.set(str(land_token.land_token), decompressed_data)
 
         root = ET.Element("WholeLandUpdateResponse")
         return HttpResponse(

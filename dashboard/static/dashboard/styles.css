@@ -334,6 +334,10 @@ li.error {
   color: red;
 }
 
+li.info {
+  color: blue;
+}
+
 /* Footer */
 
 footer {
