@@ -3,7 +3,6 @@ import uuid
 import xml.etree.ElementTree as ET
 from PIL import Image
 
-from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
@@ -30,10 +29,9 @@ class AvatarViewsTests(TestCase):
             username="no_avatar_user",
             email="no_avatar_user@example.com",
         )
-        self.token = DeviceToken.objects.create(
+        DeviceToken.objects.create(
             advertising_id=uuid.uuid4(),
             user=self.user_with_avatar,
-            device_id=uuid.uuid4(),
             access_token="test_access_token_123",
         )
 
@@ -45,7 +43,9 @@ class AvatarViewsTests(TestCase):
         root = ET.fromstring(response.content)
         user_elem = root.find("user")
         self.assertIsNotNone(user_elem)
-        self.assertEqual(user_elem.find("userId").text, str(self.user_with_avatar.user_id))
+        self.assertEqual(
+            user_elem.find("userId").text, str(self.user_with_avatar.user_id)
+        )
 
         avatar_elem = user_elem.find("avatar")
         self.assertIsNotNone(avatar_elem)
@@ -78,7 +78,9 @@ class AvatarViewsTests(TestCase):
         self.assertTrue(link.startswith("http"))
 
     def test_get_avatars_multiple_and_trailing_semicolon(self):
-        users_ids = f"{self.user_with_avatar.user_id};{self.user_without_avatar.user_id};"
+        users_ids = (
+            f"{self.user_with_avatar.user_id};{self.user_without_avatar.user_id};"
+        )
         url = reverse("avatar:get_avatars", args=(users_ids,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -94,7 +96,9 @@ class AvatarViewsTests(TestCase):
 
         root = ET.fromstring(response.content)
         user_elem = root.find("user")
-        self.assertEqual(user_elem.find("userId").text, str(self.user_with_avatar.user_id))
+        self.assertEqual(
+            user_elem.find("userId").text, str(self.user_with_avatar.user_id)
+        )
 
     def test_get_avatar_unauthenticated(self):
         url = reverse("avatar:get_avatar")
