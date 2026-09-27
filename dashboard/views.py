@@ -399,7 +399,6 @@ def delete_account(request):
                 request.user.email, delete_user_form.cleaned_data["code"]
             )
             if status:
-
                 # Send email notifying about account termination and data removal.
                 apikey = cache.get("tsto_api_key")
                 response = requests.post("https://tsto.app/api/account/wipeNotice",
@@ -422,8 +421,6 @@ def delete_account(request):
                 # Delete only if the API confirms the user was notified via email.
                 # If the API is not configured, ignore the condition and delete the user anyways.
                 if not apikey or (response.status_code == 200 and response.json().get("success")):
-                    request.user.town.delete()
-                    request.user.avatar.delete()
                     request.user.delete()
                     logout(request)
                     return HttpResponseRedirect(reverse("dashboard:login"))
