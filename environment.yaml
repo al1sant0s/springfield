@@ -16,7 +16,6 @@ dependencies:
   - boto3
   - gunicorn
   - django-axes
-  - url-normalize
   - django-cleanup
   - pip
   - pip:
