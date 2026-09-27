@@ -55,7 +55,9 @@ class AvatarViewsTests(TestCase):
         self.assertIsNotNone(avatar_elem)
         link = avatar_elem.find("link").text
         self.assertTrue(link.startswith("http"))
-        self.assertIn("custom_avatar", link)
+        self.assertTrue(
+            link.endswith(f"/avatar/user/{self.user_with_avatar.user_id}/avatar.png")
+        )
 
     def test_get_avatars_without_custom_avatar(self):
         url = reverse("avatar:get_avatars", args=(self.user_without_avatar.user_id,))
@@ -68,18 +70,38 @@ class AvatarViewsTests(TestCase):
 
         avatar_elem = user_elem.find("avatar")
         self.assertIsNotNone(avatar_elem)
-        link = avatar_elem.find("link").text or ""
-        self.assertEqual(link, "")
-
-    def test_get_avatars_lookup_by_persona_id(self):
-        url = reverse("avatar:get_avatars", args=(self.user_with_avatar.persona_id,))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        root = ET.fromstring(response.content)
-        avatar_elem = root.find("user/avatar")
         link = avatar_elem.find("link").text
         self.assertTrue(link.startswith("http"))
+        self.assertTrue(
+            link.endswith(f"/avatar/user/{self.user_without_avatar.user_id}/avatar.png")
+        )
+
+        # Defer check: downloading avatar for a user without avatar returns 404
+        download_response = self.client.get(link)
+        self.assertEqual(download_response.status_code, 404)
+
+    def test_download_avatar_success(self):
+        url = reverse("avatar:download_avatar", args=(self.user_with_avatar.user_id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(response.content, create_test_image())
+
+    def test_download_avatar_by_persona_id(self):
+        url = reverse("avatar:download_avatar", args=(self.user_with_avatar.persona_id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+
+    def test_download_avatar_user_not_found(self):
+        url = reverse("avatar:download_avatar", args=(9999999999,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_download_avatar_invalid_id(self):
+        url = reverse("avatar:download_avatar", args=("not_a_number",))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_get_avatars_multiple_and_trailing_semicolon(self):
         users_ids = (
