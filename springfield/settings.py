@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     # Third-Party Apps
     "debug_toolbar",
     "axes",
+    "django_cleanup.apps.CleanupConfig",
 ]
 
 if CACHEOPS_REDIS:
