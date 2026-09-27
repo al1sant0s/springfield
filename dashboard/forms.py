@@ -1,3 +1,4 @@
+from pathlib import Path
 from google.protobuf.message import DecodeError
 from django import forms
 from django.core.files.base import ContentFile
@@ -109,6 +110,13 @@ class UserProfileForm(forms.ModelForm):
         fields = ["avatar", "username"]
         widgets = {"avatar": forms.FileInput}
         labels = {"avatar": False}
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get("avatar")
+        if avatar:
+            ext = Path(avatar.name).suffix.lower() or ".png"
+            avatar.name = f"{self.instance.user_id}{ext}"
+        return avatar
 
 
 class SearchUserForm(forms.Form):

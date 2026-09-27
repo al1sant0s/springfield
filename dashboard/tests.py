@@ -46,3 +46,22 @@ class DashboardFormsTests(TestCase):
         form = UserProfileForm(instance=user, data={"username": "invalid user!"})
         self.assertFalse(form.is_valid())
         self.assertIn("username", form.errors)
+
+    def test_user_profile_form_renames_avatar(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from avatar.tests import create_test_image
+
+        user = UserId.objects.create(username="validuser", email="valid3@example.com")
+        form = UserProfileForm(
+            instance=user,
+            data={"username": user.username},
+            files={
+                "avatar": SimpleUploadedFile(
+                    "my_original_photo.png",
+                    create_test_image(),
+                    content_type="image/png",
+                )
+            },
+        )
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["avatar"].name, f"{user.user_id}.png")
