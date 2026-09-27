@@ -279,9 +279,6 @@ def profile(request):
 
 @login_required(login_url="dashboard:login")
 def friends(request):
-    search_form = SearchUserForm()
-    search_matches = list()
-
     if request.method == "POST":
         search_form = SearchUserForm(request.POST)
         search_matches = list()
@@ -291,61 +288,28 @@ def friends(request):
 
             # Sort by alphabetical order.
             search_matches = [
-                {
-                    "avatar_url": get_avatar_url(user),
-                    "avatar_exists": user.avatar,
-                    "username": user.username,
-                    "invite_url": reverse(
-                        "dashboard:friends_send_request", args=(user.user_id,)
-                    ),
-                }
-                for user in search_friends(request.user, username)[:100]
+                user for user in search_friends(request.user, username)[:100]
             ]
+
+    else:
+        search_form = SearchUserForm()
+        search_matches = list()
 
     # Get pending requests.
     received_requests = [
-        {
-            "avatar_url": get_avatar_url(invitation.from_user),
-            "avatar_exists": invitation.from_user.avatar,
-            "username": invitation.from_user.username,
-            "accept_url": reverse(
-                "dashboard:friends_accept_request", args=(invitation.from_user.user_id,)
-            ),
-            "reject_url": reverse(
-                "dashboard:friends_reject_request", args=(invitation.from_user.user_id,)
-            ),
-        }
+        invitation
         for invitation in request.user.received_invitations.order_by("-invitation_date")
     ]
 
     sent_requests = [
-        {
-            "avatar_url": get_avatar_url(invitation.to_user),
-            "avatar_exists": invitation.to_user.avatar,
-            "username": invitation.to_user.username,
-            "cancel_url": reverse(
-                "dashboard:friends_cancel_request", args=(invitation.to_user.user_id,)
-            ),
-        }
+        invitation
         for invitation in request.user.sent_invitations.order_by("-invitation_date")
     ]
 
-    friends = [
-        {
-            "avatar_url": get_avatar_url(user),
-            "avatar_exists": user.avatar,
-            "username": user.username,
-            "last_active": user.last_authenticated,
-            "remove_url": reverse("dashboard:friends_remove", args=(user.user_id,)),
-        }
-        for user in request.user.friends.order_by(Lower("username"))
-    ]
+    friends = [user for user in request.user.friends.order_by(Lower("username"))]
 
     context = {
         "search_form": search_form,
-        "avatar_url": get_avatar_url(request.user),
-        "avatar_exists": request.user.avatar,
-        "username": request.user.username,
         "search_matches": search_matches,
         "received_requests": received_requests,
         "sent_requests": sent_requests,
@@ -411,17 +375,10 @@ def devices(request):
                 "dashboard:remove_device", args=(token.advertising_id,)
             ),
         }
-        for token in request.user.devicetoken_set.all()
+        for token in request.user.device_tokens.all()
     ]
 
-    context = {
-        "avatar_url": get_avatar_url(request.user),
-        "avatar_exists": request.user.avatar,
-        "username": request.user.username,
-        "devices": user_devices,
-    }
-
-    return render(request, "dashboard/devices.html", context)
+    return render(request, "dashboard/devices.html", {"devices": user_devices})
 
 
 @login_required(login_url="dashboard:login")

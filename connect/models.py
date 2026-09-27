@@ -4,6 +4,7 @@ from pathlib import Path
 from PIL import Image
 from google.protobuf.message import DecodeError
 
+from django.core.files.storage import default_storage
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -110,7 +111,7 @@ class UserId(AbstractUser):
 
     @property
     def avatar_url(self):
-        if self.avatar:
+        if self.avatar and default_storage.exists(self.avatar.name):
             return self.avatar.url
         return static("dashboard/default-avatar.png")
 

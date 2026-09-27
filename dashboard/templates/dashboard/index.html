@@ -37,9 +37,9 @@
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
-          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button class="nav-item exo-2-generic">Logout 🚪</button>
+              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
         <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
@@ -71,9 +71,9 @@
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
-          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button class="nav-item exo-2-generic">Logout 🚪</button>
+              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
       </ul>
@@ -103,7 +103,7 @@
                 </div>
               {% endif %}
             <div>
-              <button class="submit" name="town-form">Upload</button>
+              <button type="submit" class="submit" name="town-form">Upload</button>
             </div>
           </form>
           <h2>- Edit currencies +</h2>
@@ -121,7 +121,7 @@
             {% csrf_token %}
             {{ currency_form }}
             <div>
-              <button class="submit" name="currency-form">Save</button>
+              <button type="submit" class="submit" name="currency-form">Save</button>
             </div>
           </form>
         </section>

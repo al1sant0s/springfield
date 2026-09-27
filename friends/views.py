@@ -1,4 +1,9 @@
-from django.http import HttpResponse, HttpResponseForbidden, HttpResponseNotFound, JsonResponse
+from django.http import (
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    JsonResponse,
+)
 from django.db import models, transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -10,22 +15,29 @@ from friends.models import FriendInvitation
 
 
 def send_friend_request(from_user, to_user, success_response):
-
     if from_user == to_user:
         return HttpResponseForbidden("Cannot befriend yourself!")
 
     try:
         with transaction.atomic():
             # Lock and check for existing invitations.
-            exists = FriendInvitation.objects.select_for_update().filter(
-                models.Q(from_user=to_user, to_user=from_user) |
-                models.Q(from_user=from_user, to_user=to_user)
-            ).exists()
+            exists = (
+                FriendInvitation.objects.select_for_update()
+                .filter(
+                    models.Q(from_user=to_user, to_user=from_user)
+                    | models.Q(from_user=from_user, to_user=to_user)
+                )
+                .exists()
+            )
 
             if exists:
-                return HttpResponse("An invitation already exists between these users.", status=409)
+                return HttpResponse(
+                    "An invitation already exists between these users.", status=409
+                )
 
-            FriendInvitation.objects.create(from_user=from_user, to_user=to_user, invitation_date=timezone.now())
+            FriendInvitation.objects.create(
+                from_user=from_user, to_user=to_user, invitation_date=timezone.now()
+            )
             return success_response
 
     except Exception:
@@ -35,14 +47,13 @@ def send_friend_request(from_user, to_user, success_response):
 def cancel_friend_request(from_user, to_user, success_response):
     with transaction.atomic():
         FriendInvitation.objects.filter(
-            models.Q(from_user=to_user, to_user=from_user) |
-            models.Q(from_user=from_user, to_user=to_user)
+            models.Q(from_user=to_user, to_user=from_user)
+            | models.Q(from_user=from_user, to_user=to_user)
         ).delete()
     return success_response
 
 
 def accept_friend_request(from_user, to_user, success_response):
-
     if from_user == to_user:
         return HttpResponseForbidden("Cannot befriend yourself!")
 
@@ -65,9 +76,10 @@ def remove_friend(from_user, to_user, success_response):
 
 @require_GET
 def outbound(request, user_id):
-
     # Look up for sent_invitations.
-    user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
+    user = get_object_or_404(
+        DeviceToken, access_token=request.headers.get("X-AuthToken")
+    ).user
     entries = list()
 
     for invitation in user.sent_invitations.order_by("-invitation_date"):
@@ -88,11 +100,7 @@ def outbound(request, user_id):
 
     response = {
         "entries": entries,
-        "pagingInfo": {
-            "size": n,
-            "offset": 0,
-            "totalSize": n
-        }
+        "pagingInfo": {"size": n, "offset": 0, "totalSize": n},
     }
 
     return JsonResponse(response)
@@ -102,7 +110,9 @@ def outbound(request, user_id):
 @require_http_methods(["POST", "DELETE"])
 def outbound_sent(request, from_user_id, to_user_id):
     # Get user sending invitation and receiving invitation.
-    from_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
+    from_user = get_object_or_404(
+        DeviceToken, access_token=request.headers.get("X-AuthToken")
+    ).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
 
     if request.method == "DELETE":
@@ -115,7 +125,9 @@ def outbound_sent(request, from_user_id, to_user_id):
 @require_GET
 def inbound(request, user_id):
     # Look up for received_invitations.
-    user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
+    user = get_object_or_404(
+        DeviceToken, access_token=request.headers.get("X-AuthToken")
+    ).user
 
     entries = list()
     for invitation in user.received_invitations.order_by("-invitation_date"):
@@ -136,11 +148,7 @@ def inbound(request, user_id):
 
     response = {
         "entries": entries,
-        "pagingInfo": {
-            "size": n,
-            "offset": 0,
-            "totalSize": n
-        }
+        "pagingInfo": {"size": n, "offset": 0, "totalSize": n},
     }
 
     return JsonResponse(response)
@@ -151,13 +159,17 @@ def inbound(request, user_id):
 def inbound_accept(request, to_user_id, from_user_id):
     # Get user sending invitation and receiving invitation.
     from_user = get_object_or_404(UserId, user_id=from_user_id)
-    to_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
+    to_user = get_object_or_404(
+        DeviceToken, access_token=request.headers.get("X-AuthToken")
+    ).user
     return accept_friend_request(from_user, to_user, HttpResponse(status=204))
 
 
 @require_GET
 def get_friends(request, user_id):
-    user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
+    user = get_object_or_404(
+        DeviceToken, access_token=request.headers.get("X-AuthToken")
+    ).user
     entries = list()
 
     for friend in user.friends.order_by(models.functions.Lower("username")):
@@ -185,11 +197,7 @@ def get_friends(request, user_id):
 
     response = {
         "entries": entries,
-        "pagingInfo": {
-            "size": n,
-            "offset": 0,
-            "totalSize": n
-        }
+        "pagingInfo": {"size": n, "offset": 0, "totalSize": n},
     }
 
     return JsonResponse(response)
@@ -198,6 +206,8 @@ def get_friends(request, user_id):
 @csrf_exempt
 @require_http_methods(["DELETE"])
 def cancel_friendship(request, to_user_id, from_user_id):
-    from_user = get_object_or_404(DeviceToken, access_token=request.headers.get("X-AuthToken")).user
+    from_user = get_object_or_404(
+        DeviceToken, access_token=request.headers.get("X-AuthToken")
+    ).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
     return remove_friend(from_user, to_user, HttpResponse(status=204))

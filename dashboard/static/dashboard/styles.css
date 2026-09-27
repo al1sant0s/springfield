@@ -129,23 +129,23 @@ nav li {
   background-color: deepskyblue;
 }
 
-#logout, #logout button {
+.logout, .logout button {
   border: none;
   background-color: #ff1717;
   height: 100%;
 }
 
-#logout button {
+.logout button {
   color: white;
   text-shadow: 2px 2px 7px black;
 }
 
-#logout button:hover {
+.logout button:hover {
   color: yellow;
   background-color: firebrick;
 }
 
-#logout button:active {
+.logout button:active {
   background-color: red;
 }
 
@@ -335,7 +335,7 @@ li.error {
 }
 
 li.info {
-  color: blue;
+  color: #824900;
 }
 
 /* Footer */

@@ -30,7 +30,7 @@ def get_avatars(request, users_ids):
         try:
             user = UserId.objects.get(user_id=int(user_id))
 
-        except UserId.DoesNotExist():
+        except UserId.DoesNotExist:
             ET.SubElement(avatar, "link").text = ""
 
         else:
