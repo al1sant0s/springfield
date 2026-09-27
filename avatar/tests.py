@@ -35,6 +35,10 @@ class AvatarViewsTests(TestCase):
             access_token="test_access_token_123",
         )
 
+    def tearDown(self):
+        if self.user_with_avatar.avatar:
+            self.user_with_avatar.avatar.delete(save=False)
+
     def test_get_avatars_with_custom_avatar(self):
         url = reverse("avatar:get_avatars", args=(self.user_with_avatar.user_id,))
         response = self.client.get(url)
