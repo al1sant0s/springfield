@@ -125,26 +125,26 @@ server {
 	client_max_body_size 10M;
 
 	location /static/ {
-		alias	/data/static/;
+		alias					/data/static/;
 	}
 
 	# Internal location used by X-Accel-Redirect to stream local media files
 	# (avatars and towns) directly from disk without buffering through Python workers.
 	location /media/ {
 		internal;
-		alias	/data/media/;
+		alias					/data/media/;
 	}
 
 	location /dlc/ {
-		alias	/data/dlc/;
+		alias					/data/dlc/;
 	}
 
 	location / {
-		proxy_pass		http://localhost:8000;
-		proxy_set_header	Host $http_host;
-		proxy_set_header	X-Real-IP $remote_addr;
-		proxy_set_header	X-Forwarded-For $proxy_add_x_forwarded_for;
-		proxy_set_header	X-Forwarded-Proto $scheme;
+		proxy_pass				http://localhost:8000;
+		proxy_set_header		Host $http_host;
+		proxy_set_header		X-Real-IP $remote_addr;
+		proxy_set_header		X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header		X-Forwarded-Proto $scheme;
 	}
 }
 ```
@@ -397,8 +397,8 @@ server {
 	client_max_body_size 10M;
 
 	location /static/ {
-		proxy_pass		http://localhost:3902;
-		proxy_set_header	Host static-bucket.web.garage.localhost;
+		proxy_pass				http://localhost:3902;
+		proxy_set_header		Host static-bucket.web.garage.localhost;
 	}
 
 	# Internal proxy to stream S3/Garage media files (avatars and towns) via X-Accel-Redirect.
@@ -407,20 +407,20 @@ server {
 	# AWS_ENDPOINT_URL (e.g. 192.168.1.115:3900) so that Garage validates the SigV4 signature.
 	location /tsto-bucket/ {
 		internal;
-		proxy_pass		http://localhost:3900;
-		proxy_set_header	Host 192.168.1.115:3900;
+		proxy_pass				http://localhost:3900;
+		proxy_set_header		Host 192.168.1.115:3900;
 	}
 
 	location /dlc/ {
-		alias			/data/dlc/;
+		alias					/data/dlc/;
 	}
 
 	location / {
-		proxy_pass		http://localhost:8000;
-		proxy_set_header	Host $http_host;
-		proxy_set_header	X-Real-IP $remote_addr;
-		proxy_set_header	X-Forwarded-For $proxy_add_x_forwarded_for;
-		proxy_set_header	X-Forwarded-Proto $scheme;
+		proxy_pass				http://localhost:8000;
+		proxy_set_header		Host $http_host;
+		proxy_set_header		X-Real-IP $remote_addr;
+		proxy_set_header		X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header		X-Forwarded-Proto $scheme;
 	}
 }
 ```
