@@ -157,7 +157,7 @@ DEBUG=false
 SECRET_KEY='insert-your-secret-key-here'
 SERVER_BASE_URL=http://192.168.1.115:8080
 ALLOWED_HOSTS=192.168.1.115,localhost,127.0.0.1
-CSRF_TRUSTED_ORIGINS=http://192.168.1.115:8080
+CSRF_TRUSTED_ORIGINS=http://192.168.1.115:8080,http://localhost:8080,http://127.0.0.1:8080
 STATIC_URL=static/
 STATIC_ROOT=/app/static/
 MEDIA_URL=media/
@@ -167,8 +167,9 @@ MEDIA_ROOT=/app/media/
 A few things to consider:
 
 * Pick a good **SECRET_KEY**.
-* Change `SERVER_BASE_URL`, `ALLOWED_HOSTS`, and `CSRF_TRUSTED_ORIGINS` to reflect your nginx host and port.
-* `STATIC_ROOT` and `MEDIA_ROOT` are internal container paths where static files and media (avatars, towns) reside. These correspond to the bind mounts defined in `compose.yaml`.
+* `SERVER_BASE_URL` and `ALLOWED_HOSTS`: Reflect your nginx host and port.
+* `CSRF_TRUSTED_ORIGINS`: Include the full scheme, host, and port (e.g. `http://192.168.1.115:8080,http://localhost:8080`) for every origin you use to access the dashboard, to prevent CSRF 403 errors on form submissions.
+* `STATIC_ROOT` and `MEDIA_ROOT`: Internal container paths where static files and media (avatars, towns) reside. These correspond to the bind mounts defined in `compose.yaml`.
 
 > For a full detailed list of the environment variables, jump to the [environment variables](user-content-️-environment-variables) section.
 
@@ -335,7 +336,7 @@ DEBUG=false
 SECRET_KEY='insert-your-secret-key-here'
 SERVER_BASE_URL=http://192.168.1.115:8080
 ALLOWED_HOSTS=192.168.1.115,localhost,127.0.0.1
-CSRF_TRUSTED_ORIGINS=http://192.168.1.115:8080
+CSRF_TRUSTED_ORIGINS=http://192.168.1.115:8080,http://localhost:8080,http://127.0.0.1:8080
 AUTH_CODE_MINUTES=30
 LOGIN_ATTEMPTS=10
 LOGIN_FAIL_COOLOFF_TIME=10
@@ -489,7 +490,7 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 
 - `[CACHE_URL]`: Cache backend URL formatted according to *django-service-urls* (e.g. `redis://redis:6379/0?timeout=3600`). Default: `memory://`.
 
-- `[CSRF_TRUSTED_ORIGINS]`: Comma-separated list of trusted origins for unsafe HTTP requests (e.g., `http://192.168.1.115:8080`). Default: `http://localhost:8000,http://127.0.0.1:8000`.
+- `[CSRF_TRUSTED_ORIGINS]`: Comma-separated list of trusted origins for unsafe HTTP requests (e.g., `http://192.168.1.115:8080,http://localhost:8080`). Must include scheme and port. Default: `http://localhost:8000,http://127.0.0.1:8000`.
 
 - `[DATABASE_URL]`: Database connection URL (e.g., `postgres://springfield:springfield@db:5432/springfield` or `sqlite:///database.db`). Default: SQLite database at `database.db`.
 
