@@ -91,7 +91,17 @@ class ResetPasswordForm(forms.Form):
 
 
 class UserProfileForm(forms.ModelForm):
-    username = forms.CharField(min_length=5, max_length=12, label_suffix="")
+    username = forms.CharField(
+        min_length=5,
+        max_length=16,
+        label_suffix="",
+        validators=[
+            RegexValidator(
+                regex=r"^[a-zA-Z0-9_]{5,16}$",
+                message="Username must be between 5 and 16 characters and contain only letters, numbers, and underscores.",
+            )
+        ],
+    )
 
     class Meta:
         model = UserId
@@ -101,7 +111,9 @@ class UserProfileForm(forms.ModelForm):
 
 
 class SearchUserForm(forms.Form):
-    search_text = forms.CharField(label="Search user")
+    search_text = forms.CharField(
+        min_length=5, max_length=16, label="Search user"
+    )
 
 
 class DeleteUserForm(forms.Form):
