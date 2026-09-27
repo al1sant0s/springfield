@@ -1,5 +1,4 @@
 import xml.etree.ElementTree as ET
-from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db import models
 from django.http import Http404, HttpResponse
@@ -48,15 +47,7 @@ def get_avatars(request, users_ids):
                 and target_user.avatar
                 and default_storage.exists(target_user.avatar.name)
             ):
-                url = target_user.avatar.url
-                if url.startswith("/"):
-                    link_text = (
-                        f"{settings.SERVER_BASE_URL}{url}"
-                        if getattr(settings, "SERVER_BASE_URL", None)
-                        else request.build_absolute_uri(url)
-                    )
-                else:
-                    link_text = url
+                link_text = request.build_absolute_uri(target_user.avatar.url)
 
         except (ValueError, TypeError):
             pass
