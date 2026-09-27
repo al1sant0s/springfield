@@ -4,6 +4,7 @@ import gzip
 import time
 import uuid
 import sys
+import urllib.parse
 
 from django.http import (
     HttpResponse,
@@ -56,16 +57,25 @@ def load_town(user):
 
 def send_town_file(user):
     if user.town and default_storage.exists(user.town.name):
-        # When running behind Nginx with local filesystem storage, let Nginx serve the file directly
+        # When running behind Nginx, let Nginx serve the file directly.
+        # For local filesystem storage the plain media URL is used.
+        # For S3/Garage the presigned URL is stripped of its domain so that
+        # Nginx can proxy the signed path+query to S3 with the correct Host header.
         if not settings.DEBUG and "test" not in sys.argv:
-            url = user.town.url
-            if url.startswith("/"):
-                # Local filesystem storage
-                response = HttpResponse(content_type="application/x-protobuf")
-                response["X-Accel-Redirect"] = url
-                return response
+            response = HttpResponse(content_type="application/x-protobuf")
+            parsed = urllib.parse.urlsplit(user.town.url)
+            if parsed.scheme:
+                # Remote storage — forward signed path + query string
+                redirect = parsed.path
+                if parsed.query:
+                    redirect += "?" + parsed.query
+            else:
+                # Local filesystem — plain relative URL
+                redirect = parsed.path
+            response["X-Accel-Redirect"] = redirect
+            return response
 
-        # Remote storage (e.g. S3/Garage) or development/testing
+        # Fallback for development / tests
         return HttpResponse(user.town.read(), content_type="application/x-protobuf")
 
     return HttpResponse(
