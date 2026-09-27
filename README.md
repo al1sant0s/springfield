@@ -405,10 +405,13 @@ server {
 	# Django strips the domain from the presigned URL and sets X-Accel-Redirect to the signed
 	# path+query so Nginx can proxy it here. The Host header MUST match the host embedded in
 	# AWS_ENDPOINT_URL (e.g. 192.168.1.115:3900) so that Garage validates the SigV4 signature.
+	# proxy_hide_header suppresses Garage's Content-Type (application/octet-stream) so that
+	# Django's content type (application/x-protobuf or image/png) reaches the client instead.
 	location /tsto-bucket/ {
 		internal;
 		proxy_pass				http://localhost:3900;
 		proxy_set_header		Host 192.168.1.115:3900;
+		proxy_hide_header		Content-Type;
 	}
 
 	location /dlc/ {
