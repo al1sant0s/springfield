@@ -128,7 +128,10 @@ server {
 		alias	/data/static/;
 	}
 
+	# Internal location used by X-Accel-Redirect to stream local media files
+	# (avatars and towns) directly from disk without buffering through Python workers.
 	location /media/ {
+		internal;
 		alias	/data/media/;
 	}
 
@@ -146,7 +149,7 @@ server {
 }
 ```
 
-This configuration specifies that static files are served from `/data/static/`, media files (avatars and towns) from `/data/media/`, and DLC from `/data/dlc/`. In production, Nginx also accelerates authorized town file downloads via `X-Accel-Redirect`, streaming files directly from disk without buffering them through Python workers. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server; adjust the paths and hostnames according to your environment.
+This configuration specifies that static files are served from `/data/static/`, DLC from `/data/dlc/`, and all game requests are forwarded to the Django server on port 8000. The `/media/` location is marked `internal` so it is only reachable via `X-Accel-Redirect` responses from Django — Nginx streams avatars and towns directly from disk without buffering them through Python workers.
 
 Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file, with the following minimal settings:
 
@@ -381,7 +384,7 @@ Moving on to the TSTO API configuration: if you have obtained access to the TSTO
 In the database section, `DATABASE_URL` provides the PostgreSQL connection string matching the credentials defined for the Postgres container.
 
 The last part configures S3-compatible storage (such as Garage):
-* `AWS_ENDPOINT_URL` specifies the S3 endpoint URL. Note that if you use S3 for avatars, presigned URLs generated for avatar images will include this endpoint. Therefore, `AWS_ENDPOINT_URL` should point to your host's externally reachable IP/domain and port (e.g. `http://192.168.1.115:3900`) rather than an internal container hostname (`http://garage:3900`), so both the server container and external client browsers or game devices can resolve and fetch the assets.
+* `AWS_ENDPOINT_URL` specifies the S3 endpoint URL. This value is also used by Django to generate presigned URLs for avatars and towns. Therefore, `AWS_ENDPOINT_URL` should point to your host's externally reachable IP/domain and port (e.g. `http://192.168.1.115:3900`) — this is the host that gets embedded in the SigV4 signature, and **Nginx must forward requests to S3 using this same host** so that the signature validates.
 * `STORAGE_DEFAULT` defines the backend for default storage (towns and avatars) along with the bucket name (`tsto-bucket`).
 * `STORAGE_STATICFILES` defines S3 storage for static files (`static-bucket`). Extra options like `custom_domain` and `location` can be passed as URL query parameters. For static files, the bucket is typically exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/) so user web browsers can fetch static assets directly.
 
@@ -398,6 +401,16 @@ server {
 		proxy_set_header	Host static-bucket.web.garage.localhost;
 	}
 
+	# Internal proxy to stream S3/Garage media files (avatars and towns) via X-Accel-Redirect.
+	# Django strips the domain from the presigned URL and sets X-Accel-Redirect to the signed
+	# path+query so Nginx can proxy it here. The Host header MUST match the host embedded in
+	# AWS_ENDPOINT_URL (e.g. 192.168.1.115:3900) so that Garage validates the SigV4 signature.
+	location /tsto-bucket/ {
+		internal;
+		proxy_pass		http://localhost:3900;
+		proxy_set_header	Host 192.168.1.115:3900;
+	}
+
 	location /dlc/ {
 		alias			/data/dlc/;
 	}
@@ -412,7 +425,8 @@ server {
 }
 ```
 
-When using S3 or Garage for storage, town files are securely fetched by Django via authenticated S3 requests using your configured AWS credentials and streamed to authenticated game clients. If you use local disk storage, local media files can be served directly by Nginx using `X-Accel-Redirect`.
+With this setup Django authenticates access, generates a signed URL for the requested file, strips the domain, and returns it as an `X-Accel-Redirect` header. Nginx intercepts the redirect and streams the file to the game client directly from S3/Garage — Python workers are never involved in the data transfer itself. Replace `192.168.1.115:3900` and `localhost:3900` with your actual `AWS_ENDPOINT_URL` host and local S3 port respectively. If you use a different bucket name in `STORAGE_DEFAULT`, update the location path accordingly.
+
 
 Now that everything is configured, run the commands to start and initialize the server:
 
