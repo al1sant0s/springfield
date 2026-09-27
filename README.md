@@ -365,7 +365,7 @@ DATABASE_URL=postgres://springfield:springfield@db:5432/springfield
 AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 AWS_DEFAULT_REGION=garage
-AWS_ENDPOINT_URL=http://garage:3900
+AWS_ENDPOINT_URL=http://192.168.1.115:3900
 STORAGE_DEFAULT=s3://?bucket_name=tsto-bucket
 STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=192.168.1.115:8080&location=static/
 ```
@@ -381,6 +381,7 @@ Moving on to the TSTO API configuration: if you have obtained access to the TSTO
 In the database section, `DATABASE_URL` provides the PostgreSQL connection string matching the credentials defined for the Postgres container.
 
 The last part configures S3-compatible storage (such as Garage):
+* `AWS_ENDPOINT_URL` specifies the S3 endpoint URL. Note that if you use S3 for avatars, presigned URLs generated for avatar images will include this endpoint. Therefore, `AWS_ENDPOINT_URL` should point to your host's externally reachable IP/domain and port (e.g. `http://192.168.1.115:3900`) rather than an internal container hostname (`http://garage:3900`), so both the server container and external client browsers or game devices can resolve and fetch the assets.
 * `STORAGE_DEFAULT` defines the backend for default storage (towns and avatars) along with the bucket name (`tsto-bucket`).
 * `STORAGE_STATICFILES` defines S3 storage for static files (`static-bucket`). Extra options like `custom_domain` and `location` can be passed as URL query parameters. For static files, the bucket is typically exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/) so user web browsers can fetch static assets directly.
 
@@ -493,6 +494,14 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 - `[ALLOWED_HOSTS]`: Comma-separated list of host/domain names this Django site can serve. Default: `localhost,127.0.0.1,::1`.
 
 - `[AUTH_CODE_MINUTES]`: Authentication code lifetime in minutes. Default: `30` minutes.
+
+- `[AWS_ACCESS_KEY_ID]`: Access key ID for S3-compatible storage backends.
+
+- `[AWS_DEFAULT_REGION]`: AWS/S3 region name for S3 storage (e.g. `garage` or `us-east-1`).
+
+- `[AWS_ENDPOINT_URL]`: Endpoint URL for S3-compatible storage (e.g. `http://192.168.1.115:3900`). Must be reachable from both the container and client browsers/devices when generating presigned media URLs (such as avatars).
+
+- `[AWS_SECRET_ACCESS_KEY]`: Secret access key for S3-compatible storage backends.
 
 - `[CACHEOPS_REDIS]`: Redis URL for query caching via *django-cacheops* (e.g., `redis://redis:6379/1`). When omitted, query caching is disabled.
 
