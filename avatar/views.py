@@ -1,5 +1,8 @@
 import mimetypes
+import sys
+import urllib.parse
 import xml.etree.ElementTree as ET
+from django.conf import settings
 from django.core.files.storage import default_storage
 from django.db import models
 from django.http import Http404, HttpResponse
@@ -27,6 +30,26 @@ def download_avatar(request, user_id):
         raise Http404
 
     content_type = mimetypes.guess_type(target_user.avatar.name)[0] or "image/png"
+
+    # When running behind Nginx, let Nginx serve the file directly.
+    # For local filesystem storage the plain media URL is used.
+    # For S3/Garage the presigned URL is stripped of its domain so that
+    # Nginx can proxy the signed path+query to S3 with the correct Host header.
+    if not settings.DEBUG and "test" not in sys.argv:
+        response = HttpResponse(content_type=content_type)
+        parsed = urllib.parse.urlsplit(target_user.avatar.url)
+        if parsed.scheme:
+            # Remote storage — forward signed path + query string
+            redirect = parsed.path
+            if parsed.query:
+                redirect += "?" + parsed.query
+        else:
+            # Local filesystem — plain relative URL
+            redirect = parsed.path
+        response["X-Accel-Redirect"] = redirect
+        return response
+
+    # Fallback for development / tests
     return HttpResponse(target_user.avatar.read(), content_type=content_type)
 
 
