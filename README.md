@@ -108,68 +108,80 @@ services:
     env_file:
       - .env
     volumes:
-      - ./towns/:/app/towns/:z
-      - ./database.db:/app/database.db:z
-      - /data/static/:$STATIC_ROOT:z
+      - /data/media/:/app/media/:z
+      - /data/static/:/app/static/:z
+      - /data/database.db:/app/database.db:z
 ```
 
 With this configuration the server will use a SQLite file as your database.
-It only requires that you provide a web server, e.g., nginx, to act as a reverse proxy and serve the DLC and static files for the dashboard.
+It only requires that you provide a web server, e.g., nginx, to act as a reverse proxy and serve the DLC, avatars, and static files for the dashboard.
 
 A simple nginx configuration for a local server, which listens on port 8080, may be specified like so:
 
-```
-	server {
-		listen 8080;
-		server_name localhost;
-		client_max_body_size 5M;
+```nginx
+server {
+	listen 8080;
+	server_name localhost;
+	client_max_body_size 10M;
 
-
-		location /static/ {
-			root		/data;
-		}
-
-		location /dlc/ {
-			root		/data;
-		}
-
-		location / {
-			proxy_pass	http://localhost:8000;
-		}
+	location /static/ {
+		alias	/data/static/;
 	}
 
+	location /media/avatars/ {
+		alias	/data/media/avatars/;
+	}
+
+	location /dlc/ {
+		alias	/data/dlc/;
+	}
+
+	location / {
+		proxy_pass		http://localhost:8000;
+		proxy_set_header	Host $host;
+		proxy_set_header	X-Real-IP $remote_addr;
+		proxy_set_header	X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header	X-Forwarded-Proto $scheme;
+	}
+}
 ```
 
-This configuration specifies that static files are served at `/data/static/` and DLC served at `/data/dlc/` in the file system. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server. You will need to make one according to your own circumstances. For example, if your server and proxy are running on different machines, you shouldn't use `localhost` for the `proxy_pass` entry.
+This configuration specifies that static files are served from `/data/static/`, avatars from `/data/media/avatars/`, and DLC from `/data/dlc/`. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server; adjust the paths and hostnames according to your environment.
 
-Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file. With the following minimal settings:
+Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file, with the following minimal settings:
 
 **`.env`**
 ```env
 # Server settings
-
 DEBUG=false
-DOMAIN=192.168.1.115
-PORT=8080
-PROTOCOL=http
 SECRET_KEY='insert-your-secret-key-here'
-STATIC_LOCATION=static/
+SERVER_BASE_URL=http://192.168.1.115:8080
+ALLOWED_HOSTS=192.168.1.115,localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://192.168.1.115:8080
+STATIC_URL=static/
 STATIC_ROOT=/app/static/
-TOWNS_ROOT=./towns/
-
+MEDIA_URL=media/
+MEDIA_ROOT=/app/media/
 ```
 
-A few things to consider.
+A few things to consider:
 
 * Pick a good **SECRET_KEY**.
-* Remember to change the DOMAIN, PORT, PROTOCOL and STATIC_LOCATION with your own values to reflect your nginx settings. If you use a real domain, you must set PORT to either 80 (http) or 443 (https) along with the corresponding PROTOCOL.
-* STATIC_ROOT is where the static files from the server will be stored in. Change it if necessary.
-* TOWNS_ROOT is where towns will be stored in. Change it if necessary.
+* Change `SERVER_BASE_URL`, `ALLOWED_HOSTS`, and `CSRF_TRUSTED_ORIGINS` to reflect your nginx host and port.
+* `STATIC_ROOT` and `MEDIA_ROOT` are internal container paths where static files and media (avatars, towns) reside. These correspond to the bind mounts defined in `compose.yaml`.
 
 > For a full detailed list of the environment variables, jump to the [environment variables](user-content-️-environment-variables) section.
 
-With nginx running and your compose and .env file ready, start your server running the following command
-in a terminal at the same location as your compose.yaml file.
+Before starting the containers, ensure the host persistent directories and the SQLite database file exist beforehand:
+
+```sh
+sudo mkdir -p /data/media /data/static /data/dlc
+sudo touch /data/database.db
+```
+
+> **Note**: Creating `/data/database.db` before running Docker Compose is important. If a single-file mount target does not exist when the container launches, Docker will automatically create it as a directory.
+
+With nginx running, host directories prepared, and your `compose.yaml` and `.env` file ready, start your server:
 
 ```sh
 docker compose up -d
@@ -319,22 +331,24 @@ For these new services to run, we need to expand our .env file. Remember, you mu
 **`.env`**
 ```env
 # Server settings
-AUTH_CODE_MINUTES=30
-CACHE_DEFAULT_BACKEND=django_redis.cache.RedisCache
-CACHE_DEFAULT_LOCATION=redis://redis:6379/1
-CACHEOPS_REDIS_URL=$CACHE_DEFAULT_LOCATION
-CACHE_SECONDS=43200
 DEBUG=false
-DOMAIN=192.168.1.115
+SECRET_KEY='insert-your-secret-key-here'
+SERVER_BASE_URL=http://192.168.1.115:8080
+ALLOWED_HOSTS=192.168.1.115,localhost,127.0.0.1
+CSRF_TRUSTED_ORIGINS=http://192.168.1.115:8080
+AUTH_CODE_MINUTES=30
 LOGIN_ATTEMPTS=10
 LOGIN_FAIL_COOLOFF_TIME=10
-PORT=8080
-PROTOCOL=http
-SECRET_KEY='insert-your-secret-key-here'
-STATIC_LOCATION=static/
-STATIC_ROOT=static/
-TOWNS_ROOT=./
 
+# Cache configuration
+CACHE_URL=redis://redis:6379/0?timeout=3600
+CACHEOPS_REDIS=redis://redis:6379/1
+
+# Static and media files
+STATIC_URL=static/
+STATIC_ROOT=static/
+MEDIA_URL=media/
+MEDIA_ROOT=media/
 
 # TSTO API configuration
 TSTO_API_KEY='insert-your-api-key-if-you-have-one'
@@ -344,71 +358,62 @@ TSTO_API_TEAM_NAME=MyTeamNameHere
 POSTGRES_DB=springfield
 POSTGRES_USER=springfield
 POSTGRES_PASSWORD=springfield
-DATABASE_DEFAULT=postgres://springfield:springfield@db:5432/springfield
+DATABASE_URL=postgres://springfield:springfield@db:5432/springfield
 
-
-# Garage configuration
+# Garage / S3 configuration
 AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 AWS_DEFAULT_REGION=garage
 AWS_ENDPOINT_URL=http://garage:3900
 STORAGE_DEFAULT=s3://?bucket_name=tsto-bucket
-STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=$PROTOCOL:&custom_domain=$DOMAIN:$PORT&location=$STATIC_LOCATION
-
+STORAGE_STATICFILES=s3+static://?bucket_name=static-bucket&url_protocol=http:&custom_domain=192.168.1.115:8080&location=static/
 ```
 
-This .env file is way longer than the first one we saw before, so lets take it easy.
+This .env file configures the advanced services:
 
-In the first part of the file we are defining some new defaults for the lifetime of the authentication codes (AUTH_CODE_MINUTES), the cache duration (CACHE_SECONDS),
-the maximum number of failed login attempts (LOGIN_ATTEMPTS) and the time in minutes the user will be locked out of their account once they exceed this limit within the period (LOGIN_FAIL_COOLOFF_TIME).
+In the first part we define the server base URL, allowed hosts, lifetime of authentication codes (`AUTH_CODE_MINUTES`), the maximum failed login attempts (`LOGIN_ATTEMPTS`), and the cooldown lockout duration in minutes (`LOGIN_FAIL_COOLOFF_TIME`).
 
-We are specifying that our cache backend is powered by Redis (CACHE_DEFAULT_BACKEND) and pointing to its location (CACHE_DEFAULT_LOCATION).
-The variable CACHEOPS_REDIS_URL is also important here; it signals to our server that we want to enable an additional service for caching (actually it would be called an app in Django context), which depends on Redis. It's called [django-cacheops](https://pypi.org/project/django-cacheops/) and its main purpose is to support automatic or manual queryset caching.
+For caching, `CACHE_URL` configures the Redis default cache backend (with a 1-hour timeout query parameter). `CACHEOPS_REDIS` enables [django-cacheops](https://pypi.org/project/django-cacheops/) on a dedicated Redis database index for automatic ORM queryset caching.
 
-Also we are now saying that our static files will be situated at `static/` (STATIC_ROOT). This directory is actually relative to
-the S3 bucket we will use to store the static files.
+Moving on to the TSTO API configuration: if you have obtained access to the TSTO API, insert your credentials here for authentication code delivery.
 
-Moving on to the second part, we have our TSTO API configuration. If you have obtained access to the TSTO API, then you can insert your settings here.
-The TSTO API settings will be used for authentication when users request a code for login.
+In the database section, `DATABASE_URL` provides the PostgreSQL connection string matching the credentials defined for the Postgres container.
 
-The third part is our database configuration for PostgreSQL. We are setting an user, their password and database; all with the same value 'springfield'.
-The variable DATABASE_DEFAULT defines the server database backend configuration.
+The last part configures S3-compatible storage (such as Garage):
+* `STORAGE_DEFAULT` defines the backend for default storage (towns and avatars) along with the bucket name (`tsto-bucket`).
+* `STORAGE_STATICFILES` defines S3 storage for static files (`static-bucket`). Extra options like `custom_domain` and `location` can be passed as URL query parameters. For static files, the bucket is typically exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/) so user web browsers can fetch static assets directly.
 
-The last part is our S3 service configuration. The first four variables are for establishing a connection with it.
+To reflect our new static configuration, we have also updated our nginx settings:
 
-STORAGE_DEFAULT defines the backend for the default storage as well as the name of our bucket (tsto-bucket in this case).
+```nginx
+server {
+	listen 8080;
+	server_name localhost;
+	client_max_body_size 10M;
 
-Analogously, there is STORAGE_STATICFILES which defines the storage backend for static files. We provide extra options to it: the custom_domain
-and location, so the server may construct the appropriate static URL. These extra options are described in the specific page for S3 storage from [django-storages](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html). For the static files we are using another bucket rather than tsto-bucket called static-bucket. This bucket is different since it's exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/). This is done so the user web browser can request the static files from the bucket. Otherwise, only the game server would have access to the static files. To reflect our new static configuration, we have also updated our nginx settings.
-
-```
-	server {
-		listen 8080;
-		server_name localhost;
-		client_max_body_size 5M;
-
-
-		location /static/ {
-			proxy_pass				http://localhost:3902;
-			proxy_set_header		Host static-bucket.web.garage.localhost;
-		}
-
-		location /dlc/ {
-			root					/data;
-		}
-
-		location / {
-			proxy_pass				http://localhost:8000;
-		}
+	location /static/ {
+		proxy_pass		http://localhost:3902;
+		proxy_set_header	Host static-bucket.web.garage.localhost;
 	}
+
+	location /dlc/ {
+		alias			/data/dlc/;
+	}
+
+	location / {
+		proxy_pass		http://localhost:8000;
+		proxy_set_header	Host $host;
+		proxy_set_header	X-Real-IP $remote_addr;
+		proxy_set_header	X-Forwarded-For $proxy_add_x_forwarded_for;
+		proxy_set_header	X-Forwarded-Proto $scheme;
+	}
+}
 ```
 
-Now that everything is done, run the commands to start and set the server up. Note that this time we need to run the makemigrations command since we have defined
-a new location for the static files.
+Now that everything is configured, run the commands to start and initialize the server:
 
 ```sh
 docker compose up -d
-docker compose exec springfield-server python manage.py makemigrations
 docker compose exec springfield-server python manage.py migrate
 docker compose exec springfield-server python manage.py collectstatic
 docker compose exec springfield-server python manage.py createsuperuser
@@ -450,19 +455,17 @@ I highly recommend picking PostgreSQL as your database. If you decide to pick an
 
 ## ⬆️ Updating the server
 
-In order to update the server, you must run the following sequence of commands.
+In order to update the server, you must run the following sequence of commands:
 
 ```sh
 docker compose down
 docker compose up -d --pull always
-docker compose exec springfield-server python manage.py makemigrations
 docker compose exec springfield-server python manage.py migrate
 ```
 
-This will shut down the server instance (if it is running at the time), recreate the containers with the latest images available, and perform new migrations (if necessary).
+This will shut down the server instance, recreate the containers with the latest images available, and apply any new database migrations.
 
-> If you are running multiple servers connected to the same database. You should run `docker compose down` on all of them first. Then you should perform the previous four commands in one server.
-> After doing this, you may update and restart the rest of the servers by running `docker compose up -d --pull always` on each one.
+> If you are running multiple servers connected to the same database, run `docker compose down` on all of them first. Then perform the update and migrations on one server, and finally restart the remaining servers with `docker compose up -d --pull always`.
 
 ## 🩺 Run tests
 
@@ -474,56 +477,55 @@ docker compose exec springfield-server python manage.py test
 
 ## ⚙️ Environment variables
 
-Here is a list of all available environment variables, which you can tweak in your .env file to adjust the server. Variables between square brackets [] are optional. Variables without square brackets [] are required, and if they are not specified, the server will not work.
+Here is a list of all available environment variables, which you can tweak in your `.env` file to configure the server. Variables in square brackets `[]` are optional. Variables without square brackets are required.
 
-Variables which specifies the backends for: cache, database, storages, etc; use _django-service-urls_ to specify multiple values with a single string.
-Consult the [documentation](https://pypi.org/project/django-service-urls/) to understand how to specify such values.
+Service URLs for caching, storage, and email use _django-service-urls_ / _django-environ_ formatting. Consult the [django-service-urls](https://pypi.org/project/django-service-urls/) documentation for syntax details.
 
-- [AUTH_CODE_MINUTES]: authentication code lifetime in minutes. Default: 30 minutes.
+- `[ALLOWED_HOSTS]`: Comma-separated list of host/domain names this Django site can serve. Default: `localhost,127.0.0.1,::1`.
 
-- [CACHEOPS_REDIS_URL]: enables _django-cacheops_. Only set this variable in case you are using Redis as your cache backend. Usually it should be set with the same value as CACHE_DEFAULT_LOCATION.
+- `[AUTH_CODE_MINUTES]`: Authentication code lifetime in minutes. Default: `30` minutes.
 
-- [CACHE_DEFAULT_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the cache backend. Default: _django.core.cache.backends.locmem.LocMemCache_.
+- `[CACHEOPS_REDIS]`: Redis URL for query caching via *django-cacheops* (e.g., `redis://redis:6379/1`). When omitted, query caching is disabled.
 
-- [CACHE_DEFAULT_LOCATION]: a string specified in the format described by _django-service-urls_ which determines the cache service location. Default: _unique-snowflake_.
+- `[CACHE_URL]`: Cache backend URL formatted according to *django-service-urls* (e.g. `redis://redis:6379/0?timeout=3600`). Default: `memory://`.
 
-- [CACHE_SECONDS]: duration of cached values in seconds. Default: 3600 seconds.
+- `[CSRF_TRUSTED_ORIGINS]`: Comma-separated list of trusted origins for unsafe HTTP requests (e.g., `http://192.168.1.115:8080`). Default: `http://localhost:8000,http://127.0.0.1:8000`.
 
-- [DATABASE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the database backend. Default: a SQLite file called database.db which is created in the working directory.
+- `[DATABASE_URL]`: Database connection URL (e.g., `postgres://springfield:springfield@db:5432/springfield` or `sqlite:///database.db`). Default: SQLite database at `database.db`.
 
-- DEBUG: boolean variable which determines if server runs in debug mode. This value must be set to false when the server is in a production environment.
+- `DEBUG`: Boolean variable determining if the server runs in debug mode. Must be set to `false` in production.
 
-- DOMAIN: reverse proxy domain or ip address which redirects to the server.
+- `[EMAIL_BACKEND]`: Service URL determining the email backend (e.g. `smtp+tls://user:pass@smtp.example.com:587`). Default: `console://`. Only used if `TSTO_API_KEY` is not provided.
 
-- [EMAIL_BACKEND]: a string specified in the format described by _django-service-urls_ which determines the email backend. Default: printing emails to console. Note that this is only used if SENDER_EMAIL is defined and TSTO_API variables are not.
+- `[INTERNAL_IPS]`: Comma-separated list of internal IP addresses for Django debug toolbar. Default: `127.0.0.1,::1`.
 
-- [LOGIN_ATTEMPTS]: maximum number of failed login attempts permitted before temporarily blocking user access. Default: 0 attempts.
+- `[LOGIN_ATTEMPTS]`: Maximum number of failed login attempts permitted before temporarily blocking user access (via *django-axes*). Default: `0` (disabled).
 
-- [LOGIN_FAIL_COOLOFF_TIME]: Duration (in minutes) that a user remains locked out after exceeding LOGIN_ATTEMPTS failed attempts. Default: 30 minutes.
+- `[LOGIN_FAIL_COOLOFF_TIME]`: Duration in minutes that an IP remains locked out after exceeding `LOGIN_ATTEMPTS`. Default: `30` minutes.
 
-- PORT: reverse proxy port.
+- `[MEDIA_ROOT]`: Internal container filesystem directory where uploaded media files (towns, avatars) are saved. Default: `/app/media`.
 
-- PROTOCOL: reverse proxy protocol.
+- `[MEDIA_URL]`: URL prefix for accessing media files. Default: `media/`.
 
-- SECRET_KEY: the server secret key.
+- `SECRET_KEY`: Secret key used for cryptographic signing and session security. Must be kept secret.
 
-- [SENDER_EMAIL]: email address where emails are dispatched from.
+- `[SENDER_EMAIL]`: Email address used as the sender when dispatching verification codes.
 
-- [STATIC_LOCATION]: static endpoint. Default: `static/`.
+- `SERVER_BASE_URL`: Public base URL of the server (e.g. `http://192.168.1.115:8080` or `https://tsto.example.com`). Default: `http://localhost:8000`.
 
-- STATIC_ROOT: directory or path where static files will be stored.
+- `[STATIC_ROOT]`: Internal container filesystem directory where static files are collected. Default: `/app/staticfiles`.
 
-- [STORAGE_DEFAULT]: a string specified in the format described by _django-service-urls_ which determines the default storage backend. Default: _django.core.files.storage.filesystem.FileSystemStorage_.
+- `[STATIC_URL]`: URL prefix for static files. Default: `static/`.
 
-- [STORAGE_STATICFILES]: a string specified in the format described by _django-service-urls_ which determines the static storage backend. Default: _django.contrib.staticfiles.storage.StaticFilesStorage_.
+- `[STORAGE_DEFAULT]`: Storage service URL for default file storage (towns and avatars). Supports `fs://?allow_overwrite=true` or S3 buckets via `s3://?bucket_name=my-bucket`. Default: `fs://?allow_overwrite=true`.
 
-- [TIME_ZONE]: a string representing the time zone for this installation. See the [list of time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
+- `[STORAGE_STATICFILES]`: Storage service URL for static files. Default: `static://`.
 
-- [TOWNS_ROOT]: directory or path where town files will be stored. Default: `towns/`.
+- `[TIME_ZONE]`: Time zone string for the Django application. Default: `UTC`.
 
-- [TSTO_API_KEY]: self-explanatory. No default value.
+- `[TSTO_API_KEY]`: TSTO API authentication key. Optional; overrides custom email delivery when provided.
 
-- [TSTO_API_TEAM_NAME]: self-explanatory. No default value.
+- `[TSTO_API_TEAM_NAME]`: TSTO API team name. Optional.
 
 ## Author
 
