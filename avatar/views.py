@@ -3,9 +3,29 @@ from django.core.files.storage import default_storage
 from django.db import models
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from connect.models import UserId, DeviceToken
 
 # Create your views here.
+
+
+def download_avatar(request, user_id):
+    try:
+        parsed_id = int(user_id)
+        target_user = UserId.objects.filter(
+            models.Q(user_id=parsed_id) | models.Q(persona_id=parsed_id)
+        ).first()
+    except (ValueError, TypeError):
+        raise Http404
+
+    if (
+        not target_user
+        or not target_user.avatar
+        or not default_storage.exists(target_user.avatar.name)
+    ):
+        raise Http404
+
+    return HttpResponse(target_user.avatar.read(), content_type="image/png")
 
 
 def get_avatar(request):
@@ -35,23 +55,9 @@ def get_avatars(request, users_ids):
         avatar_elem = ET.SubElement(user_elem, "avatar")
         ET.SubElement(avatar_elem, "avatarId").text = user_id
 
-        link_text = ""
-        try:
-            parsed_id = int(user_id)
-            target_user = UserId.objects.filter(
-                models.Q(user_id=parsed_id) | models.Q(persona_id=parsed_id)
-            ).first()
-
-            if (
-                target_user
-                and target_user.avatar
-                and default_storage.exists(target_user.avatar.name)
-            ):
-                link_text = request.build_absolute_uri(target_user.avatar.url)
-
-        except (ValueError, TypeError):
-            pass
-
+        link_text = request.build_absolute_uri(
+            reverse("avatar:download_avatar", args=(user_id,))
+        )
         ET.SubElement(avatar_elem, "link").text = link_text
 
     return HttpResponse(

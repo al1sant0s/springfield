@@ -6,4 +6,6 @@ app_name = "avatar"
 urlpatterns = [
     path("user//avatars", views.get_avatar, name="get_avatar"),
     path("user/<str:users_ids>/avatars", views.get_avatars, name="get_avatars"),
+    path("user/<str:user_id>/avatar.png", views.download_avatar, name="download_avatar"),
 ]
+
