@@ -146,7 +146,7 @@ server {
 }
 ```
 
-This configuration specifies that static files are served from `/data/static/`, media files (avatars and towns) from `/data/media/`, and DLC from `/data/dlc/`. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server; adjust the paths and hostnames according to your environment.
+This configuration specifies that static files are served from `/data/static/`, media files (avatars and towns) from `/data/media/`, and DLC from `/data/dlc/`. In production, Nginx also accelerates authorized town file downloads via `X-Accel-Redirect`, streaming files directly from disk without buffering them through Python workers. By default the server listens on port 8000, so we redirect the other requests to that port. Obviously this is just an example of configuration for the proxy server; adjust the paths and hostnames according to your environment.
 
 Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file, with the following minimal settings:
 
