@@ -296,17 +296,17 @@ def friends(request):
         search_matches = list()
 
     # Get pending requests.
-    received_requests = [
-        invitation
-        for invitation in request.user.received_invitations.order_by("-invitation_date")
-    ]
+    received_requests = (
+        request.user.received_invitations.select_related("from_user").order_by(
+            "-invitation_date"
+        )
+    )
 
-    sent_requests = [
-        invitation
-        for invitation in request.user.sent_invitations.order_by("-invitation_date")
-    ]
+    sent_requests = request.user.sent_invitations.select_related("to_user").order_by(
+        "-invitation_date"
+    )
 
-    friends = [user for user in request.user.friends.order_by(Lower("username"))]
+    friends = request.user.friends.order_by(Lower("username"))
 
     context = {
         "search_form": search_form,

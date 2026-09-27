@@ -225,13 +225,13 @@ def protoClientConfig(request):
 @csrf_exempt
 def friendData(request):
     friend_data_pairs = list()
-    mayhem_ids = list()
-
     debug_mayhem_id = request.GET.get("debug_mayhem_id")
 
     # Find user friends.
     if debug_mayhem_id is not None:
-        mayhem_ids.append(int(debug_mayhem_id))
+        target_users = [
+            get_object_or_404(UserId, mayhem_id=uuid.UUID(int=int(debug_mayhem_id)))
+        ]
 
     else:
         try:
@@ -248,20 +248,18 @@ def friendData(request):
                 current_client_session_id=session_uuid,
             ).user
 
-            for friend in user.friends.exclude(pk=user.pk):
-                mayhem_ids.append(friend.mayhem_id.int)
+            target_users = user.friends.all()
 
-    for mayhem_id in mayhem_ids:
-        user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+    for friend in target_users:
         land_data = LandData_pb2.LandMessage()
-        land_data.ParseFromString(load_town(user))
+        land_data.ParseFromString(load_town(friend))
 
         friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(
-            friendId=str(user.mayhem_id.int)
+            friendId=str(friend.mayhem_id.int)
         )
-        friend_data_pair.friendData.name = user.username
+        friend_data_pair.friendData.name = friend.username
         friend_data_pair.authService = 0
-        friend_data_pair.externalId = str(user.user_id)
+        friend_data_pair.externalId = str(friend.user_id)
         friend_data_pair.friendData.dataVersion = land_data.friendData.dataVersion
         friend_data_pair.friendData.hasLemonTree = land_data.friendData.hasLemonTree
         friend_data_pair.friendData.language = land_data.friendData.language
