@@ -57,10 +57,18 @@ def load_town(user):
 def send_town_file(user):
     if user.town and default_storage.exists(user.town.name):
         url = user.town.url
-        # When running behind Nginx with local storage, let Nginx serve the file directly
-        if not settings.DEBUG and "test" not in sys.argv and url.startswith("/"):
+        # When running behind Nginx, let Nginx serve the file directly
+        if not settings.DEBUG and "test" not in sys.argv:
+            url = user.town.url
             response = HttpResponse(content_type="application/x-protobuf")
-            response["X-Accel-Redirect"] = url
+
+            if url.startswith("/"):
+                # Local filesystem storage
+                response["X-Accel-Redirect"] = url
+            else:
+                # S3 / Garage storage internal proxy route
+                response["X-Accel-Redirect"] = f"/s3_media/{user.town.name}"
+
             return response
 
         # Fallback for development/tests or remote storage

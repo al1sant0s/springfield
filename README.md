@@ -384,7 +384,7 @@ The last part configures S3-compatible storage (such as Garage):
 * `STORAGE_DEFAULT` defines the backend for default storage (towns and avatars) along with the bucket name (`tsto-bucket`).
 * `STORAGE_STATICFILES` defines S3 storage for static files (`static-bucket`). Extra options like `custom_domain` and `location` can be passed as URL query parameters. For static files, the bucket is typically exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/) so user web browsers can fetch static assets directly.
 
-To reflect our new static configuration, we have also updated our nginx settings:
+To reflect our new storage configuration, we update our nginx settings:
 
 ```nginx
 server {
@@ -395,6 +395,12 @@ server {
 	location /static/ {
 		proxy_pass		http://localhost:3902;
 		proxy_set_header	Host static-bucket.web.garage.localhost;
+	}
+
+	# Internal proxy to stream S3 town files directly via X-Accel-Redirect
+	location /s3_media/ {
+		internal;
+		proxy_pass		http://localhost:3900/tsto-bucket/;
 	}
 
 	location /dlc/ {
@@ -410,6 +416,8 @@ server {
 	}
 }
 ```
+
+Notice the internal `location /s3_media/` directive: when the game client requests a town file through `/protoland`, Django verifies authentication and returns an `X-Accel-Redirect` to `/s3_media/`. Nginx intercepts this and streams the file directly from Garage's S3 endpoint (`http://localhost:3900/tsto-bucket/`) without buffering it through Python workers.
 
 Now that everything is configured, run the commands to start and initialize the server:
 
