@@ -5,6 +5,7 @@ from PIL import Image
 from google.protobuf.message import DecodeError
 
 from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -16,6 +17,13 @@ from protofiles import LandData_pb2
 
 
 def validate_avatar(file):
+    if not file:
+        return
+
+    # Skip validation if the file is already committed in storage and not newly uploaded
+    if not isinstance(file, UploadedFile) and getattr(file, "_committed", True):
+        return
+
     # 1. Size check
     if file.size > 1048576:
         raise ValidationError("File size exceeds 1MB limit.")
@@ -45,6 +53,13 @@ def validate_avatar(file):
 
 
 def validate_town(file):
+    if not file:
+        return
+
+    # Skip validation if the file is already committed in storage and not newly uploaded
+    if not isinstance(file, UploadedFile) and getattr(file, "_committed", True):
+        return
+
     # 1. Size check
     if file.size > 5242880:
         raise ValidationError("File size exceeds 5MB limit.")
