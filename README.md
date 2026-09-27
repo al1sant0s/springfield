@@ -417,7 +417,7 @@ server {
 }
 ```
 
-Notice the internal `location /tsto-bucket/` directive: when the game client requests a town file through `/protoland`, Django verifies authentication and dynamically sets `X-Accel-Redirect` using your configured bucket name (e.g. `/tsto-bucket/<town_path>`). Nginx intercepts this and streams the file directly from Garage's S3 endpoint (`http://localhost:3900`) without buffering it through Python workers. If you use a different bucket name in `STORAGE_DEFAULT`, simply update the location path to match your bucket name.
+Notice the internal `location /tsto-bucket/` directive: when the game client requests a town file, Django verifies authentication and dynamically sets `X-Accel-Redirect` using your configured bucket name (e.g. `/tsto-bucket/<town_path>`). Nginx intercepts this and streams the file directly from Garage's S3 endpoint (`http://localhost:3900`) without buffering it through Python workers. If you use a different bucket name in `STORAGE_DEFAULT`, simply update the location path to match your bucket name.
 
 Now that everything is configured, run the commands to start and initialize the server:
 
