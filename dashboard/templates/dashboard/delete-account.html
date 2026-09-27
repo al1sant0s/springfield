@@ -24,12 +24,20 @@
           <h2>⚠️ Warning: You are about to permanently delete your account.</h2>
           <h3 class="highlight">This action <strong>cannot be undone</strong>.</h3>
           <p>
-            If you are really sure about this, insert the code which was sent to your email address and solve the captcha bellow to proceed.
+            If you are really sure about this, insert the code which was sent to your email address and solve the captcha below to proceed.
           </p>
-          {% if messages %}
+          {% if messages or delete_user_form.errors %}
             <ul class="messages">
               {% for message in messages %}
                 <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+              {% for error in delete_user_form.non_field_errors %}
+                <li class="error">{{ error }}</li>
+              {% endfor %}
+              {% for field in delete_user_form %}
+                {% for error in field.errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
               {% endfor %}
             </ul>
           {% endif %}
@@ -38,7 +46,7 @@
             {% csrf_token %}
             {{ delete_user_form }}
             <div>
-              <button class="submit">Delete</button>
+              <button type="submit" class="submit">Delete</button>
             </div>
           </form>
           <hr>

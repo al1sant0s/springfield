@@ -22,10 +22,18 @@
         <section>
           <h2>Account details</h2>
           <p>Insert your email to register an account.</p>
-          {% if messages %}
+          {% if messages or register_form.errors %}
             <ul class="messages">
               {% for message in messages %}
                 <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+              {% for error in register_form.non_field_errors %}
+                <li class="error">{{ error }}</li>
+              {% endfor %}
+              {% for field in register_form %}
+                {% for error in field.errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
               {% endfor %}
             </ul>
           {% endif %}
@@ -34,7 +42,7 @@
             {% csrf_token %}
             {{ register_form }}
             <div>
-              <button class="submit">Register</button>
+              <button type="submit" class="submit">Register</button>
             </div>
           </form>
           <hr>

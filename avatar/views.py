@@ -1,37 +1,20 @@
+import xml.etree.ElementTree as ET
+from django.core.files.storage import default_storage
+from django.db import models
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
-from django.core.cache import cache
-
 from connect.models import UserId, DeviceToken
-from springfield.settings import env
-from url_normalize import url_normalize
-
-import xml.etree.ElementTree as ET
-
-
-def get_avatar_url(user):
-
-    static_url = cache.get("static_url")
-
-    if static_url is None:
-        protocol = env("PROTOCOL")
-        domain = env("DOMAIN")
-        port = env("PORT")
-        static_location = env("STATIC_LOCATION", default="static/")
-        static_url = url_normalize(f"{protocol}://{domain}:{port}/{static_location}")
-        cache.set("static_url", static_url, timeout = env("CACHE_SECONDS", default=3600))
-
-    return f"{static_url}{user.avatar.name.lower()}"
-
 
 # Create your views here.
 
-def get_avatar(request):
 
+def get_avatar(request):
     access_token = request.headers.get("AuthToken")
 
     if access_token is not None:
-        user = get_object_or_404(DeviceToken, access_token=access_token).user
+        user = get_object_or_404(
+            DeviceToken.objects.select_related("user"), access_token=access_token
+        ).user
         return get_avatars(request, str(user.user_id))
 
     else:
@@ -39,25 +22,38 @@ def get_avatar(request):
 
 
 def get_avatars(request, users_ids):
-
     root = ET.Element("users")
 
     for user_id in users_ids.split(";"):
+        user_id = user_id.strip()
+        if not user_id:
+            continue
 
-        user = ET.SubElement(root, "user")
-        ET.SubElement(user, "userId").text = user_id
+        user_elem = ET.SubElement(root, "user")
+        ET.SubElement(user_elem, "userId").text = user_id
 
-        avatar = ET.SubElement(user, "avatar")
-        ET.SubElement(avatar, "avatarId").text = user_id
+        avatar_elem = ET.SubElement(user_elem, "avatar")
+        ET.SubElement(avatar_elem, "avatarId").text = user_id
 
+        link_text = ""
         try:
-            user = UserId.objects.get(user_id=int(user_id))
+            parsed_id = int(user_id)
+            target_user = UserId.objects.filter(
+                models.Q(user_id=parsed_id) | models.Q(persona_id=parsed_id)
+            ).first()
 
-        except UserId.DoesNotExist():
-            ET.SubElement(avatar, "link").text = ""
+            if (
+                target_user
+                and target_user.avatar
+                and default_storage.exists(target_user.avatar.name)
+            ):
+                link_text = request.build_absolute_uri(target_user.avatar.url)
 
-        else:
-            ET.SubElement(avatar, "link").text = get_avatar_url(user)
+        except (ValueError, TypeError):
+            pass
 
+        ET.SubElement(avatar_elem, "link").text = link_text
 
-    return HttpResponse(ET.tostring(root, "utf8", "xml"), content_type="application/xml")
+    return HttpResponse(
+        ET.tostring(root, "utf8", "xml"), content_type="application/xml"
+    )

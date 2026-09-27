@@ -17,6 +17,7 @@ dependencies:
   - gunicorn
   - django-axes
   - url-normalize
+  - django-cleanup
   - pip
   - pip:
       - django-hCaptcha

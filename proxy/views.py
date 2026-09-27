@@ -200,7 +200,10 @@ def pids_personas(request):
 
 
 def user_id_personas(request, user_id):
-    user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
+    user = get_object_or_404(
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("Authorization", "").split(" ")[-1],
+    ).user
     response = {
         "personas": {
             "persona": [
@@ -238,7 +241,10 @@ def personas(request):
         username = username[:-1]
 
 
-    our_user = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1]).user
+    our_user = get_object_or_404(
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("Authorization", "").split(" ")[-1],
+    ).user
 
     for user in search_friends(our_user, username)[:100]:
 
@@ -282,7 +288,10 @@ def progreg_code(request):
 
 
 def links(request):
-    token = get_object_or_404(DeviceToken, access_token=request.headers.get("Authorization", "").split(" ")[-1])
+    token = get_object_or_404(
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("Authorization", "").split(" ")[-1],
+    )
     response = {
         "pidGamePersonaMappings": {
             "pidGamePersonaMapping": [

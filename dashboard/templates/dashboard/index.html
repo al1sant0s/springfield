@@ -37,18 +37,14 @@
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
-          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button class="nav-item exo-2-generic">Logout 🚪</button>
+              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
-        {% if avatar_exists %}
-        <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
-        {% else %}
-          <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
-        {% endif %}
+        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
         <li class="nav-username">
-          <p>{{ username }}</p>
+          <p>{{ request.user.username }}</p>
         </li>
       </ul>
     </nav>
@@ -57,13 +53,9 @@
       <ul>
         <a href="#" class="close-btn">✕</a>
         <ul class="nav-user-info">
-          {% if avatar_exists %}
-            <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
-          {% else %}
-            <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
-          {% endif %}
+          <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
           <li class="nav-username">
-            <p>{{ username }}</p>
+            <p>{{ request.user.username }}</p>
           </li>
         </ul>
         <li>
@@ -79,9 +71,9 @@
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
-          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button class="nav-item exo-2-generic">Logout 🚪</button>
+              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
       </ul>
@@ -92,12 +84,20 @@
       <article>
         <section>
           <h2>Upload town file</h2>
-          {% if messages %}
+          {% if messages or town_form.errors %}
             <ul class="messages">
               {% for message in messages %}
                 {% if "town" in message.tags %}
                   <li class="{{ message.tags }}">{{ message }}</li>
                 {% endif %}
+              {% endfor %}
+              {% for error in town_form.non_field_errors %}
+                <li class="error">{{ error }}</li>
+              {% endfor %}
+              {% for field in town_form %}
+                {% for error in field.errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
               {% endfor %}
             </ul>
           {% endif %}
@@ -105,20 +105,30 @@
           <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
             {% csrf_token %}
             {{ town_form }}
-            <div class="bottom-link">
-              <a href="{{ town_url }}">Download your town file</a>
-            </div>
+              {% if request.user.town %}
+                <div class="bottom-link">
+                  <a href="{{ request.user.town.url }}" download>Download your town file</a>
+                </div>
+              {% endif %}
             <div>
-              <button class="submit" name="town-form">Upload</button>
+              <button type="submit" class="submit" name="town-form">Upload</button>
             </div>
           </form>
           <h2>- Edit currencies +</h2>
-            {% if messages %}
+            {% if messages or currency_form.errors %}
               <ul class="messages">
                 {% for message in messages %}
                   {% if "currency" in message.tags %}
                     <li class="{{ message.tags }}">{{ message }}</li>
                   {% endif %}
+                {% endfor %}
+                {% for error in currency_form.non_field_errors %}
+                  <li class="error">{{ error }}</li>
+                {% endfor %}
+                {% for field in currency_form %}
+                  {% for error in field.errors %}
+                    <li class="error">{{ error }}</li>
+                  {% endfor %}
                 {% endfor %}
               </ul>
             {% endif %}
@@ -127,7 +137,7 @@
             {% csrf_token %}
             {{ currency_form }}
             <div>
-              <button class="submit" name="currency-form">Save</button>
+              <button type="submit" class="submit" name="currency-form">Save</button>
             </div>
           </form>
         </section>

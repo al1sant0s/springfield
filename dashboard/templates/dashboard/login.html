@@ -21,6 +21,21 @@
       <article>
         <section>
           <h2>Login details</h2>
+          {% if messages or form.errors %}
+            <ul class="messages">
+              {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+              {% endfor %}
+              {% for error in form.non_field_errors %}
+                <li class="warning">{{ error }}</li>
+              {% endfor %}
+              {% for field in form %}
+                {% for error in field.errors %}
+                  <li class="warning">{{ error }}</li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          {% endif %}
           <hr>
           <form action="{% url 'dashboard:login' %}" method="post">
             {% csrf_token %}
@@ -29,7 +44,7 @@
               <a href="{% url 'dashboard:forgot_password' %}">Forgot password?</a>
             </div>
             <div>
-              <button class="submit">Log in</button>
+              <button type="submit" class="submit">Log in</button>
             </div>
           </form>
           <hr>

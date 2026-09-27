@@ -38,18 +38,14 @@
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
-          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button class="nav-item exo-2-generic">Logout 🚪</button>
+            <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
-        {% if avatar_exists %}
-        <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
-        {% else %}
-          <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
-        {% endif %}
+        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
         <li class="nav-username">
-          <p>{{ username }}</p>
+          <p>{{ request.user.username }}</p>
         </li>
       </ul>
     </nav>
@@ -58,13 +54,9 @@
       <ul>
         <a href="#" class="close-btn">✕</a>
         <ul class="nav-user-info">
-          {% if avatar_exists %}
-            <li class="nav-profile-pic" style="background-image: url('{{ avatar_url }}')"></li>
-          {% else %}
-            <li class="nav-profile-pic" style="background-image: url('{% static 'dashboard/default-avatar.png' %}')"></li>
-          {% endif %}
+          <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
           <li class="nav-username">
-            <p>{{ username }}</p>
+            <p>{{ request.user.username }}</p>
           </li>
         </ul>
         <li>
@@ -80,9 +72,9 @@
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
         </li>
         <li>
-          <form id="logout" action="{% url 'dashboard:logout' %}" method="post">
+          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button class="nav-item exo-2-generic">Logout 🚪</button>
+            <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
       </ul>
@@ -93,6 +85,13 @@
         <section class="wide-section">
             <h2>Connected devices</h2>
             <p>If you do not recognize a device here, remove it!</p>
+            {% if messages %}
+              <ul class="messages">
+                {% for message in messages %}
+                  <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
             <hr>
             {% if devices %}
               <table class="long-table">

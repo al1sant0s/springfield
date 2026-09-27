@@ -32,7 +32,6 @@ class TestDevice():
             device_id=self.device_id,
             device_id_cache=self.device_id,
             current_client_session_id=self.current_client_session_id,
-            session_key=user.session_key,
             login_status=login_status
         )
         self.token.save()
