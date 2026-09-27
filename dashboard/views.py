@@ -386,10 +386,6 @@ def remove_device(request, advertising_id):
     return HttpResponseRedirect(reverse("dashboard:devices"))
 
 
-def download_town(request, mayhem_id):
-    return HttpResponse(load_town(request.user), content_type="application/x-protobuf")
-
-
 @login_required(login_url="dashboard:login")
 def delete_account(request):
     if request.method == "POST":

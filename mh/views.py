@@ -3,6 +3,7 @@ import json
 import gzip
 import time
 import uuid
+import sys
 
 from django.http import (
     HttpResponse,
@@ -50,6 +51,24 @@ def load_town(user):
         user.town.read()
         if user.town and default_storage.exists(user.town.name)
         else starting_town(user).SerializeToString()
+    )
+
+
+def send_town_file(user):
+    if user.town and default_storage.exists(user.town.name):
+        url = user.town.url
+        # When running behind Nginx with local storage, let Nginx serve the file directly
+        if not settings.DEBUG and "test" not in sys.argv and url.startswith("/"):
+            response = HttpResponse(content_type="application/x-protobuf")
+            response["X-Accel-Redirect"] = url
+            return response
+
+        # Fallback for development/tests or remote storage
+        return HttpResponse(user.town.read(), content_type="application/x-protobuf")
+
+    return HttpResponse(
+        starting_town(user).SerializeToString(),
+        content_type="application/x-protobuf",
     )
 
 
@@ -389,11 +408,8 @@ def protoland(request, mayhem_id):
     # Load town.
     if request.method == "GET":
         if land_token.retrieved and land_token.authorized:
-            return HttpResponse(
-                load_town(
-                    get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-                ),
-                content_type="application/x-protobuf",
+            return send_town_file(
+                get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
             )
 
         # Ask for a new land token.
