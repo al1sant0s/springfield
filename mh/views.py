@@ -108,7 +108,8 @@ def users(request):
 
         else:
             user = get_object_or_404(
-                DeviceToken, current_client_session_id=session_uuid
+                DeviceToken.objects.select_related("user"),
+                current_client_session_id=session_uuid,
             ).user
             root = ET.Element("Resources")
             ET.SubElement(root, "URI").text = f"users/{user.mayhem_id.int}"
@@ -243,7 +244,8 @@ def friendData(request):
 
         else:
             user = get_object_or_404(
-                DeviceToken, current_client_session_id=session_uuid
+                DeviceToken.objects.select_related("user"),
+                current_client_session_id=session_uuid,
             ).user
 
             for friend in user.friends.exclude(pk=user.pk):
@@ -382,7 +384,9 @@ def protoland(request, mayhem_id):
         return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
 
     else:
-        land_token = get_object_or_404(LandToken, land_token=land_token)
+        land_token = get_object_or_404(
+            LandToken.objects.select_related("user"), land_token=land_token
+        )
 
     # Load town.
     if request.method == "GET":
@@ -444,7 +448,8 @@ def protocurrency(request, mayhem_id):
 
     else:
         user = get_object_or_404(
-            DeviceToken, current_client_session_id=session_uuid
+            DeviceToken.objects.select_related("user"),
+            current_client_session_id=session_uuid,
         ).user
 
         # Avoid user tampering with other towns.
@@ -485,11 +490,14 @@ def extraLandUpdate(request, mayhem_id):
 
         else:
             user = get_object_or_404(
-                DeviceToken, current_client_session_id=session_uuid
+                DeviceToken.objects.select_related("user"),
+                current_client_session_id=session_uuid,
             ).user
 
     else:
-        user = get_object_or_404(LandToken, land_token=land_token).user
+        user = get_object_or_404(
+            LandToken.objects.select_related("user"), land_token=land_token
+        ).user
 
     # Avoid user tampering with other towns.
     if mayhem_id != user.mayhem_id.int:

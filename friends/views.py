@@ -78,11 +78,14 @@ def remove_friend(from_user, to_user, success_response):
 def outbound(request, user_id):
     # Look up for sent_invitations.
     user = get_object_or_404(
-        DeviceToken, access_token=request.headers.get("X-AuthToken")
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("X-AuthToken"),
     ).user
     entries = list()
 
-    for invitation in user.sent_invitations.order_by("-invitation_date"):
+    for invitation in user.sent_invitations.select_related("to_user").order_by(
+        "-invitation_date"
+    ):
         entries.append(
             {
                 "timestamp": int(invitation.invitation_date.timestamp() * 1000),
@@ -111,7 +114,8 @@ def outbound(request, user_id):
 def outbound_sent(request, from_user_id, to_user_id):
     # Get user sending invitation and receiving invitation.
     from_user = get_object_or_404(
-        DeviceToken, access_token=request.headers.get("X-AuthToken")
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("X-AuthToken"),
     ).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
 
@@ -126,11 +130,14 @@ def outbound_sent(request, from_user_id, to_user_id):
 def inbound(request, user_id):
     # Look up for received_invitations.
     user = get_object_or_404(
-        DeviceToken, access_token=request.headers.get("X-AuthToken")
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("X-AuthToken"),
     ).user
 
     entries = list()
-    for invitation in user.received_invitations.order_by("-invitation_date"):
+    for invitation in user.received_invitations.select_related("from_user").order_by(
+        "-invitation_date"
+    ):
         entries.append(
             {
                 "timestamp": int(invitation.invitation_date.timestamp()),
@@ -160,7 +167,8 @@ def inbound_accept(request, to_user_id, from_user_id):
     # Get user sending invitation and receiving invitation.
     from_user = get_object_or_404(UserId, user_id=from_user_id)
     to_user = get_object_or_404(
-        DeviceToken, access_token=request.headers.get("X-AuthToken")
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("X-AuthToken"),
     ).user
     return accept_friend_request(from_user, to_user, HttpResponse(status=204))
 
@@ -168,7 +176,8 @@ def inbound_accept(request, to_user_id, from_user_id):
 @require_GET
 def get_friends(request, user_id):
     user = get_object_or_404(
-        DeviceToken, access_token=request.headers.get("X-AuthToken")
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("X-AuthToken"),
     ).user
     entries = list()
 
@@ -207,7 +216,8 @@ def get_friends(request, user_id):
 @require_http_methods(["DELETE"])
 def cancel_friendship(request, to_user_id, from_user_id):
     from_user = get_object_or_404(
-        DeviceToken, access_token=request.headers.get("X-AuthToken")
+        DeviceToken.objects.select_related("user"),
+        access_token=request.headers.get("X-AuthToken"),
     ).user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
     return remove_friend(from_user, to_user, HttpResponse(status=204))

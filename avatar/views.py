@@ -10,7 +10,9 @@ def get_avatar(request):
     access_token = request.headers.get("AuthToken")
 
     if access_token is not None:
-        user = get_object_or_404(DeviceToken, access_token=access_token).user
+        user = get_object_or_404(
+            DeviceToken.objects.select_related("user"), access_token=access_token
+        ).user
         return get_avatars(request, str(user.user_id))
 
     else:
