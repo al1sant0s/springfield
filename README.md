@@ -40,7 +40,7 @@ Among all its features, it includes support for:
 
 - adding and visiting friend neighbors,
 
-- editing money and donut currencies at your will,
+- editing money and donuts currencies at your will,
 
 - importing and exporting town files,
 
