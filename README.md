@@ -72,7 +72,7 @@ Some services are essential, while others are optional and can extend the server
 
 The required services, which must be available in any configuration, are:
 
-- a web server to act as a reverse proxy to the game server and to serve the static and DLC files, e.g., nginx
+- Nginx to act as a reverse proxy to the game server and to serve the media, static and DLC files
 
 - and a database service.
 
