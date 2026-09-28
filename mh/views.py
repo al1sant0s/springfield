@@ -55,32 +55,21 @@ def load_town(user):
 
 
 def send_town_file(user):
-    if user.town and default_storage.exists(user.town.name):
-        # When running behind Nginx, let Nginx serve the file directly.
-        # For local filesystem storage the plain media URL is used.
-        # For S3/Garage the presigned URL is stripped of its domain so that
-        # Nginx can proxy the signed path+query to S3 with the correct Host header.
-        if not settings.DEBUG:
-            response = HttpResponse(content_type="application/x-protobuf")
-            parsed = urllib.parse.urlsplit(user.town.url)
-            if parsed.scheme:
-                # Remote storage — forward signed path + query string
-                redirect = parsed.path
-                if parsed.query:
-                    redirect += "?" + parsed.query
-            else:
-                # Local filesystem — plain relative URL
-                redirect = parsed.path
-            response["X-Accel-Redirect"] = redirect
-            return response
+    if not user.town:
+        return HttpResponse(
+            starting_town(user).SerializeToString(),
+            content_type="application/x-protobuf",
+        )
 
-        # Fallback for development (DEBUG=True)
-        return HttpResponse(user.town.read(), content_type="application/x-protobuf")
+    parsed = urllib.parse.urlsplit(user.town.url)
+    redirect = parsed.path
+    if parsed.scheme and parsed.query:
+        redirect += "?" + parsed.query
 
-    return HttpResponse(
-        starting_town(user).SerializeToString(),
-        content_type="application/x-protobuf",
-    )
+    # When running behind Nginx, let Nginx serve the file directly.
+    response = HttpResponse(content_type="application/x-protobuf")
+    response["X-Accel-Redirect"] = redirect
+    return response
 
 
 #######################################

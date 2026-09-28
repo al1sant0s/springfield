@@ -1,54 +1,30 @@
 import mimetypes
 import urllib.parse
 import xml.etree.ElementTree as ET
-from django.conf import settings
-from django.core.files.storage import default_storage
 from django.db import models
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from connect.models import UserId, DeviceToken
 
-# Create your views here.
-
 
 def download_avatar(request, user_id):
-    try:
-        parsed_id = int(user_id)
-        target_user = UserId.objects.filter(
-            models.Q(user_id=parsed_id) | models.Q(persona_id=parsed_id)
-        ).first()
-    except (ValueError, TypeError):
+    user = get_object_or_404(
+        UserId, models.Q(user_id=user_id) | models.Q(persona_id=user_id)
+    )
+    if not user.avatar:
         raise Http404
 
-    if not target_user or not target_user.avatar:
-        raise Http404
-
-    content_type = mimetypes.guess_type(target_user.avatar.name)[0] or "image/png"
+    parsed = urllib.parse.urlsplit(user.avatar.url)
+    redirect = parsed.path
+    if parsed.scheme and parsed.query:
+        redirect += "?" + parsed.query
 
     # When running behind Nginx, let Nginx serve the file directly.
-    # For local filesystem storage the plain media URL is used.
-    # For S3/Garage the presigned URL is stripped of its domain so that
-    # Nginx can proxy the signed path+query to S3 with the correct Host header.
-    if not settings.DEBUG:
-        response = HttpResponse(content_type=content_type)
-        parsed = urllib.parse.urlsplit(target_user.avatar.url)
-        if parsed.scheme:
-            # Remote storage — forward signed path + query string
-            redirect = parsed.path
-            if parsed.query:
-                redirect += "?" + parsed.query
-        else:
-            # Local filesystem — plain relative URL
-            redirect = parsed.path
-        response["X-Accel-Redirect"] = redirect
-        return response
-
-    # Fallback for development (DEBUG=True)
-    try:
-        return HttpResponse(target_user.avatar.read(), content_type=content_type)
-    except Exception:
-        raise Http404
+    content_type = mimetypes.guess_type(user.avatar.name)[0] or "image/png"
+    response = HttpResponse(content_type=content_type)
+    response["X-Accel-Redirect"] = redirect
+    return response
 
 
 def get_avatar(request):
