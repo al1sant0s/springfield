@@ -125,12 +125,10 @@ class UserId(AbstractUser):
 
     @property
     def avatar_url(self):
-        if self.avatar:
-            try:
-                return self.avatar.url
-            except Exception:
-                pass
-        return static("dashboard/default-avatar.png")
+        try:
+            return self.avatar.url
+        except (ValueError, AttributeError):
+            return static("dashboard/default-avatar.png")
 
     @transaction.atomic
     def save(self, *args, **kwargs):

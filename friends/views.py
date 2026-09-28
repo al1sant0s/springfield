@@ -4,7 +4,7 @@ from django.http import (
     HttpResponseNotFound,
     JsonResponse,
 )
-from django.db import models, transaction
+from django.db import models, transaction, IntegrityError, DatabaseError
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -40,7 +40,7 @@ def send_friend_request(from_user, to_user, success_response):
             )
             return success_response
 
-    except Exception:
+    except (IntegrityError, DatabaseError):
         return HttpResponse("Failed to create invitation.", status=500)
 
 

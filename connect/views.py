@@ -30,9 +30,12 @@ def auth(request, device_id):
     sig = request.GET.get("sig")
     if sig is not None:
         # Read sig for further authentication.
-        json_data = sig.split(".")[0]
-        json_data += "=" * (math.ceil(len(json_data) / 64) * 64 - len(json_data))
-        json_data = json.loads(base64.b64decode(json_data))
+        try:
+            json_data = sig.split(".")[0]
+            json_data += "=" * (math.ceil(len(json_data) / 64) * 64 - len(json_data))
+            json_data = json.loads(base64.b64decode(json_data))
+        except ValueError:
+            raise Http404
 
         # Anonymous login.
         if request.GET.get("authenticator_login_type") == "mobile_anonymous":
