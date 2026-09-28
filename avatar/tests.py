@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from PIL import Image
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from connect.models import DeviceToken, UserId
@@ -85,6 +85,16 @@ class AvatarViewsTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "image/png")
+        self.assertIn("X-Accel-Redirect", response)
+        self.assertIn("custom_avatar", response["X-Accel-Redirect"])
+
+    @override_settings(DEBUG=True)
+    def test_download_avatar_debug_fallback(self):
+        url = reverse("avatar:download_avatar", args=(self.user_with_avatar.user_id,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertNotIn("X-Accel-Redirect", response)
         self.assertEqual(response.content, create_test_image())
 
     def test_download_avatar_by_persona_id(self):
@@ -92,6 +102,8 @@ class AvatarViewsTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "image/png")
+        self.assertIn("X-Accel-Redirect", response)
+        self.assertIn("custom_avatar", response["X-Accel-Redirect"])
 
     def test_download_avatar_user_not_found(self):
         url = reverse("avatar:download_avatar", args=(9999999999,))
@@ -118,7 +130,8 @@ class AvatarViewsTests(TestCase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response["Content-Type"], "image/jpeg")
-            self.assertEqual(response.content, buf.getvalue())
+            self.assertIn("X-Accel-Redirect", response)
+            self.assertIn("custom_avatar", response["X-Accel-Redirect"])
         finally:
             if jpeg_user.avatar:
                 jpeg_user.avatar.delete(save=False)
