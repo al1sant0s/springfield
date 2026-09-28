@@ -114,7 +114,7 @@ services:
 ```
 
 With this configuration the server will use a SQLite file as your database.
-It only requires that you provide a web server, e.g., nginx, to act as a reverse proxy and serve the DLC, media files (avatars and towns), and static files for the dashboard.
+**Nginx is required as the reverse proxy.** Springfield uses Nginx's `X-Accel-Redirect` mechanism to offload avatar and town file serving directly from disk (or S3/Garage) without routing binary data through Python workers. Other reverse proxies are not supported out of the box — anyone wishing to use a different proxy is welcome to fork the project and adapt it.
 
 A simple nginx configuration for a local server, which listens on port 8080, may be specified like so:
 
