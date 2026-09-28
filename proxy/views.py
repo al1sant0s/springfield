@@ -56,16 +56,18 @@ def check_tsto_api():
         tsto_api_available = False
         tsto_api_key = env("TSTO_API_KEY", default=None)
         tsto_api_team_name = env("TSTO_API_TEAM_NAME", default=None)
-        timeout = env("CACHE_SECONDS", default=3600)
-        cache.set("tsto_api_key", tsto_api_key, timeout=timeout)
-        cache.set("tsto_api_team_name", tsto_api_team_name, timeout=timeout)
+        cache.set("tsto_api_key", tsto_api_key)
+        cache.set("tsto_api_team_name", tsto_api_team_name)
 
         if tsto_api_key is not None and tsto_api_team_name is not None:
-            response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
-            if response.status_code == 200 and response.json().get("valid", False):
-                tsto_api_available = True
+            try:
+                response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
+                if response.status_code == 200 and response.json().get("valid", False):
+                    tsto_api_available = True
+            except (requests.exceptions.RequestException, ValueError):
+                pass
 
-        cache.set("tsto_api_available", tsto_api_available, timeout=timeout)
+        cache.set("tsto_api_available", tsto_api_available)
 
     return tsto_api_available
 
@@ -120,14 +122,17 @@ def request_auth_code(email):
 
     # Get code from TSTO API if available.
     if check_tsto_api():
-        response = requests.post("https://tsto.app/api/auth/generateCode/",
-            params={"apikey": cache.get("tsto_api_key")},
-            data={"email": email, "username": username, "teamName": cache.get("tsto_api_team_name")}
-        )
-        if response.status_code == 200:
-            content = response.json()
-            if content.get("status") == 200 and content.get("active"):
-                return True
+        try:
+            response = requests.post("https://tsto.app/api/auth/generateCode/",
+                params={"apikey": cache.get("tsto_api_key")},
+                data={"email": email, "username": username, "teamName": cache.get("tsto_api_team_name")}
+            )
+            if response.status_code == 200:
+                content = response.json()
+                if content.get("status") == 200 and content.get("active"):
+                    return True
+        except (requests.exceptions.RequestException, ValueError):
+            pass
 
 
     get_auth_code(BaseUserManager.normalize_email(email), username=username)
@@ -137,18 +142,21 @@ def request_auth_code(email):
 def validate_auth_code(email, code):
 
     if check_tsto_api():
-        response = requests.post("https://tsto.app/api/auth/validateCode/",
-            params={"apikey": cache.get("tsto_api_key")},
-            data={"email": email, "code": code}
-        )
-        if response.status_code == 200:
-            content = response.json()
-            if content.get("status") == 200:
-                if content.get("valid"):
-                    return True
+        try:
+            response = requests.post("https://tsto.app/api/auth/validateCode/",
+                params={"apikey": cache.get("tsto_api_key")},
+                data={"email": email, "code": code}
+            )
+            if response.status_code == 200:
+                content = response.json()
+                if content.get("status") == 200:
+                    if content.get("valid"):
+                        return True
 
-                elif content.get("active"):
-                    return False
+                    elif content.get("active"):
+                        return False
+        except (requests.exceptions.RequestException, ValueError):
+            pass
 
     try:
         auth_code = ProgRegCode.objects.get(email=email, expiry_on__gt=timezone.now())

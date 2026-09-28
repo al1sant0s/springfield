@@ -46,12 +46,11 @@ def save_town(user, land_data):
 
 
 def load_town(user):
-    if user.town:
-        try:
-            return user.town.read()
-        except Exception:
-            pass
-    return starting_town(user).SerializeToString()
+    try:
+        return user.town.read()
+    except (ValueError, OSError):
+        # Expected fallback states: town not set, empty/missing file, or unreadable bytes
+        return starting_town(user).SerializeToString()
 
 
 def send_town_file(user):

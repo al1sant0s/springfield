@@ -26,7 +26,10 @@ def pinEvents(request, device_id):
     else:
         decompressed_data = request.body
 
-    json_data = json.loads(decompressed_data)
+    try:
+        json_data = json.loads(decompressed_data)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON body"}, status=400)
 
     if "didm" in json_data[0] and ("gaid" in json_data[0]["didm"] or "idfv" in json_data[0]["didm"]):
 
@@ -62,7 +65,10 @@ def pinEvents(request, device_id):
 @csrf_exempt
 def logEvent(request, device_id):
 
-    json_data = json.loads(request.body)
+    try:
+        json_data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON body"}, status=400)
     advertising_id = json_data[0].get("advertiserID", json_data[0].get("vendorId"))
 
     if advertising_id is not None:
