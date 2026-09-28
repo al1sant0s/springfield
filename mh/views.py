@@ -3,7 +3,6 @@ import json
 import gzip
 import time
 import uuid
-import sys
 import urllib.parse
 
 from django.http import (
@@ -61,7 +60,7 @@ def send_town_file(user):
         # For local filesystem storage the plain media URL is used.
         # For S3/Garage the presigned URL is stripped of its domain so that
         # Nginx can proxy the signed path+query to S3 with the correct Host header.
-        if not settings.DEBUG and "test" not in sys.argv:
+        if not settings.DEBUG:
             response = HttpResponse(content_type="application/x-protobuf")
             parsed = urllib.parse.urlsplit(user.town.url)
             if parsed.scheme:
@@ -75,7 +74,7 @@ def send_town_file(user):
             response["X-Accel-Redirect"] = redirect
             return response
 
-        # Fallback for development / tests
+        # Fallback for development (DEBUG=True)
         return HttpResponse(user.town.read(), content_type="application/x-protobuf")
 
     return HttpResponse(

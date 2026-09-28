@@ -1,5 +1,4 @@
 import mimetypes
-import sys
 import urllib.parse
 import xml.etree.ElementTree as ET
 from django.conf import settings
@@ -31,7 +30,7 @@ def download_avatar(request, user_id):
     # For local filesystem storage the plain media URL is used.
     # For S3/Garage the presigned URL is stripped of its domain so that
     # Nginx can proxy the signed path+query to S3 with the correct Host header.
-    if not settings.DEBUG and "test" not in sys.argv:
+    if not settings.DEBUG:
         response = HttpResponse(content_type=content_type)
         parsed = urllib.parse.urlsplit(target_user.avatar.url)
         if parsed.scheme:
@@ -45,7 +44,7 @@ def download_avatar(request, user_id):
         response["X-Accel-Redirect"] = redirect
         return response
 
-    # Fallback for development / tests
+    # Fallback for development (DEBUG=True)
     try:
         return HttpResponse(target_user.avatar.read(), content_type=content_type)
     except Exception:

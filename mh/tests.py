@@ -1,6 +1,7 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.core.cache import cache
+from django.core.files.base import ContentFile
 
 from connect.tests import TestDevice
 from mh.models import LandToken
@@ -217,7 +218,12 @@ class ProtolandViewTests(TestCase):
             headers={"Land-Update-Token": str(land_token.land_token)}
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, land_data.SerializeToString())
+        self.assertEqual(response["Content-Type"], "application/x-protobuf")
+        self.assertIn("X-Accel-Redirect", response)
+        self.assertIn(f"{device.token.user.mayhem_id.int}.pb", response["X-Accel-Redirect"])
+        # Verify saved town file on storage
+        device.token.user.refresh_from_db()
+        self.assertEqual(device.token.user.town.read(), land_data.SerializeToString())
 
         # Change some data and post town with unauthorized land token.
         land_token.authorized = False
@@ -238,13 +244,19 @@ class ProtolandViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, ET.tostring(ET.Element("WholeLandUpdateResponse")))
 
-        # Get town again and make sure it was not saved yet.
+        # Get town again and make sure it was not saved yet (returns error xml because token is unauthorized).
         response = self.client.get(
             reverse("mh:protoland", args=(device.token.user.mayhem_id.int,)),
             headers={"Land-Update-Token": str(land_token.land_token)}
         )
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, land_data.SerializeToString(), msg_prefix="Unauthorized land token should not save town")
+        self.assertContains(response, ET.tostring(ET.Element("error", attrib={"code": "409", "type": "INVALID_VALUE", "severity": "DEBUG"})))
+        device.token.user.refresh_from_db()
+        self.assertNotEqual(
+            device.token.user.town.read(),
+            land_data.SerializeToString(),
+            msg="Unauthorized land token should not save town",
+        )
         self.assertTrue(cache.get(str(land_token.land_token)))
 
         # Attempt to post to other user's town by giving their mayhem id.
@@ -277,6 +289,30 @@ class ProtolandViewTests(TestCase):
         # Remove town.
         device.token.user.refresh_from_db()
         device.token.user.town.delete()
+
+    @override_settings(DEBUG=True)
+    def test_protoland_get_town_debug_fallback(self):
+        device = TestDevice()
+        device.register_device_token()
+        land_token = LandToken.objects.create(user=device.token.user, retrieved=True, authorized=True)
+
+        land_data = LandData_pb2.LandMessage()
+        land_data.friendData.dataVersion = 99
+        device.token.user.town = ContentFile(land_data.SerializeToString(), f"{device.token.user.mayhem_id.int}.pb")
+        device.token.user.save(update_fields=["town"])
+
+        try:
+            response = self.client.get(
+                reverse("mh:protoland", args=(device.token.user.mayhem_id.int,)),
+                headers={"Land-Update-Token": str(land_token.land_token)}
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response["Content-Type"], "application/x-protobuf")
+            self.assertNotIn("X-Accel-Redirect", response)
+            self.assertEqual(response.content, land_data.SerializeToString())
+        finally:
+            if device.token.user.town:
+                device.token.user.town.delete(save=False)
 
     def test_load_premium_currency(self):
 
