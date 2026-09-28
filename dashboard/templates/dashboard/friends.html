@@ -52,13 +52,17 @@
 
     <nav id="nav-menu">
       <ul>
-        <a href="#" class="close-btn">✕</a>
-        <ul class="nav-user-info">
-          <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
-          <li class="nav-username">
-            <p>{{ request.user.username }}</p>
-          </li>
-        </ul>
+        <li class="nav-close">
+          <a href="#" class="close-btn">✕</a>
+        </li>
+        <li class="nav-user-info-container">
+          <ul class="nav-user-info">
+            <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
+            <li class="nav-username">
+              <p>{{ request.user.username }}</p>
+            </li>
+          </ul>
+        </li>
         <li>
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
         </li>
@@ -118,24 +122,28 @@
                   <col class="column-username"> 
                   <col class="column-action"> 
                 </colgroup>
-                <tr>
-                  <th scope="col">Avatar</th>
-                  <th scope="col">Username</th>
-                  <th scope="col">Add as a friend?</th>
-                </tr>
-                {% for match in search_matches %}
+                <thead>
                   <tr>
-                    <td class="avatar">
-                      <img src={{ match.avatar_url }} alt="" width="100" height="100">
-                    </td>
-                    <td>
-                      {{ match.username }}
-                    </td>
-                    <td>
-                      <a class="action-button confirm-action" aria-label="Add as a friend" title="Add as a friend" href="{% url 'dashboard:friends_send_request' match.user_id %}">✅</a>
-                    </td>
+                    <th scope="col">Avatar</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Add as a friend?</th>
                   </tr>
-                {% endfor %}
+                </thead>
+                <tbody>
+                  {% for match in search_matches %}
+                    <tr>
+                      <td class="avatar">
+                        <img src="{{ match.avatar_url }}" alt="" width="100" height="100">
+                      </td>
+                      <td>
+                        {{ match.username }}
+                      </td>
+                      <td>
+                        <a class="action-button confirm-action" aria-label="Add as a friend" title="Add as a friend" href="{% url 'dashboard:friends_send_request' match.user_id %}">✅</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
               </table>
             </div>
           {% endif %}
@@ -149,27 +157,31 @@
                   <col class="column-username">
                   <col class="column-action">
                 </colgroup>
-                <tr>
-                  <th scope="col">Avatar</th>
-                  <th scope="col">Username</th>
-                  <th scope="colgroup" colspan="2">Accept friend request?</th>
-                </tr>
-                {% for invitation in received_requests %}
+                <thead>
                   <tr>
-                    <td class="avatar">
-                      <img src={{ invitation.from_user.avatar_url }} alt="" width="100" height="100">
-                    </td>
-                    <td>
-                      {{ invitation.from_user.username }}
-                    </td>
-                    <td>
-                      <a class="action-button confirm-action" aria-label="Accept friend request" title="Accept friend request" href="{% url 'dashboard:friends_accept_request' invitation.from_user.user_id %}">✅</a>
-                    </td>
-                    <td>
-                      <a class="action-button decline-action" aria-label="Reject friend request" title="Reject friend request" href="{% url 'dashboard:friends_reject_request' invitation.from_user.user_id %}">❌</a>
-                    </td>
+                    <th scope="col">Avatar</th>
+                    <th scope="col">Username</th>
+                    <th scope="colgroup" colspan="2">Accept friend request?</th>
                   </tr>
-                {% endfor %}
+                </thead>
+                <tbody>
+                  {% for invitation in received_requests %}
+                    <tr>
+                      <td class="avatar">
+                        <img src="{{ invitation.from_user.avatar_url }}" alt="" width="100" height="100">
+                      </td>
+                      <td>
+                        {{ invitation.from_user.username }}
+                      </td>
+                      <td>
+                        <a class="action-button confirm-action" aria-label="Accept friend request" title="Accept friend request" href="{% url 'dashboard:friends_accept_request' invitation.from_user.user_id %}">✅</a>
+                      </td>
+                      <td>
+                        <a class="action-button decline-action" aria-label="Reject friend request" title="Reject friend request" href="{% url 'dashboard:friends_reject_request' invitation.from_user.user_id %}">❌</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
               </table>
             </div>
           {% endif %}
@@ -183,24 +195,28 @@
                   <col class="column-username">
                   <col class="column-action">
                 </colgroup>
-                <tr>
-                  <th scope="col">Avatar</th>
-                  <th scope="col">Username</th>
-                  <th scope="col">Cancel friend request?</th>
-                </tr>
-                {% for invitation in sent_requests %}
+                <thead>
                   <tr>
-                    <td class="avatar">
-                      <img src={{ invitation.to_user.avatar_url }} alt="" width="100" height="100">
-                    </td>
-                    <td>
-                      {{ invitation.to_user.username }}
-                    </td>
-                    <td>
-                      <a class="action-button decline-action" aria-label="Cancel friend request" title="Cancel friend request" href="{% url 'dashboard:friends_cancel_request' invitation.to_user.user_id %}">❌</a>
-                    </td>
+                    <th scope="col">Avatar</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Cancel friend request?</th>
                   </tr>
-                {% endfor %}
+                </thead>
+                <tbody>
+                  {% for invitation in sent_requests %}
+                    <tr>
+                      <td class="avatar">
+                        <img src="{{ invitation.to_user.avatar_url }}" alt="" width="100" height="100">
+                      </td>
+                      <td>
+                        {{ invitation.to_user.username }}
+                      </td>
+                      <td>
+                        <a class="action-button decline-action" aria-label="Cancel friend request" title="Cancel friend request" href="{% url 'dashboard:friends_cancel_request' invitation.to_user.user_id %}">❌</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
               </table>
             </div>
           {% endif %}
@@ -227,7 +243,7 @@
                   {% for friend in friends %}
                     <tr>
                       <td class="avatar">
-                        <img src={{ friend.avatar_url }} alt="" width="100" height="100">
+                        <img src="{{ friend.avatar_url }}" alt="" width="100" height="100">
                       </td>
                       <td>
                         {{ friend.username }}
@@ -250,7 +266,7 @@
 
     <footer>
       <p>
-        Server created by <a target="blank" href="https://github.com/al1sant0s">@al1sant0s</a>
+        Server created by <a target="_blank" rel="noopener noreferrer" href="https://github.com/al1sant0s">@al1sant0s</a>
       </p>
     </footer>
 
