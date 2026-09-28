@@ -22,11 +22,7 @@ def download_avatar(request, user_id):
     except (ValueError, TypeError):
         raise Http404
 
-    if (
-        not target_user
-        or not target_user.avatar
-        or not default_storage.exists(target_user.avatar.name)
-    ):
+    if not target_user or not target_user.avatar:
         raise Http404
 
     content_type = mimetypes.guess_type(target_user.avatar.name)[0] or "image/png"
@@ -50,7 +46,10 @@ def download_avatar(request, user_id):
         return response
 
     # Fallback for development / tests
-    return HttpResponse(target_user.avatar.read(), content_type=content_type)
+    try:
+        return HttpResponse(target_user.avatar.read(), content_type=content_type)
+    except Exception:
+        raise Http404
 
 
 def get_avatar(request):
