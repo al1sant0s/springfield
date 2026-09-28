@@ -13,7 +13,6 @@ from django.http import (
 )
 from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.core.cache import cache
 from django.db.models import F, Q
 from django.views.decorators.http import require_http_methods, require_POST
@@ -47,11 +46,12 @@ def save_town(user, land_data):
 
 
 def load_town(user):
-    return (
-        user.town.read()
-        if user.town and default_storage.exists(user.town.name)
-        else starting_town(user).SerializeToString()
-    )
+    if user.town:
+        try:
+            return user.town.read()
+        except Exception:
+            pass
+    return starting_town(user).SerializeToString()
 
 
 def send_town_file(user):
