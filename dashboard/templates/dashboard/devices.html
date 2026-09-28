@@ -52,13 +52,17 @@
 
     <nav id="nav-menu">
       <ul>
-        <a href="#" class="close-btn">✕</a>
-        <ul class="nav-user-info">
-          <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
-          <li class="nav-username">
-            <p>{{ request.user.username }}</p>
-          </li>
-        </ul>
+        <li class="nav-close">
+          <a href="#" class="close-btn">✕</a>
+        </li>
+        <li class="nav-user-info-container">
+          <ul class="nav-user-info">
+            <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
+            <li class="nav-username">
+              <p>{{ request.user.username }}</p>
+            </li>
+          </ul>
+        </li>
         <li>
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
         </li>
@@ -137,7 +141,7 @@
 
     <footer>
       <p>
-        Server created by <a target="blank" href="https://github.com/al1sant0s">@al1sant0s</a>
+        Server created by <a target="_blank" rel="noopener noreferrer" href="https://github.com/al1sant0s">@al1sant0s</a>
       </p>
     </footer>
 
