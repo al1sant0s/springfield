@@ -401,26 +401,30 @@ def delete_account(request):
             if status:
                 # Send email notifying about account termination and data removal.
                 apikey = cache.get("tsto_api_key")
-                response = requests.post("https://tsto.app/api/account/wipeNotice",
-                    params={"apikey": apikey},
-                    data={
-                        "emailAddress": request.user.email,
-                        "wipedBy": request.user.username,
-                        "source": cache.get("tsto_api_team_name", default="TSTO API"),
-                        "deletedItems": [
-                            "Device data.",
-                            "Login tokens.",
-                            "Profile picture.",
-                            "Username.",
-                            "Email address.",
-                            "Advertisting ID.",
-                        ],
-                    }
-                )
+                try:
+                    response = requests.post("https://tsto.app/api/account/wipeNotice",
+                        params={"apikey": apikey},
+                        data={
+                            "emailAddress": request.user.email,
+                            "wipedBy": request.user.username,
+                            "source": cache.get("tsto_api_team_name", default="TSTO API"),
+                            "deletedItems": [
+                                "Device data.",
+                                "Login tokens.",
+                                "Profile picture.",
+                                "Username.",
+                                "Email address.",
+                                "Advertisting ID.",
+                            ],
+                        }
+                    )
+                    confirmed = response.status_code == 200 and response.json().get("success")
+                except (requests.exceptions.RequestException, ValueError):
+                    confirmed = False
 
                 # Delete only if the API confirms the user was notified via email.
                 # If the API is not configured, ignore the condition and delete the user anyways.
-                if not apikey or (response.status_code == 200 and response.json().get("success")):
+                if not apikey or confirmed:
                     request.user.delete()
                     logout(request)
                     return HttpResponseRedirect(reverse("dashboard:login"))
