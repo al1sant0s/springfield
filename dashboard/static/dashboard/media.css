@@ -1,0 +1,144 @@
+@media screen and (width < 1920px) {
+
+  #nav-wide-menu {
+    font-size: 1rem;
+  }
+
+  .nav-item {
+    padding: 20px 40px;
+  }
+
+}
+
+@media screen and (width < 1366px) {
+
+  #nav-wide-menu {
+    display: none;
+  }
+
+  #nav-menu {
+    display: block;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    left: 0;
+  }
+
+  #nav-menu {
+    position: fixed;
+    top: 0;
+    left: -450px;
+    height: 100vh;
+    transition: left 0.3s ease;
+    z-index: 90;
+    padding: 60px 0 0px 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100vh;
+    box-sizing: border-box;
+  }
+
+  #nav-menu ul {
+    padding: 0; /* Reset default padding from all internal lists */
+  }
+
+  #nav-menu > ul {
+    padding-bottom: 60px;
+  }
+
+  #nav-menu .nav-close,
+  #nav-menu .nav-user-info-container {
+    border: none;
+  }
+
+  #nav-menu a {
+    text-decoration: none;
+  }
+
+  #nav-menu:target {
+    left: 0;
+    border-right: 5px ridge #b3b3b3;
+  }
+
+  .hamburger {
+    position: absolute;
+    top: 30px;
+    left: 20px;
+    width: 30px;
+    height: 25px;
+    cursor: pointer;
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-decoration: none;
+  }
+
+  .hamburger span {
+    display: block;
+    height: 3px;
+    width: 100%;
+    background-color: goldenrod;
+  }
+
+
+  .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: goldenrod;
+    text-decoration: none;
+    font-size: 2rem;
+  }
+
+  .nav-user-info {
+    display: flex;
+    border: 5px outset whitesmoke;
+  }
+
+  .nav-item {
+    text-align: center;
+  }
+
+  .nav-profile-pic {
+    width: 80px;
+    border: 3px solid gray;
+  }
+
+  article {
+    width: 100%;
+  }
+
+/*  section {
+    padding: 20px;
+    box-sizing: border-box;
+    margin: 20px auto;
+  }*/
+
+}
+
+@media screen and (width < 712px) and (orientation: portrait) {
+
+  html {
+    font-size: 12pt;
+  }
+
+  section {
+  }
+
+  #reset-password {
+    text-align: center;
+  }
+
+  #reset-password a{
+    font-size: 1.2rem;
+  }
+
+  .errorlist {
+    font-size: 0.95rem;
+    max-width: 150px;
+    text-align: justify;
+  }
+
+}

@@ -72,6 +72,10 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "axes",
     "django_cleanup.apps.CleanupConfig",
+    "django_otp",
+    "django_otp.plugins.otp_static",
+    "django_otp.plugins.otp_totp",
+    "two_factor",
 ]
 
 if CACHEOPS_REDIS:
@@ -85,6 +89,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "axes.middleware.AxesMiddleware",
@@ -96,7 +101,7 @@ WSGI_APPLICATION = "springfield.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -112,6 +117,11 @@ TEMPLATES = [
 # ==============================================================================
 # 4. AUTHENTICATION & USER MANAGEMENT
 # ==============================================================================
+
+LOGIN_URL = "dashboard:login"
+LOGIN_REDIRECT_URL = "dashboard:index"
+LOGOUT_REDIRECT_URL = "dashboard:login"
+TWO_FACTOR_PATCH_ADMIN = False
 
 AUTH_USER_MODEL = "connect.UserId"
 

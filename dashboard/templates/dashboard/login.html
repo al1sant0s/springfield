@@ -1,65 +1,46 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log in | User dashboard</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪪</text></svg>">
-    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
-  </head>
-  <body>
+{% extends "base.html" %}
 
-    <header>
-      <h1 class="corben-bold">User Dashboard</h1>
-    </header>
+{% block title %}Log in | User dashboard{% endblock title %}
 
-    <main>
-      <article>
-        <section>
-          <h2>Login details</h2>
-          {% if messages or form.errors %}
-            <ul class="messages">
-              {% for message in messages %}
-                <li class="{{ message.tags }}">{{ message }}</li>
-              {% endfor %}
-              {% for error in form.non_field_errors %}
-                <li class="warning">{{ error }}</li>
-              {% endfor %}
-              {% for field in form %}
-                {% for error in field.errors %}
-                  <li class="warning">{{ error }}</li>
-                {% endfor %}
-              {% endfor %}
-            </ul>
-          {% endif %}
-          <hr>
-          <form action="{% url 'dashboard:login' %}" method="post">
-            {% csrf_token %}
-            {{ form }}
-            <div id="reset-password" class="links">
-              <a href="{% url 'dashboard:forgot_password' %}">Forgot password?</a>
-            </div>
-            <div>
-              <button type="submit" class="submit">Log in</button>
-            </div>
-          </form>
-          <hr>
-          <div class="bottom-link">
-            <a href="{% url 'dashboard:register' %}">Register an account</a>
-          </div>
-        </section>
-      </article>
-    </main>
+{% block favicon_emoji %}🪪{% endblock favicon_emoji %}
 
-    <footer>
-      <p>
-        Server created by <a target="_blank" rel="noopener noreferrer" href="https://github.com/al1sant0s">@al1sant0s</a>
-      </p>
-    </footer>
+{% block hamburger %}{% endblock hamburger %}
 
-  </body>
-</html>
+{% block header_title %}User Dashboard{% endblock header_title %}
+
+{% block nav %}{% endblock nav %}
+
+{% block content %}
+<h2>Login details</h2>
+{% if messages or form.errors %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+    {% for error in form.non_field_errors %}
+      <li class="warning">{{ error }}</li>
+    {% endfor %}
+    {% for field in form %}
+      {% for error in field.errors %}
+        <li class="warning">{{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+{% endif %}
+<hr>
+<form action="" method="post">
+  {% csrf_token %}
+  {{ wizard.management_form }}
+  {{ wizard.form.as_p }}
+  <div id="reset-password">
+    <a href="{% url 'dashboard:forgot_password' %}">Forgot password?</a>
+  </div>
+  <div>
+    <button type="submit" class="btn">Log in</button>
+  </div>
+</form>
+<hr>
+<div class="bottom-link">
+  <a href="{% url 'dashboard:register' %}">Register an account</a>
+</div>
+{% endblock content %}

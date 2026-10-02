@@ -1,17 +1,20 @@
 /* Summary
  *
- * General-setup
+ * Head
  * Fonts
- *
+ * Messages-and-alerts
  * Header-and-navigation-menu
  * Main-content-general-style
- * Messages-and-alerts
  * Footer
  */
 
 
 
-/* General-setup */
+/* Head */
+
+html {
+  font-size: 16pt;
+}
 
 body {
   font-family: "Sriracha", cursive;
@@ -28,7 +31,6 @@ button {
 .highlight {
   display: block;
   color: #9d1616;
-  font-size: 1.19rem;
   text-align: center;
   border: 2px dashed #80570a;
   border-radius: 10px;
@@ -39,6 +41,36 @@ button {
   font-weight: 700;
   text-decoration: underline;
   color: #6e0760;
+}
+
+.btn {
+  color: aliceblue;
+  background: linear-gradient(#87397c, 45%, coral);
+  display: inline-block;
+  margin-top: 15px;
+  margin-left: 5px;
+  padding: 15px 0;
+  width: 99%;
+  border: 2px solid indianred;
+  border-radius: 3px;
+  font-size: 1.1rem;
+  text-decoration: none;
+  text-align: center;
+}
+
+.btn:hover {
+  color: gold;
+  text-shadow: 2px 2px 2px chocolate;
+}
+
+.btn:active {
+  background: linear-gradient(#6f005f, 45%, #fd5353);
+}
+
+.btn-center {
+  padding: 10px 20px;
+  margin: 20px auto 10px auto;
+  width: 100%;
 }
 
 /* Fonts */
@@ -60,15 +92,59 @@ button {
   font-optical-sizing: auto;
   font-weight: 500;
   font-style: normal;
-  font-size: 1.3rem;
+  font-size: 0.975rem;
 }
 
-.bungee-inline-regular, section button {
+.bungee-inline-regular, .btn {
   font-family: "Bungee Inline", sans-serif;
   font-weight: 400;
   font-style: normal;
 }
 
+/* Messages-and-alerts */
+
+.messages {
+  padding: 0;
+  padding-left: 20px;
+  margin: 10px auto;
+}
+
+.messages li {
+  box-sizing: border-box;
+  text-align: left;
+  margin: 4px 0;
+}
+
+form .errorlist {
+  display: none;
+}
+
+.errorlist {
+  list-style: none;
+  color: blue;
+  width: 350px;
+}
+
+.errorlist li {
+  box-sizing: border-box;
+}
+
+
+li.success {
+  color: green;
+}
+
+li.error {
+  color: red;
+}
+
+li.info {
+  color: #824900;
+}
+
+li.warning {
+  color: blue;
+}
 
 /* Header-and-navigation-menu */
 
@@ -86,38 +162,45 @@ header h1 {
 }
 
 nav {
-  color: white;
   background-color: royalblue;
   font-weight: bold;
   text-shadow: 2px 2px 7px black;
 }
 
+#nav-menu {
+  display: none;
+}
+
 #nav-wide-menu {
   border-bottom: 10px ridge cornflowerblue;
+  font-size: 1.2rem;
 }
 
 #nav-wide-menu ul {
-  width: 80%;
   margin: 0 auto;
   justify-content: center;
   display: flex;
-  min-height: 80px;
+  height: 100px;
 }
 
 nav li {
-  list-style: none;
   border: 5px outset whitesmoke;
+  display: flex;
 }
 
 .nav-item {
   box-sizing: border-box;
-  display: inline-block;
   width: 100%;
   height: 100%;
-  padding: 20px 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0px 70px;
   color: white;
   background-color: #4f8cc2;
   text-decoration: none;
+  white-space: nowrap;
+  font-size: inherit;
 }
 
 .nav-item:hover {
@@ -130,9 +213,9 @@ nav li {
 }
 
 .logout, .logout button {
+  width: 100%;
   border: none;
   background-color: #ff1717;
-  height: 100%;
 }
 
 .logout button {
@@ -151,33 +234,23 @@ nav li {
 
 .nav-profile-pic {
   box-sizing: border-box;
-  min-width: 80px;
-  min-height: 80px;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  display: block;
+  background-color: #535ba9;
   background-size: cover;
-  display: inline;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .nav-username {
   color: gold;
   box-sizing: border-box;
   border: none;
-  padding: 10px 25px;
-  min-height: 80px;
-}
-
-#nav-menu {
-  position: fixed;
-  top: 0;
-  left: -250px;
-  width: 250px;
-  height: 100vh;
-  transition: left 0.3s ease;
-  z-index: 90;
-  padding: 60px 0 0px 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 100vh;
-  box-sizing: border-box;
+  align-items: center;
+  padding: 0 40px;
+  font-size: 1rem;
 }
 
 /* Main-content-general-style */
@@ -204,13 +277,13 @@ section {
   border-radius: 0px;
   padding: 30px;
   margin: 5% auto 20px auto;
-  min-width: 450px;
-  width: fit-content;
-  max-width: 500px;
+  width: 100%;
+  max-width: 760px;
+  box-sizing: border-box;
   background: linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
-section h2, h3 {
+section h1, section h2, section h3 {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
@@ -220,7 +293,6 @@ section p {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
-  font-size: 1.09rem;
 }
 
 section hr {
@@ -228,12 +300,21 @@ section hr {
   margin-bottom: 20px;
 }
 
-section form div {
-  text-align: right;
-  margin-bottom: 1rem;
+section form div,
+section form p {
+  text-align: center;
+  margin-top: 1rem;
+  padding: 0;
 }
 
-section form > div label, fieldset {
+section form > div label {
+  text-align: left;
+  color: maroon;
+  border-color: firebrick;
+}
+
+fieldset {
+  text-align: center;
   color: maroon;
   border-color: firebrick;
 }
@@ -241,7 +322,7 @@ section form > div label, fieldset {
 section form label {
   font-weight: bold;
   min-width: 80px;
-  padding: 5px;
+  display: block;
 }
 
 section form input {
@@ -249,31 +330,19 @@ section form input {
   border: 2px solid #535ba9;
   border-radius: 10px;
   padding: 5px;
-  width: 24rem;
+  width: 97.5%;
   color: maroon;
   font-weight: 500;
+  font-size: 0.875rem;
 }
 
-section button.submit {
-  color: aliceblue;
-  background: linear-gradient(#87397c, 45%, coral);
-  padding: 7px 30px;
-  border: 2px solid indianred;
-  border-radius: 3px;
-  margin-top: 15px;
+#reset-password {
+  margin-top: 0;
+  text-align: right;
 }
 
-section button.submit:hover {
-  color: gold;
-  background: linear-gradient(#87397c, 45%, coral);
-}
-
-section button.submit:active {
-  background: linear-gradient(#6f005f, 45%, #fd5353);
-}
-
-section div#reset-password {
-  font-size: 0.95rem;
+#reset-password a{
+  font-size: 0.9em;
 }
 
 section div.bottom-link {
@@ -282,80 +351,11 @@ section div.bottom-link {
 
 section a {
   color: darkslateblue;
+  font-size: 1.2rem;
 }
 
 section a:hover {
   color: white;
-}
-
-fieldset {
-  text-align: center;
-}
-
-.avatar {
-  text-align: center;
-}
-
-.avatar figcaption {
-  color: maroon;
-}
-
-.avatar img {
-  background-color: #e79563;
-  border: 5px solid rebeccapurple;
-  border-radius: 15px;
-}
-
-.caption-paragraph {
-  text-align: center;
-  color: rebeccapurple;
-  font-style: bold;
-}
-
-/* Messages-and-alerts */
-
-.messages {
-  padding: 0;
-  padding-left: 20px;
-  margin: 10px auto;
-}
-
-.messages li {
-  box-sizing: border-box;
-  text-align: left;
-  margin: 4px 0;
-}
-
-form .errorlist {
-  display: none;
-}
-
-.errorlist {
-  list-style: none;
-  color: blue;
-  font-size: 1.1em;
-  width: 350px;
-}
-
-.errorlist li {
-  box-sizing: border-box;
-}
-
-
-li.success {
-  color: green;
-}
-
-li.error {
-  color: red;
-}
-
-li.info {
-  color: #824900;
-}
-
-li.warning {
-  color: blue;
 }
 
 /* Footer */
@@ -369,131 +369,4 @@ footer {
 footer p {
   font-size: 1.2rem;
   text-align: center;
-}
-
-@media screen and (width < 1920px) {
-
-  #nav-wide-menu li {
-    line-height: 30px;
-  }
-
-  .nav-item {
-    padding: 20px 40px;
-  }
-
-  .exo-2-generic {
-    font-size: 1.15rem;
-  }
-
-}
-
-@media screen and (width < 1366px) {
-
-  header {
-    position: sticky;
-    top: 0;
-    left: 0;
-  }
-
-  .hamburger {
-    position: absolute;
-    top: 30px;
-    left: 20px;
-    width: 30px;
-    height: 25px;
-    cursor: pointer;
-    display: inline-flex;
-    flex-direction: column;
-    justify-content: space-between;
-    text-decoration: none;
-  }
-
-  .hamburger span {
-    display: block;
-    height: 3px;
-    width: 100%;
-    background-color: goldenrod;
-  }
-
-  #nav-wide-menu {
-    display: none;
-  }
-
-  #nav-menu ul {
-    padding: 0; /* Reset default padding from all internal lists */
-  }
-
-  #nav-menu > ul {
-    padding-bottom: 60px;
-  }
-
-  #nav-menu .nav-close,
-  #nav-menu .nav-user-info-container {
-    border: none;
-  }
-
-  #nav-menu a {
-    padding: 15px 25px;
-    text-decoration: none;
-  }
-
-  #nav-menu:target {
-    left: 0;
-    border-right: 5px ridge #b3b3b3;
-  }
-
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    color: goldenrod;
-    text-decoration: none;
-    font-size: 20px;
-  }
-
-  .nav-user-info {
-    display: flex;
-    border: 5px outset whitesmoke;
-  }
-
-  .nav-item {
-    text-align: center;
-  }
-
-  .nav-profile-pic {
-    border: 3px solid gray;
-  }
-
-  article {
-    width: 100%;
-  }
-
-  section, .wide-section {
-    min-width: auto;
-    width: 80%;
-  }
-
-}
-
-
-@media screen and (width < 720px) {
-
-  section form input {
-    width: 12rem;
-  }
-
-}
-
-@media screen and (width < 720px) and (orientation: portrait) {
-
-  section form div {
-    text-align: center;
-  }
-
-  .errorlist {
-    font-size: 0.95rem;
-    max-width: 150px;
-    text-align: justify;
-  }
-
 }

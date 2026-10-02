@@ -1,9 +1,9 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.contrib import messages
 from django.contrib.auth import logout
-from django.contrib.auth.views import LoginView, login_required
+from django.contrib.auth.views import login_required
 from django.contrib.auth.models import BaseUserManager
 from django.db.models.functions import Lower
 
@@ -28,20 +28,6 @@ from .forms import SearchUserForm
 from .forms import DeleteUserForm
 
 from protofiles import LandData_pb2
-
-
-def login(request):
-    if request.user.is_authenticated:
-        return HttpResponseRedirect(reverse("dashboard:index"))
-
-    else:
-        if request.method == "GET":
-            request.session["next"] = request.GET.get("next", "dashboard:index")
-
-        return LoginView.as_view(
-            template_name="dashboard/login.html",
-            next_page=request.session.get("next", "dashboard:index"),
-        )(request)
 
 
 def register(request):
@@ -174,7 +160,7 @@ def reset_password(request):
     )
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def index(request):
     if request.method == "POST":
         if "town-form" in request.POST:
@@ -250,7 +236,7 @@ def index(request):
     )
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def profile(request):
     if request.method == "POST":
         profile_form = UserProfileForm(
@@ -276,7 +262,7 @@ def profile(request):
     return render(request, "dashboard/profile.html", {"profile_form": profile_form})
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def friends(request):
     if request.method == "POST":
         search_form = SearchUserForm(request.POST)
@@ -316,7 +302,7 @@ def friends(request):
     return render(request, "dashboard/friends.html", context)
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def friends_send_request(request, to_user_id):
     from_user = request.user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
@@ -325,7 +311,7 @@ def friends_send_request(request, to_user_id):
     )
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def friends_cancel_request(request, to_user_id):
     from_user = request.user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
@@ -334,7 +320,7 @@ def friends_cancel_request(request, to_user_id):
     )
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def friends_accept_request(request, from_user_id):
     from_user = get_object_or_404(UserId, user_id=from_user_id)
     to_user = request.user
@@ -343,7 +329,7 @@ def friends_accept_request(request, from_user_id):
     )
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def friends_reject_request(request, from_user_id):
     from_user = get_object_or_404(UserId, user_id=from_user_id)
     to_user = request.user
@@ -352,7 +338,7 @@ def friends_reject_request(request, from_user_id):
     )
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def friends_remove(request, to_user_id):
     from_user = request.user
     to_user = get_object_or_404(UserId, user_id=to_user_id)
@@ -361,7 +347,7 @@ def friends_remove(request, to_user_id):
     )
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def devices(request):
     user_devices = [
         {
@@ -378,7 +364,7 @@ def devices(request):
     return render(request, "dashboard/devices.html", {"devices": user_devices})
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def remove_device(request, advertising_id):
     get_object_or_404(
         DeviceToken, user=request.user, advertising_id=advertising_id
@@ -386,7 +372,7 @@ def remove_device(request, advertising_id):
     return HttpResponseRedirect(reverse("dashboard:devices"))
 
 
-@login_required(login_url="dashboard:login")
+@login_required
 def delete_account(request):
     if request.method == "POST":
         delete_user_form = DeleteUserForm(request.POST)

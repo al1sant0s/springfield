@@ -1,158 +1,67 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Town | User dashboard</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏡</text></svg>">
-    <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
-  </head>
-  <body>
+{% extends "base.html" %}
 
-    <header>
-      <a href="#nav-menu" class="hamburger">
-          <span></span>
-          <span></span>
-          <span></span>
-      </a>
-      <h1 class="corben-bold">User Town</h1>
-    </header>
+{% block title %}Town | User dashboard{% endblock title %}
 
-    <nav id="nav-wide-menu">
-      <ul>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
-        </li>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">Profile 👤</a>
-        </li>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends 👥</a>
-        </li>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
-        </li>
-        <li>
-          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
-            {% csrf_token %}
-              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
-          </form>
-        </li>
-        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
-        <li class="nav-username">
-          <p>{{ request.user.username }}</p>
-        </li>
-      </ul>
-    </nav>
+{% block favicon_emoji %}🏡{% endblock favicon_emoji %}
 
-    <nav id="nav-menu">
-      <ul>
-        <li class="nav-close">
-          <a href="#" class="close-btn">✕</a>
-        </li>
-        <li class="nav-user-info-container">
-          <ul class="nav-user-info">
-            <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
-            <li class="nav-username">
-              <p>{{ request.user.username }}</p>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
-        </li>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:profile' %}">Profile 👤</a>
-        </li>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:friends' %}">Friends 👥</a>
-        </li>
-        <li>
-          <a class="nav-item exo-2-generic" href="{% url 'dashboard:devices' %}">Devices 📱</a>
-        </li>
-        <li>
-          <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
-            {% csrf_token %}
-              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
-          </form>
-        </li>
-      </ul>
-    </nav>
+{% block header_title %}User Town{% endblock header_title %}
 
-
-    <main>
-      <article>
-        <section>
-          <h2>Upload town file</h2>
-          {% if messages or town_form.errors %}
-            <ul class="messages">
-              {% for message in messages %}
-                {% if "town" in message.tags %}
-                  <li class="{{ message.tags }}">{{ message }}</li>
-                {% endif %}
-              {% endfor %}
-              {% for error in town_form.non_field_errors %}
-                <li class="error">{{ error }}</li>
-              {% endfor %}
-              {% for field in town_form %}
-                {% for error in field.errors %}
-                  <li class="error">{{ error }}</li>
-                {% endfor %}
-              {% endfor %}
-            </ul>
-          {% endif %}
-          <hr>
-          <form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
-            {% csrf_token %}
-            {{ town_form }}
-              {% if request.user.town %}
-                <div class="bottom-link">
-                  <a href="{{ request.user.town.url }}" download>Download your town file</a>
-                </div>
-              {% endif %}
-            <div>
-              <button type="submit" class="submit" name="town-form">Upload</button>
-            </div>
-          </form>
-          <h2>- Edit currencies +</h2>
-            {% if messages or currency_form.errors %}
-              <ul class="messages">
-                {% for message in messages %}
-                  {% if "currency" in message.tags %}
-                    <li class="{{ message.tags }}">{{ message }}</li>
-                  {% endif %}
-                {% endfor %}
-                {% for error in currency_form.non_field_errors %}
-                  <li class="error">{{ error }}</li>
-                {% endfor %}
-                {% for field in currency_form %}
-                  {% for error in field.errors %}
-                    <li class="error">{{ error }}</li>
-                  {% endfor %}
-                {% endfor %}
-              </ul>
-            {% endif %}
-          <hr>
-          <form action="{% url 'dashboard:index' %}" method="post">
-            {% csrf_token %}
-            {{ currency_form }}
-            <div>
-              <button type="submit" class="submit" name="currency-form">Save</button>
-            </div>
-          </form>
-        </section>
-      </article>
-    </main>
-
-    <footer>
-      <p>
-        Server created by <a target="_blank" rel="noopener noreferrer" href="https://github.com/al1sant0s">@al1sant0s</a>
-      </p>
-    </footer>
-
-  </body>
-</html>
+{% block content %}
+<h2>Upload town file</h2>
+{% if messages or town_form.errors %}
+  <ul class="messages">
+    {% for message in messages %}
+      {% if "town" in message.tags %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+      {% endif %}
+    {% endfor %}
+    {% for error in town_form.non_field_errors %}
+      <li class="error">{{ error }}</li>
+    {% endfor %}
+    {% for field in town_form %}
+      {% for error in field.errors %}
+        <li class="error">{{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+{% endif %}
+<hr>
+<form enctype="multipart/form-data" action="{% url 'dashboard:index' %}" method="post">
+  {% csrf_token %}
+  {{ town_form }}
+    {% if request.user.town %}
+      <div class="bottom-link">
+        <a href="{{ request.user.town.url }}" download>Download your town file</a>
+      </div>
+    {% endif %}
+  <div>
+    <button type="submit" class="btn" name="town-form">Upload</button>
+  </div>
+</form>
+<h2>- Edit currencies +</h2>
+{% if messages or currency_form.errors %}
+  <ul class="messages">
+    {% for message in messages %}
+      {% if "currency" in message.tags %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+      {% endif %}
+    {% endfor %}
+    {% for error in currency_form.non_field_errors %}
+      <li class="error">{{ error }}</li>
+    {% endfor %}
+    {% for field in currency_form %}
+      {% for error in field.errors %}
+        <li class="error">{{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+{% endif %}
+<hr>
+<form action="{% url 'dashboard:index' %}" method="post">
+  {% csrf_token %}
+  {{ currency_form }}
+  <div>
+    <button type="submit" class="btn" name="currency-form">Save</button>
+  </div>
+</form>
+{% endblock content %}
