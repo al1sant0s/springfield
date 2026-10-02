@@ -19,6 +19,7 @@ dependencies:
   - django-cleanup
   - pip
   - pip:
+      - django-two-factor-auth
       - django-hCaptcha
       - django-cacheops
       - django-render-block

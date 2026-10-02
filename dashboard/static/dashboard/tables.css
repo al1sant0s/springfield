@@ -1,25 +1,6 @@
 .wide-section {
   width: 100%;
-  max-width: 65%;
-}
-
-.wide-section label {
-  font-size: 1.25rem;
-}
-
-.wide-section input {
-  box-sizing: border-box;
-  width: 100%;
-  font-size: 1.05rem;
-  padding: 12px 0 12px 25px;
-}
-
-.wide-section form div {
-  text-align: left;
-}
-
-.wide-section form div:has(button) {
-  text-align: right;
+  max-width: 1024px;
 }
 
 .tableFixHead {
@@ -31,14 +12,13 @@
 table {
   border-collapse: collapse;
   border: 3px solid #c8c8c8;
-  letter-spacing: 1px;
   width: 100%;
 }
 
 td, th {
   border: 1px solid #bebebe;
   padding: 10px 20px;
-  font-size: 1.15em;
+  font-size: 1rem;
 }
 
 td.avatar img {
@@ -87,30 +67,10 @@ table div input {
   font-size: 1.35em;
 }
 
-@media screen and (width < 1366px) {
-  .wide-section {
-    max-width: 85%;
-  }
-}
-
-@media screen and (width < 720px) {
-
-  .wide-section input {
-    padding: 5px 10px;
-    font-size: 1rem;
-  }
-
-  .wide-section form div:has(button) {
-    text-align: center;
-  }
-
-  td.avatar img {
-    border-radius: 5px;
-  }
+@media screen and (width < 712px) {
 
   th, td {
     padding: 5px;
-    font-size: 0.79rem;
   }
 
   td.avatar img {
@@ -124,14 +84,6 @@ table div input {
 
   .action-button {
     padding: 0;
-  }
-
-  .confirm-action {
-    font-size: 1em;
-  }
-
-  .decline-action {
-    font-size: 1em;
   }
 
   .long-table * {

@@ -63,7 +63,6 @@ Among all its features, it includes support for:
 - [🩺 Run tests](#user-content--run-tests)
 - [⚙️ Environment variables](#user-content-️-environment-variables)
 
-
 ## 📋 Requirements
 
 The server can be set up in a plethora of ways according to your preferences, but it relies on some external services to work.
@@ -98,6 +97,7 @@ To make this guide easier to follow we will focus on Docker Compose. Let's start
 Create the following compose file somewhere in your file system. If necessary adjust the ports field.
 
 **`compose.yaml`**
+
 ```yaml
 services:
 
@@ -120,32 +120,32 @@ A simple nginx configuration for a local server, which listens on port 8080, may
 
 ```nginx
 server {
-	listen 8080;
-	server_name localhost;
-	client_max_body_size 10M;
+ listen 8080;
+ server_name localhost;
+ client_max_body_size 10M;
 
-	location /static/ {
-		alias					/data/static/;
-	}
+ location /static/ {
+  alias     /data/static/;
+ }
 
-	# Internal location used by X-Accel-Redirect to stream local media files
-	# (avatars and towns) directly from disk without buffering through Python workers.
-	location /media/ {
-		internal;
-		alias					/data/media/;
-	}
+ # Internal location used by X-Accel-Redirect to stream local media files
+ # (avatars and towns) directly from disk without buffering through Python workers.
+ location /media/ {
+  internal;
+  alias     /data/media/;
+ }
 
-	location /dlc/ {
-		alias					/data/dlc/;
-	}
+ location /dlc/ {
+  alias     /data/dlc/;
+ }
 
-	location / {
-		proxy_pass				http://localhost:8000;
-		proxy_set_header		Host $http_host;
-		proxy_set_header		X-Real-IP $remote_addr;
-		proxy_set_header		X-Forwarded-For $proxy_add_x_forwarded_for;
-		proxy_set_header		X-Forwarded-Proto $scheme;
-	}
+ location / {
+  proxy_pass    http://localhost:8000;
+  proxy_set_header  Host $http_host;
+  proxy_set_header  X-Real-IP $remote_addr;
+  proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header  X-Forwarded-Proto $scheme;
+ }
 }
 ```
 
@@ -154,6 +154,7 @@ This configuration specifies that static files are served from `/data/static/`, 
 Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file, with the following minimal settings:
 
 **`.env`**
+
 ```env
 # Server settings
 DEBUG=false
@@ -169,10 +170,10 @@ MEDIA_ROOT=/app/media/
 
 A few things to consider:
 
-* Pick a good **SECRET_KEY**.
-* `SERVER_BASE_URL` and `ALLOWED_HOSTS`: Reflect your nginx host and port.
-* `CSRF_TRUSTED_ORIGINS`: Include the full scheme, host, and port (e.g. `http://192.168.1.115:8080,http://localhost:8080`) for every origin you use to access the dashboard, to prevent CSRF 403 errors on form submissions.
-* `STATIC_ROOT` and `MEDIA_ROOT`: Internal container paths where static files and media (avatars, towns) reside. These correspond to the bind mounts defined in `compose.yaml`.
+- Pick a good **SECRET_KEY**.
+- `SERVER_BASE_URL` and `ALLOWED_HOSTS`: Reflect your nginx host and port.
+- `CSRF_TRUSTED_ORIGINS`: Include the full scheme, host, and port (e.g. `http://192.168.1.115:8080,http://localhost:8080`) for every origin you use to access the dashboard, to prevent CSRF 403 errors on form submissions.
+- `STATIC_ROOT` and `MEDIA_ROOT`: Internal container paths where static files and media (avatars, towns) reside. These correspond to the bind mounts defined in `compose.yaml`.
 
 > For a full detailed list of the environment variables, jump to the [environment variables](user-content-️-environment-variables) section.
 
@@ -239,6 +240,7 @@ should definitely check their documentation too.
 With that said, let's update our compose file like so.
 
 **`compose.yaml`**
+
 ```yaml
 services:
 
@@ -333,6 +335,7 @@ volumes:
 For these new services to run, we need to expand our .env file. Remember, you must update each environment variable with your own values.
 
 **`.env`**
+
 ```env
 # Server settings
 DEBUG=false
@@ -384,52 +387,51 @@ Moving on to the TSTO API configuration: if you have obtained access to the TSTO
 In the database section, `DATABASE_URL` provides the PostgreSQL connection string matching the credentials defined for the Postgres container.
 
 The last part configures S3-compatible storage (such as Garage):
-* `AWS_ENDPOINT_URL` specifies the S3 endpoint URL. This value is also used by Django to generate presigned URLs for avatars and towns. Therefore, `AWS_ENDPOINT_URL` should point to your host's externally reachable IP/domain and port (e.g. `http://192.168.1.115:3900`) — this is the host that gets embedded in the SigV4 signature, and **Nginx must forward requests to S3 using this same host** so that the signature validates.
-* `STORAGE_DEFAULT` defines the backend for default storage (towns and avatars) along with the bucket name (`tsto-bucket`).
-* `STORAGE_STATICFILES` defines S3 storage for static files (`static-bucket`). Extra options like `custom_domain` and `location` can be passed as URL query parameters. For static files, the bucket is typically exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/) so user web browsers can fetch static assets directly.
+- `AWS_ENDPOINT_URL` specifies the S3 endpoint URL. This value is also used by Django to generate presigned URLs for avatars and towns. Therefore, `AWS_ENDPOINT_URL` should point to your host's externally reachable IP/domain and port (e.g. `http://192.168.1.115:3900`) — this is the host that gets embedded in the SigV4 signature, and **Nginx must forward requests to S3 using this same host** so that the signature validates.
+- `STORAGE_DEFAULT` defines the backend for default storage (towns and avatars) along with the bucket name (`tsto-bucket`).
+- `STORAGE_STATICFILES` defines S3 storage for static files (`static-bucket`). Extra options like `custom_domain` and `location` can be passed as URL query parameters. For static files, the bucket is typically exposed as a [public website](https://garagehq.deuxfleurs.fr/documentation/cookbook/exposing-websites/) so user web browsers can fetch static assets directly.
 
 To reflect our new storage configuration, we update our nginx settings:
 
 ```nginx
 server {
-	listen 8080;
-	server_name localhost;
-	client_max_body_size 10M;
+ listen 8080;
+ server_name localhost;
+ client_max_body_size 10M;
 
-	location /static/ {
-		proxy_pass				http://localhost:3902;
-		proxy_set_header		Host static-bucket.web.garage.localhost;
-	}
+ location /static/ {
+  proxy_pass    http://localhost:3902;
+  proxy_set_header  Host static-bucket.web.garage.localhost;
+ }
 
-	# Internal proxy to stream S3/Garage media files (avatars and towns) via X-Accel-Redirect.
-	# Django strips the domain from the presigned URL and sets X-Accel-Redirect to the signed
-	# path+query so Nginx can proxy it here. The Host header MUST match the host embedded in
-	# AWS_ENDPOINT_URL (e.g. 192.168.1.115:3900) so that Garage validates the SigV4 signature.
-	# proxy_hide_header suppresses Garage's Content-Type (application/octet-stream) so that
-	# Django's content type (application/x-protobuf or image/png) reaches the client instead.
-	location /tsto-bucket/ {
-		internal;
-		proxy_pass				http://localhost:3900;
-		proxy_set_header		Host 192.168.1.115:3900;
-		proxy_hide_header		Content-Type;
-	}
+ # Internal proxy to stream S3/Garage media files (avatars and towns) via X-Accel-Redirect.
+ # Django strips the domain from the presigned URL and sets X-Accel-Redirect to the signed
+ # path+query so Nginx can proxy it here. The Host header MUST match the host embedded in
+ # AWS_ENDPOINT_URL (e.g. 192.168.1.115:3900) so that Garage validates the SigV4 signature.
+ # proxy_hide_header suppresses Garage's Content-Type (application/octet-stream) so that
+ # Django's content type (application/x-protobuf or image/png) reaches the client instead.
+ location /tsto-bucket/ {
+  internal;
+  proxy_pass    http://localhost:3900;
+  proxy_set_header  Host 192.168.1.115:3900;
+  proxy_hide_header  Content-Type;
+ }
 
-	location /dlc/ {
-		alias					/data/dlc/;
-	}
+ location /dlc/ {
+  alias     /data/dlc/;
+ }
 
-	location / {
-		proxy_pass				http://localhost:8000;
-		proxy_set_header		Host $http_host;
-		proxy_set_header		X-Real-IP $remote_addr;
-		proxy_set_header		X-Forwarded-For $proxy_add_x_forwarded_for;
-		proxy_set_header		X-Forwarded-Proto $scheme;
-	}
+ location / {
+  proxy_pass    http://localhost:8000;
+  proxy_set_header  Host $http_host;
+  proxy_set_header  X-Real-IP $remote_addr;
+  proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header  X-Forwarded-Proto $scheme;
+ }
 }
 ```
 
 With this setup Django authenticates access, generates a signed URL for the requested file, strips the domain, and returns it as an `X-Accel-Redirect` header. Nginx intercepts the redirect and streams the file to the game client directly from S3/Garage — Python workers are never involved in the data transfer itself. Replace `192.168.1.115:3900` and `localhost:3900` with your actual `AWS_ENDPOINT_URL` host and local S3 port respectively. If you use a different bucket name in `STORAGE_DEFAULT`, update the location path accordingly.
-
 
 Now that everything is configured, run the commands to start and initialize the server:
 
@@ -453,16 +455,19 @@ Here is an example to illustrate, using a "fake" Gmail account to send emails. N
 This may change in the foreseeable future. Check the details as a precaution.
 
 **.env**
+
 ```.env
 SENDER_EMAIL=myaddress@gmail.com
 EMAIL_BACKEND=smtp+tls://myaddress%40gmail.com:abcd%20efgh%20ijkl%20mnop@smtp.gmail.com:587
 ```
-The default email message comes from a template file located at `/proxy/templates/templated_email/auth_code.email`. If you wish to replace the email message with one of your own, you can bind your email template file with the server's. To do this, include the following line in the volumes section from the springfield-server service in your compose file.
+
+The default email message comes from a template file located at `templates/templated_email/auth_code.email`. If you wish to replace the email message with one of your own, you can bind your email template file with the server's. To do this, include the following line in the volumes section from the springfield-server service in your compose file.
 
 **.compose.yaml**
+
 ```.yaml
 volumes:
-	- /path/to/auth_code.email:/app/proxy/templates/templated_email/auth_code.email:z
+ - /path/to/auth_code.email:/app/templates/templated_email/auth_code.email:z
 ```
 
 The server uses [django-templated-email](https://pypi.org/project/django-templated-email/) for sending emails. It supports both plain text and HTML for structuring the email message. The template receives a context that includes three variables: username, code and auth_code_minutes, which you may use in your custom email message.
@@ -514,9 +519,9 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 
 - `[AWS_SECRET_ACCESS_KEY]`: Secret access key for S3-compatible storage backends.
 
-- `[CACHEOPS_REDIS]`: Redis URL for query caching via *django-cacheops* (e.g., `redis://redis:6379/1`). When omitted, query caching is disabled.
+- `[CACHEOPS_REDIS]`: Redis URL for query caching via _django-cacheops_ (e.g., `redis://redis:6379/1`). When omitted, query caching is disabled.
 
-- `[CACHE_URL]`: Cache backend URL formatted according to *django-service-urls* (e.g. `redis://redis:6379/0?timeout=3600`). Default: `memory://`.
+- `[CACHE_URL]`: Cache backend URL formatted according to _django-service-urls_ (e.g. `redis://redis:6379/0?timeout=3600`). Default: `memory://`.
 
 - `[CSRF_TRUSTED_ORIGINS]`: Comma-separated list of trusted origins for unsafe HTTP requests (e.g., `http://192.168.1.115:8080,http://localhost:8080`). Must include scheme and port. Default: `http://localhost:8000,http://127.0.0.1:8000`.
 
@@ -564,11 +569,11 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 
 👤 **Alisson Santos**
 
-* Github: [@al1sant0s](https://github.com/al1sant0s)
+- Github: [@al1sant0s](https://github.com/al1sant0s)
 
 ## 🤝 Contributing
 
-Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/al1sant0s/springfield/issues). 
+Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/al1sant0s/springfield/issues).
 
 ## Show your support
 

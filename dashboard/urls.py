@@ -1,5 +1,6 @@
 from django.urls import path
 from django.contrib.auth.views import LogoutView
+from two_factor.views import LoginView
 
 from . import views
 
@@ -15,8 +16,8 @@ urlpatterns = [
     path("friends/remove/<int:to_user_id>", views.friends_remove, name="friends_remove"),
     path("devices/", views.devices, name="devices"),
     path("devices/remove/<uuid:advertising_id>/", views.remove_device, name="remove_device"),
-    path("login/", views.login, name="login"),
-    path("logout/", LogoutView.as_view(next_page="dashboard:login"), name="logout"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("logout/", LogoutView.as_view(), name="logout"),
     path("auth/", views.auth, name="auth"),
     path("register/", views.register, name="register"),
     path("forgot/password/", views.forgot_password, name="forgot_password"),
