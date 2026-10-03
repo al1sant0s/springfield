@@ -50,7 +50,7 @@
   <p>MFA is currently <strong style="color: green;">enabled</strong> 🔐</p>
   <hr>
   <div>
-    <a class="btn btn-secondary" href="{% url 'two_factor:disable' %}">Disable MFA</a>
+    <a class="btn btn-danger" href="{% url 'two_factor:disable' %}">Disable MFA</a>
     <a class="btn btn-info" href="{% url 'two_factor:backup_tokens' %}">Backup Codes</a>
   </div>
 {% else %}
@@ -65,6 +65,6 @@
 <p>‼️ Warning! Be <strong class="danger-emphasis">very careful</strong> with this. This action is <strong class="danger-emphasis">irreversible</strong>.</p>
 <hr>
 <div>
-  <a class="btn btn-secondary" href="{% url 'dashboard:delete_account' %}">Delete my account</a>
+  <a class="btn btn-danger" href="{% url 'dashboard:delete_account' %}">Delete my account</a>
 </div>
 {% endblock content %}

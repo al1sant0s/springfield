@@ -375,8 +375,8 @@ section a:hover {
   width: 99%;
 }
 
-.btn-link,
-.btn-link + .btn {
+.float-right,
+.float-right + .btn {
   display: inline-block;
   box-sizing: border-box;
   vertical-align: middle;
@@ -387,16 +387,16 @@ section a:hover {
   font-size: 0.95rem;
 }
 
+.float-right + .btn {
+  margin-left: 2%;
+}
+
 .btn-link,
 .btn-link + .btn,
 .btn[name="wizard_goto_step"] {
   background: linear-gradient(#733d1c, 45%, #ff7950);
   border-color: #883921;
   color: white;
-}
-
-.btn-link + .btn {
-  margin-left: 2%;
 }
 
 .btn-link + .btn:hover,
@@ -409,12 +409,12 @@ section a:hover {
   background: linear-gradient(#301708, 45%, #ff6232);
 }
 
-.btn-secondary {
+.btn-secondary, .btn-danger {
   background: linear-gradient(#c50000, 45%, #f66);
   border-color: #8d1134;
 }
 
-.btn-secondary:active {
+.btn-secondary:active, .btn-danger:active {
   background: linear-gradient(#5d0000, 45%, #f22);
 }
 
