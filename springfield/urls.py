@@ -18,7 +18,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from debug_toolbar.toolbar import debug_toolbar_urls
+from django_otp.admin import OTPAdminSite
 from two_factor.urls import urlpatterns as tf_urls
+
+# Upgrade the default admin site to require OTP
+admin.site.__class__ = OTPAdminSite
 
 urlpatterns = [
     path("mh/", include("mh.urls")),

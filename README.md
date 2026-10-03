@@ -34,19 +34,19 @@ Get your old Springfield back up and running again with this super customizable 
 
 Among all its features, it includes support for:
 
-- multiple accounts,
+- multiple accounts accompanied with a beautiful user dashboard for managing them,
+
+- importing and exporting town files,
+
+- editing money and donuts currencies at your will,
 
 - usernames and profile pictures,
 
 - adding and visiting friend neighbors,
 
-- editing money and donuts currencies at your will,
-
-- importing and exporting town files,
-
 - tracking connected devices,
 
-- a beautiful user dashboard for managing your accounts,
+- Two factor authentication (2FA) for extra security,
 
 - versatile configuration to set up the server, with the option to run a single or multiple instances in parallel, all connected to the same database and storage (e.g., S3 bucket)
 
@@ -217,6 +217,9 @@ docker compose exec springfield-server python manage.py createsuperuser
 
 After that, check the admin dashboard at `http://localhost:8080/admin/`.
 The normal user dashboard is located at `http://localhost:8080/dashboard/`.
+There's a small detail you should know. Admin accounts can only log to the admin dashboard if they have **Two Factor Authentication (2FA)** enabled.
+You can enable 2FA for your admin account by logging into the normal user dashboard and clicking on the "Enable 2FA" button, in the profile section.
+After that, you will be prompted to scan a QR code with your authenticator app. Once you do that, you will be able to log into the admin dashboard.
 
 Now your server is ready to be used. Congratulations!
 
