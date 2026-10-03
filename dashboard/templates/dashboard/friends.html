@@ -14,7 +14,7 @@
 {% block section_class %}wide-section{% endblock section_class %}
 
 {% block content %}
-<h2>Friends hub</h2>
+<h1>Friends hub</h1>
 <p>Send, accept or reject friend requests here.</p>
 {% if messages or search_form.errors %}
   <ul class="messages">
@@ -40,7 +40,7 @@
   </div>
 </form>
 {% if search_matches %}
-  <h2>Search results ({{ search_matches|length }})</h2>
+  <h1>Search results ({{ search_matches|length }})</h1>
   <hr>
   <div class="tableFixHead">
     <table>
@@ -75,7 +75,7 @@
   </div>
 {% endif %}
 {% if received_requests %}
-<h2>Pending incoming requests ({{ received_requests|length }})</h2>
+<h1>Pending incoming requests ({{ received_requests|length }})</h1>
   <hr>
   <div class="tableFixHead">
     <table>
@@ -113,7 +113,7 @@
   </div>
 {% endif %}
 {% if sent_requests %}
-  <h2>Pending outgoing requests ({{ sent_requests|length }})</h2>
+  <h1>Pending outgoing requests ({{ sent_requests|length }})</h1>
   <hr>
   <div class="tableFixHead">
     <table>
@@ -148,7 +148,7 @@
   </div>
 {% endif %}
 {% if friends %}
-  <h2>Friends ({{ friends|length }})</h2>
+  <h1>Friends ({{ friends|length }})</h1>
   <hr>
   <div class="tableFixHead">
     <table class="long-table">

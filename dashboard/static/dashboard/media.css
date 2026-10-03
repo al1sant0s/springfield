@@ -16,10 +16,6 @@
     display: none;
   }
 
-  #nav-menu {
-    display: block;
-  }
-
   header {
     position: sticky;
     top: 0;
@@ -27,6 +23,7 @@
   }
 
   #nav-menu {
+    display: block;
     position: fixed;
     top: 0;
     left: -450px;
@@ -110,12 +107,6 @@
     width: 100%;
   }
 
-/*  section {
-    padding: 20px;
-    box-sizing: border-box;
-    margin: 20px auto;
-  }*/
-
 }
 
 @media screen and (width < 712px) and (orientation: portrait) {
@@ -124,7 +115,8 @@
     font-size: 12pt;
   }
 
-  section {
+  section h1 {
+    font-size: 1.4rem;
   }
 
   #reset-password {
@@ -139,6 +131,18 @@
     font-size: 0.95rem;
     max-width: 150px;
     text-align: justify;
+  }
+
+  .btn-primary{
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .btn-link,
+  .btn-link + .btn {
+    display: block;
+    width: 100%;
+    margin-left: 0;
   }
 
 }

@@ -12,7 +12,7 @@
 {% block header_title %}User Profile{% endblock header_title %}
 
 {% block content %}
-<h2>Edit user profile</h2>
+<h1>Edit user profile</h1>
 <p>Change your avatar picture and username.</p>
 {% if messages or profile_form.errors %}
   <ul class="messages">
@@ -36,7 +36,7 @@
     <figcaption>
       Avatar Picture
     </figcaption>
-    <img src="{{ request.user.avatar_url }}" alt="" width="100" height="100">
+    <img src="{{ request.user.avatar_url }}" alt="" width="140" height="140">
   </figure>
   <p class="caption-paragraph">Requirements: PNG or JPG - 416x416 (or less) pixels.</p>
   {{ profile_form }}
@@ -45,26 +45,26 @@
   </div>
 </form>
 <hr id="mfa-account">
-<h2>Multi-factor authentication</h2>
-{% if has_mfa %}
+<h1>Multi-factor authentication</h1>
+{% if user.is_authenticated and user.otp_device %}
   <p>MFA is currently <strong style="color: green;">enabled</strong> 🔐</p>
   <hr>
   <div>
-    <a class="btn dangerous" href="{% url 'two_factor:disable' %}">Disable MFA</a>
-    <a class="btn" href="{% url 'two_factor:backup_tokens' %}">Backup Codes</a>
+    <a class="btn btn-secondary" href="{% url 'two_factor:disable' %}">Disable MFA</a>
+    <a class="btn btn-info" href="{% url 'two_factor:backup_tokens' %}">Backup Codes</a>
   </div>
 {% else %}
   <p>Configure Multi-factor authentication (MFA)</p>
   <hr>
   <div>
-    <a class="btn" href="{% url 'two_factor:setup' %}">Enable MFA</a>
+    <a class="btn btn-info" href="{% url 'two_factor:setup' %}">Enable MFA</a>
   </div>
 {% endif %}
 <hr id="delete-account">
-<h2>Delete user account</h2>
+<h1>Delete user account</h1>
 <p>‼️ Warning! Be <strong class="danger-emphasis">very careful</strong> with this. This action is <strong class="danger-emphasis">irreversible</strong>.</p>
 <hr>
 <div>
-  <a class="btn dangerous" href="{% url 'dashboard:delete_account' %}">Delete my account</a>
+  <a class="btn btn-secondary" href="{% url 'dashboard:delete_account' %}">Delete my account</a>
 </div>
 {% endblock content %}

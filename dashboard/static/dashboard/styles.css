@@ -5,6 +5,7 @@
  * Messages-and-alerts
  * Header-and-navigation-menu
  * Main-content-general-style
+ * Multifactor-authentication-(MFA)
  * Footer
  */
 
@@ -43,36 +44,6 @@ button {
   color: #6e0760;
 }
 
-.btn {
-  color: aliceblue;
-  background: linear-gradient(#87397c, 45%, coral);
-  display: inline-block;
-  margin-top: 15px;
-  margin-left: 5px;
-  padding: 15px 0;
-  width: 99%;
-  border: 2px solid indianred;
-  border-radius: 3px;
-  font-size: 1.1rem;
-  text-decoration: none;
-  text-align: center;
-}
-
-.btn:hover {
-  color: gold;
-  text-shadow: 2px 2px 2px chocolate;
-}
-
-.btn:active {
-  background: linear-gradient(#6f005f, 45%, #fd5353);
-}
-
-.btn-center {
-  padding: 10px 20px;
-  margin: 20px auto 10px auto;
-  width: 100%;
-}
-
 /* Fonts */
 
 .corben-regular {
@@ -92,7 +63,6 @@ button {
   font-optical-sizing: auto;
   font-weight: 500;
   font-style: normal;
-  font-size: 0.975rem;
 }
 
 .bungee-inline-regular, .btn {
@@ -283,6 +253,10 @@ section {
   background: linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
+section h1 {
+  font-size: 1.8rem;
+}
+
 section h1, section h2, section h3 {
   color: #870c25;
   margin: 0 0 0 auto;
@@ -293,6 +267,7 @@ section p {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
+  text-align: justify;
 }
 
 section hr {
@@ -356,6 +331,100 @@ section a {
 
 section a:hover {
   color: white;
+}
+
+/* Multifactor-authentication-(MFA) */
+
+.bg-white {
+  background-color: white;
+}
+
+.mb-3 td {
+  width: 100%;
+}
+
+/* Buttons */
+
+.btn, .btn.btn-block {
+  color: aliceblue;
+  background: linear-gradient(#87397c, 45%, coral);
+  display: inline-block;
+  margin-top: 15px;
+  margin-left: 5px;
+  padding: 15px 0;
+  width: 99%;
+  border: 2px solid #8a2000;
+  border-radius: 3px;
+  font-size: 1.1rem;
+  text-decoration: none;
+  text-align: center;
+}
+
+.btn:hover, .btn.btn-block:hover {
+  color: gold;
+  text-shadow: 2px 2px 2px chocolate;
+}
+
+.btn:active, .btn.btn-block:active {
+  background: linear-gradient(#6f005f, 45%, #fd5353);
+}
+
+.btn-primary {
+  display: block;
+  margin-top: 15px;
+  width: 99%;
+}
+
+.btn-link,
+.btn-link + .btn {
+  display: inline-block;
+  box-sizing: border-box;
+  vertical-align: middle;
+  width: 48%;
+  text-align: center;
+  margin-top: 10px;
+  padding: 12px 10px;
+  font-size: 0.95rem;
+}
+
+.btn-link,
+.btn-link + .btn,
+.btn[name="wizard_goto_step"] {
+  background: linear-gradient(#733d1c, 45%, #ff7950);
+  border-color: #883921;
+  color: white;
+}
+
+.btn-link + .btn {
+  margin-left: 2%;
+}
+
+.btn-link + .btn:hover,
+.btn[name="wizard_goto_step"]:hover {
+  color: gold;
+}
+
+.btn-link:active, .btn-link + .btn:active,
+.btn[name="wizard_goto_step"]:active {
+  background: linear-gradient(#301708, 45%, #ff6232);
+}
+
+.btn-secondary {
+  background: linear-gradient(#c50000, 45%, #f66);
+  border-color: #8d1134;
+}
+
+.btn-secondary:active {
+  background: linear-gradient(#5d0000, 45%, #f22);
+}
+
+.btn-info {
+  background: linear-gradient(#004986, 45%, #88b6ff);
+  border-color: #113c8d;
+}
+
+.btn-info:active {
+  background: linear-gradient(#002f57, 45%, #3e88ff);
 }
 
 /* Footer */
