@@ -48,12 +48,6 @@ caption {
   padding: 10px;
 }
 
-table div input {
-  display: block;
-  width: 250px;
-  background-color: red;
-}
-
 .action-button {
   text-decoration: none;
   padding: 20px;

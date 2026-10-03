@@ -17,7 +17,7 @@
 {% endblock extra_media %}
 
 {% block content %}
-<h2>{% if wizard.steps.current == 'auth' %}Login details{% elif wizard.steps.current == 'token' %}Two-Factor Authentication{% elif wizard.steps.current == 'backup' %}Backup Token{% else %}Login details{% endif %}</h2>
+<h1>{% if wizard.steps.current == 'auth' %}Login details{% elif wizard.steps.current == 'token' %}Two-Factor Authentication{% elif wizard.steps.current == 'backup' %}Backup Token{% else %}Login details{% endif %}</h1>
 
 {% if wizard.steps.current == 'token' %}
   <p>{{ device|as_verbose_action }}</p>
