@@ -411,8 +411,9 @@ def delete_account(request):
                 # Delete only if the API confirms the user was notified via email.
                 # If the API is not configured, ignore the condition and delete the user anyways.
                 if not apikey or confirmed:
-                    request.user.delete()
+                    user = request.user
                     logout(request)
+                    user.delete()
                     return HttpResponseRedirect(reverse("dashboard:login"))
 
                 messages.error(request, "A notification email could not be delivered. Try again!")
