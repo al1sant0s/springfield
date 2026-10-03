@@ -382,8 +382,9 @@ def delete_account(request):
                 request.user.email, delete_user_form.cleaned_data["code"]
             )
             if status:
-                request.user.delete()
+                user = request.user
                 logout(request)
+                user.delete()
                 return HttpResponseRedirect(reverse("dashboard:login"))
 
             elif status is None:
