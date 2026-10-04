@@ -75,7 +75,8 @@
   </div>
 {% endif %}
 {% if received_requests %}
-<h1>Pending incoming requests ({{ received_requests|length }})</h1>
+  <hr>
+  <h1>Pending incoming requests ({{ received_requests|length }})</h1>
   <hr>
   <div class="tableFixHead">
     <table>
@@ -113,6 +114,7 @@
   </div>
 {% endif %}
 {% if sent_requests %}
+  <hr>
   <h1>Pending outgoing requests ({{ sent_requests|length }})</h1>
   <hr>
   <div class="tableFixHead">
@@ -148,6 +150,7 @@
   </div>
 {% endif %}
 {% if friends %}
+  <hr>
   <h1>Friends ({{ friends|length }})</h1>
   <hr>
   <div class="tableFixHead">
