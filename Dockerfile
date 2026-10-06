@@ -1,4 +1,4 @@
-FROM condaforge/miniforge3:26.1.1-3
+FROM condaforge/miniforge3:26.7.2-0
 
 WORKDIR /app
 
@@ -10,10 +10,8 @@ COPY . .
 
 ENV PATH="/opt/conda/envs/django/bin:$PATH"
 
-RUN useradd --create-home --uid 1000 app
-
-USER app
-
 EXPOSE 8000
+
+USER ubuntu
 
 CMD ["gunicorn", "springfield.wsgi", "--bind", "0.0.0.0:8000"]
