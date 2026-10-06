@@ -1,16 +1,16 @@
-import uuid
 import secrets
+import uuid
 from pathlib import Path
-from PIL import Image
-from google.protobuf.message import DecodeError
 
+from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import RegexValidator
-from django.core.exceptions import ValidationError
 from django.db import models, transaction
-from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
 from django.templatetags.static import static
+from django.utils import timezone
+from google.protobuf.message import DecodeError
+from PIL import Image
 
 from protofiles import LandData_pb2
 

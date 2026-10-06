@@ -9,6 +9,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC,
     6,
@@ -22,9 +23,8 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from . import LandData_pb2 as LandData__pb2
 from . import Error_pb2 as Error__pb2
-
+from . import LandData_pb2 as LandData__pb2
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13GetFriendData.proto\x12\x04\x44\x61ta\x1a\x0eLandData.proto\x1a\x0b\x45rror.proto\"(\n\x14GetFriendDataRequest\x12\x10\n\x08\x66riendId\x18\x01 \x03(\t\"\xd6\x03\n\x15GetFriendDataResponse\x12>\n\nfriendData\x18\x01 \x03(\x0b\x32*.Data.GetFriendDataResponse.FriendDataPair\x12!\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x12.Data.ErrorMessage\x1a\xd9\x02\n\x0e\x46riendDataPair\x12\x10\n\x08\x66riendId\x18\x01 \x01(\t\x12\x30\n\nfriendData\x18\x02 \x01(\x0b\x32\x1c.Data.LandMessage.FriendData\x12I\n\x05\x65rror\x18\x03 \x01(\x0b\x32:.Data.GetFriendDataResponse.FriendDataPair.FriendDataError\x12K\n\x0b\x61uthService\x18\x04 \x01(\x0e\x32\x36.Data.GetFriendDataResponse.FriendDataPair.AuthService\x12\x12\n\nexternalId\x18\x05 \x01(\t\x1a-\n\x0f\x46riendDataError\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0c\n\x04type\x18\x02 \x01(\t\"(\n\x0b\x41uthService\x12\x0b\n\x07NUCLEUS\x10\x00\x12\x0c\n\x08\x46\x41\x43\x45\x42OOK\x10\x01\x42\x16\n\x14\x63om.ea.simpsons.data')
 

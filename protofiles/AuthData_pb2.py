@@ -9,6 +9,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC,
     6,
@@ -23,7 +24,6 @@ _sym_db = _symbol_database.Default()
 
 
 from . import Error_pb2 as Error__pb2
-
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0e\x41uthData.proto\x12\x04\x44\x61ta\x1a\x0b\x45rror.proto\"7\n\x10UserIndirectData\x12\x0e\n\x06userId\x18\x01 \x01(\t\x12\x13\n\x0btelemetryId\x18\x02 \x01(\t\"(\n\x11\x41nonymousUserData\x12\x13\n\x0bisAnonymous\x18\x01 \x01(\x08\"7\n\tTokenData\x12\x12\n\nsessionKey\x18\x01 \x01(\t\x12\x16\n\x0e\x65xpirationDate\x18\x02 \x01(\x03\"\\\n\x14UsersResponseMessage\x12$\n\x04user\x18\x01 \x01(\x0b\x32\x16.Data.UserIndirectData\x12\x1e\n\x05token\x18\x02 \x01(\x0b\x32\x0f.Data.TokenData\"\xc9\x01\n\x08LinkData\x12/\n\nsourceType\x18\x01 \x01(\x0e\x32\x1b.Data.LinkData.identityType\x12\x10\n\x08sourceId\x18\x02 \x01(\t\x12\x34\n\x0f\x64\x65stinationType\x18\x03 \x01(\x0e\x32\x1b.Data.LinkData.identityType\x12\x15\n\rdestinationId\x18\x04 \x01(\t\"-\n\x0cidentityType\x12\n\n\x06TNT_ID\x10\x00\x12\x11\n\rNUCLEUS_TOKEN\x10\x01\"v\n\x17LinkUserResponseMessage\x12\x0e\n\x06userId\x18\x01 \x01(\t\x12\x12\n\nexternalId\x18\x02 \x01(\t\x12\x14\n\x0c\x65xternalType\x18\x03 \x01(\t\x12!\n\x05\x65rror\x18\x04 \x01(\x0b\x32\x12.Data.ErrorMessage\"N\n\x19\x44\x65leteUserResponseMessage\x12\x0e\n\x06userId\x18\x01 \x01(\t\x12!\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x12.Data.ErrorMessageB!\n\x1f\x63om.eamobile.mayhem.plugin.data')
 

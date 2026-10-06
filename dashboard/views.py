@@ -1,36 +1,36 @@
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from django.shortcuts import get_object_or_404, render
-from django.core.cache import cache
+import requests
 from django.contrib import messages
 from django.contrib.auth import logout
-from django.contrib.auth.views import login_required
 from django.contrib.auth.models import BaseUserManager
+from django.contrib.auth.views import login_required
+from django.core.cache import cache
 from django.db.models.functions import Lower
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 
-from connect.models import UserId, DeviceToken
-from mh.models import LandToken
-from proxy.views import request_auth_code, validate_auth_code, search_friends
-from mh.views import save_town, load_town
+from connect.models import DeviceToken, UserId
 from friends.views import (
-    send_friend_request,
-    cancel_friend_request,
     accept_friend_request,
+    cancel_friend_request,
     remove_friend,
+    send_friend_request,
 )
-
-from .forms import UploadTownForm
-from .forms import EditCurrenciesForm
-from .forms import RequestUserForm
-from .forms import AuthCodeForm
-from .forms import ResetPasswordForm
-from .forms import UserProfileForm
-from .forms import SearchUserForm
-from .forms import DeleteUserForm
-
+from mh.models import LandToken
+from mh.views import load_town, save_town
 from protofiles import LandData_pb2
+from proxy.views import request_auth_code, search_friends, validate_auth_code
 
-import requests
+from .forms import (
+    AuthCodeForm,
+    DeleteUserForm,
+    EditCurrenciesForm,
+    RequestUserForm,
+    ResetPasswordForm,
+    SearchUserForm,
+    UploadTownForm,
+    UserProfileForm,
+)
 
 # Create your views here.
 

@@ -1,0 +1,6 @@
+# Enable import sorting (I) alongside standard error checks
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["F401"] # Keeps all checks except unused import removal
+
+[lint.isort]
+known-first-party = ["springfield"]

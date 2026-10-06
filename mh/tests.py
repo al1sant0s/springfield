@@ -1,15 +1,15 @@
+import gzip
+import uuid
+import xml.etree.ElementTree as ET
+
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
-from django.core.cache import cache
 
 from connect.tests import TestDevice
 from mh.models import LandToken
 from mh.views import load_town
 from protofiles import *
-
-import xml.etree.ElementTree as ET
-import uuid
-import gzip
 
 
 class GetCurrentTimeViewTests(TestCase):

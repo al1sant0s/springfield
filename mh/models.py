@@ -1,8 +1,8 @@
+import uuid
+
 from django.db import models
 
 from connect.models import UserId
-
-import uuid
 
 # Create your models here.
 

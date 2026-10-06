@@ -1,23 +1,23 @@
-from django.http import Http404, HttpResponse, JsonResponse
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.models import BaseUserManager
-from django.db.models import Q
-from django.views.decorators.csrf import csrf_exempt
-
-from proxy.views import request_auth_code, validate_auth_code
-
-from .models import UserId, DeviceToken
-from mh.models import LandToken
-
-import math
-import json
-import jwt
 import base64
 import hashlib
-import uuid
-import time
+import json
+import math
 import secrets
+import time
+import uuid
+
+import jwt
+from django.contrib.auth.models import BaseUserManager
+from django.db.models import Q
+from django.http import Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+
+from mh.models import LandToken
+from proxy.views import request_auth_code, validate_auth_code
+
+from .models import DeviceToken, UserId
 
 
 # Create your views here.

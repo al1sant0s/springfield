@@ -1,9 +1,11 @@
 from pathlib import Path
-from google.protobuf.message import DecodeError
+
 from django import forms
 from django.core.files.base import ContentFile
 from django.core.validators import RegexValidator
+from google.protobuf.message import DecodeError
 from hcaptcha.fields import hCaptchaField
+
 from connect.models import UserId
 from protofiles import LandData_pb2
 

@@ -9,6 +9,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC,
     6,
@@ -24,7 +25,6 @@ _sym_db = _symbol_database.Default()
 
 from . import Error_pb2 as Error__pb2
 from . import LandData_pb2 as LandData__pb2
-
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15MatchmakingData.proto\x12\x04\x44\x61ta\x1a\x0b\x45rror.proto\x1a\x0eLandData.proto\"k\n\x1aMatchmakingResponseMessage\x12*\n\x0fmatchedUserLand\x18\x01 \x01(\x0b\x32\x11.Data.LandMessage\x12!\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x12.Data.ErrorMessageB\x16\n\x14\x63om.ea.simpsons.data')
 

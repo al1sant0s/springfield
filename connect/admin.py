@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+
 from mh.models import LandToken
+
 from .models import DeviceToken, UserId
 
 
