@@ -108,9 +108,9 @@ services:
     env_file:
       - .env
     volumes:
-      - /data/media/:/app/media/:z
-      - /data/static/:/app/static/:z
-      - /data/database.db:/app/database.db:z
+      - /var/www/media/:/app/media/:z
+      - /var/www/static/:/app/static/:z
+      - /var/lib/springfield:/app/data:z
 ```
 
 With this configuration the server will use a SQLite file as your database.
@@ -125,18 +125,18 @@ server {
  client_max_body_size 10M;
 
  location /static/ {
-  alias     /data/static/;
+  alias     /var/www/static/;
  }
 
  # Internal location used by X-Accel-Redirect to stream local media files
  # (avatars and towns) directly from disk without buffering through Python workers.
  location /media/ {
   internal;
-  alias     /data/media/;
+  alias     /var/www/media/;
  }
 
  location /dlc/ {
-  alias     /data/dlc/;
+  alias     /var/www/dlc/;
  }
 
  location / {
@@ -149,7 +149,7 @@ server {
 }
 ```
 
-This configuration specifies that static files are served from `/data/static/`, DLC from `/data/dlc/`, and all game requests are forwarded to the Django server on port 8000. The `/media/` location is marked `internal` so it is only reachable via `X-Accel-Redirect` responses from Django — Nginx streams avatars and towns directly from disk without buffering them through Python workers.
+This configuration specifies that static files are served from `/var/www/static/`, DLC from `/var/www/dlc/`, and all game requests are forwarded to the Django server on port 8000. The `/media/` location is marked `internal` so it is only reachable via `X-Accel-Redirect` responses from Django — Nginx streams avatars and towns directly from disk without buffering them through Python workers.
 
 Finally you need to create an `.env` file at the same directory where you have the `compose.yaml` file, with the following minimal settings:
 
@@ -166,6 +166,7 @@ STATIC_URL=static/
 STATIC_ROOT=/app/static/
 MEDIA_URL=media/
 MEDIA_ROOT=/app/media/
+DATABASE_URL=sqlite:////app/data/database.db
 ```
 
 A few things to consider:
@@ -177,14 +178,15 @@ A few things to consider:
 
 > For a full detailed list of the environment variables, jump to the [environment variables](user-content-️-environment-variables) section.
 
-Before starting the containers, ensure the host persistent directories and the SQLite database file exist beforehand:
+Before starting the containers, ensure the host persistent directories exist beforehand:
 
 ```sh
-sudo mkdir -p /data/media /data/static /data/dlc
-sudo touch /data/database.db
+sudo mkdir -p /var/www/media /var/www/static /var/www/dlc
+sudo mkdir -p /var/lib/springfield
+sudo chown -R 1000:1000 /var/lib/springfield /var/www/media /var/www/static
 ```
 
-> **Note**: Creating `/data/database.db` before running Docker Compose is important. If a single-file mount target does not exist when the container launches, Docker will automatically create it as a directory.
+> **Note**: The SQLite database lives in `/var/lib/springfield/`, which is mounted as a directory (not a single file) so SQLite can create its journal files next to `database.db`. The container runs as a non-root user `app` with UID 1000, so the directories it writes to must be owned by UID 1000 on the host, as the `chown` above does.
 
 With nginx running, host directories prepared, and your `compose.yaml` and `.env` file ready, start your server:
 
@@ -421,7 +423,7 @@ server {
  }
 
  location /dlc/ {
-  alias     /data/dlc/;
+  alias     /var/www/dlc/;
  }
 
  location / {
@@ -528,7 +530,7 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 
 - `[CSRF_TRUSTED_ORIGINS]`: Comma-separated list of trusted origins for unsafe HTTP requests (e.g., `http://192.168.1.115:8080,http://localhost:8080`). Must include scheme and port. Default: `http://localhost:8000,http://127.0.0.1:8000`.
 
-- `[DATABASE_URL]`: Database connection URL (e.g., `postgres://springfield:springfield@db:5432/springfield` or `sqlite:///database.db`). Default: SQLite database at `database.db`.
+- `[DATABASE_URL]`: Database connection URL (e.g., `postgres://springfield:springfield@db:5432/springfield` or `sqlite:////app/data/database.db`). Default: SQLite database at `database.db`.
 
 - `DEBUG`: Boolean variable determining if the server runs in debug mode. Must be set to `false` in production.
 
