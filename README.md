@@ -125,26 +125,26 @@ server {
  client_max_body_size 10M;
 
  location /static/ {
-  alias     /var/www/static/;
+  alias /var/www/static/;
  }
 
  # Internal location used by X-Accel-Redirect to stream local media files
  # (avatars and towns) directly from disk without buffering through Python workers.
  location /media/ {
   internal;
-  alias     /var/www/media/;
+  alias /var/www/media/;
  }
 
  location /dlc/ {
-  alias     /var/www/dlc/;
+  alias /var/www/dlc/;
  }
 
  location / {
-  proxy_pass    http://localhost:8000;
-  proxy_set_header  Host $http_host;
-  proxy_set_header  X-Real-IP $remote_addr;
-  proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header  X-Forwarded-Proto $scheme;
+  proxy_pass http://localhost:8000;
+  proxy_set_header Host $http_host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
  }
 }
 ```
@@ -405,8 +405,8 @@ server {
  client_max_body_size 10M;
 
  location /static/ {
-  proxy_pass    http://localhost:3902;
-  proxy_set_header  Host static-bucket.web.garage.localhost;
+  proxy_pass http://localhost:3902;
+  proxy_set_header Host static-bucket.web.garage.localhost;
  }
 
  # Internal proxy to stream S3/Garage media files (avatars and towns) via X-Accel-Redirect.
@@ -417,21 +417,21 @@ server {
  # Django's content type (application/x-protobuf or image/png) reaches the client instead.
  location /tsto-bucket/ {
   internal;
-  proxy_pass    http://localhost:3900;
-  proxy_set_header  Host 192.168.1.115:3900;
-  proxy_hide_header  Content-Type;
+  proxy_pass http://localhost:3900;
+  proxy_set_header Host 192.168.1.115:3900;
+  proxy_hide_header Content-Type;
  }
 
  location /dlc/ {
-  alias     /var/www/dlc/;
+  alias /var/www/dlc/;
  }
 
  location / {
-  proxy_pass    http://localhost:8000;
-  proxy_set_header  Host $http_host;
-  proxy_set_header  X-Real-IP $remote_addr;
-  proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header  X-Forwarded-Proto $scheme;
+  proxy_pass http://localhost:8000;
+  proxy_set_header Host $http_host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header X-Forwarded-Proto $scheme;
  }
 }
 ```
