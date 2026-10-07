@@ -1,10 +1,16 @@
-#town-viewer {
-  border: solid 2px #c5c5c5;
-}
-
 main article section {
   background: none;
   max-width: none;
   border: none;
   padding: 0;
+}
+
+#town-viewer {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: block;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  background-color: #000;
 }
