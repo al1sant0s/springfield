@@ -1,24 +1,25 @@
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+import base64
+import datetime
+import hashlib
+import json
+
+import requests
+from django.contrib.auth.models import BaseUserManager
+from django.core.cache import cache
 from django.db.models import Q
-from django.utils import timezone
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from django.core.cache import cache
-from django.contrib.auth.models import BaseUserManager
 from templated_email import send_templated_mail
 
-from springfield.settings import env
-from connect.models import UserId, DeviceToken
+from connect.models import DeviceToken, UserId
 from friends.models import FriendInvitation
-from .models import ProgRegCode
+from springfield.settings import env
 
-import base64
-import hashlib
-import json
-import datetime
-import requests
+from .models import ProgRegCode
 
 
 def search_friends(user, search_username):

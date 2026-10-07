@@ -1,16 +1,16 @@
+from django.db import DatabaseError, IntegrityError, models, transaction
 from django.http import (
     HttpResponse,
     HttpResponseForbidden,
     HttpResponseNotFound,
     JsonResponse,
 )
-from django.db import models, transaction, IntegrityError, DatabaseError
-from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods, require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from connect.models import UserId, DeviceToken
+from connect.models import DeviceToken, UserId
 from friends.models import FriendInvitation
 
 

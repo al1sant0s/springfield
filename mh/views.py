@@ -1,10 +1,15 @@
-import xml.etree.ElementTree as ET
-import json
 import gzip
+import json
 import time
-import uuid
 import urllib.parse
+import uuid
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
+from django.conf import settings
+from django.core.cache import cache
+from django.core.files.base import ContentFile
+from django.db.models import F, Q
 from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
@@ -12,16 +17,11 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import get_object_or_404
-from django.core.files.base import ContentFile
-from django.core.cache import cache
-from django.db.models import F, Q
-from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
+from django.views.decorators.http import require_http_methods, require_POST
 
 from connect.models import DeviceToken, UserId
 from mh.models import LandToken
-from pathlib import Path
 from protofiles import *
 
 

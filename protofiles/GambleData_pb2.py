@@ -9,6 +9,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC,
     6,
@@ -24,7 +25,6 @@ _sym_db = _symbol_database.Default()
 
 from . import Error_pb2 as Error__pb2
 from . import PurchaseData_pb2 as PurchaseData__pb2
-
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10GambleData.proto\x12\x04\x44\x61ta\x1a\x0b\x45rror.proto\x1a\x12PurchaseData.proto\"y\n\x0eGambleResponse\x12+\n\x0fupdatedCurrency\x18\x01 \x01(\x0b\x32\x12.Data.CurrencyData\x12\x17\n\x0f\x63urrencyAwarded\x18\x02 \x01(\x05\x12!\n\x05\x65rror\x18\x03 \x01(\x0b\x32\x12.Data.ErrorMessageB\x16\n\x14\x63om.ea.simpsons.data')
 

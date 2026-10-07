@@ -1,11 +1,13 @@
 import mimetypes
 import urllib.parse
 import xml.etree.ElementTree as ET
+
 from django.db import models
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from connect.models import UserId, DeviceToken
+
+from connect.models import DeviceToken, UserId
 
 
 def download_avatar(request, user_id):

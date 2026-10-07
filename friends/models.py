@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models.functions import Greatest, Least
-from connect.models import UserId
 
+from connect.models import UserId
 
 # Create your models here.
 

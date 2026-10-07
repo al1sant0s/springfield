@@ -1,5 +1,5 @@
-from django.urls import path
 from django.contrib.auth.views import LogoutView
+from django.urls import path
 from two_factor.views import LoginView
 
 from . import views

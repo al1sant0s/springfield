@@ -9,6 +9,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC,
     6,
@@ -22,11 +23,10 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
-from . import PurchaseData_pb2 as PurchaseData__pb2
-from . import LandData_pb2 as LandData__pb2
 from . import Error_pb2 as Error__pb2
+from . import LandData_pb2 as LandData__pb2
+from . import PurchaseData_pb2 as PurchaseData__pb2
 from . import WholeLandTokenData_pb2 as WholeLandTokenData__pb2
-
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19\x43ustomerServiceData.proto\x12\x04\x44\x61ta\x1a\x12PurchaseData.proto\x1a\x0eLandData.proto\x1a\x0b\x45rror.proto\x1a\x18WholeLandTokenData.proto\"2\n\rPlayerSession\x12\x0f\n\x07ownerId\x18\x01 \x01(\t\x12\x10\n\x08hostname\x18\x02 \x01(\t\"\x7f\n\x13LandResponseMessage\x12\x1f\n\x04land\x18\x01 \x01(\x0b\x32\x11.Data.LandMessage\x12$\n\x07session\x18\x02 \x01(\x0b\x32\x13.Data.PlayerSession\x12!\n\x05\x65rror\x18\x03 \x01(\x0b\x32\x12.Data.ErrorMessage\"b\n\x17\x43urrencyResponseMessage\x12$\n\x08\x63urrency\x18\x01 \x01(\x0b\x32\x12.Data.CurrencyData\x12!\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x12.Data.ErrorMessage\"\xc6\x01\n\x13UserResponseMessage\x12\x0e\n\x06gameId\x18\x01 \x01(\t\x12@\n\x0ereverseMapping\x18\x02 \x03(\x0b\x32(.Data.UserResponseMessage.ReverseMapping\x12!\n\x05\x65rror\x18\x03 \x01(\x0b\x32\x12.Data.ErrorMessage\x1a:\n\x0eReverseMapping\x12\x12\n\nexternalId\x18\x01 \x01(\t\x12\x14\n\x0c\x65xternalType\x18\x02 \x01(\t\"\xbb\x01\n\x19LandBackupResponseMessage\x12>\n\nlandBackup\x18\x01 \x03(\x0b\x32*.Data.LandBackupResponseMessage.LandBackup\x12!\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x12.Data.ErrorMessage\x1a;\n\nLandBackup\x12\x0c\n\x04\x64\x61te\x18\x01 \x01(\x04\x12\x1f\n\x04land\x18\x02 \x01(\x0b\x32\x11.Data.LandMessage\"w\n\x1dWholeLandTokenResponseMessage\x12\x33\n\rtokenResponse\x18\x01 \x01(\x0b\x32\x1c.Data.WholeLandTokenResponse\x12!\n\x05\x65rror\x18\x02 \x01(\x0b\x32\x12.Data.ErrorMessageB&\n$com.ea.simpsons.customerservice.data')
 

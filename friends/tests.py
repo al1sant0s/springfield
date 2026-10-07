@@ -3,7 +3,13 @@ from django.test import TestCase
 
 from connect.tests import TestDevice
 from friends.models import FriendInvitation
-from friends.views import send_friend_request, cancel_friend_request, accept_friend_request, remove_friend
+from friends.views import (
+    accept_friend_request,
+    cancel_friend_request,
+    remove_friend,
+    send_friend_request,
+)
+
 
 # Create your tests here.
 #

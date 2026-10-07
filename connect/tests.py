@@ -1,15 +1,14 @@
-from django.test import TestCase
-from django.urls import reverse
-from django.utils.crypto import get_random_string
-from connect.models import UserId, DeviceToken
-from proxy.views import get_auth_code
-
-from mh.models import LandToken
-
 import base64
 import json
 import uuid
 
+from django.test import TestCase
+from django.urls import reverse
+from django.utils.crypto import get_random_string
+
+from connect.models import DeviceToken, UserId
+from mh.models import LandToken
+from proxy.views import get_auth_code
 
 # Create your tests here.
 
