@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Town Viewer{% endblock title %}
+
+{% block favicon_emoji %}🌆{% endblock favicon_emoji %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/iframes.css' %}">
+{% endblock extra_css %}
+
+{% block header_title %}Town Viewer{% endblock header_title %}
+
+{% block content %}
+<iframe id="town-viewer" src="{{ src }}" width="100%" height="720px"></iframe>
+{% endblock content %}
+

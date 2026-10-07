@@ -210,3 +210,6 @@ if not AXES_FAILURE_LIMIT:
 # HCaptcha config
 HCAPTCHA_SITEKEY = env("HCAPTCHA_SITEKEY")
 HCAPTCHA_SECRET = env("HCAPTCHA_SECRET")
+
+# Town Viewer config
+TOWN_VIEWER_URL = env("TOWN_VIEWER_URL", default=None)

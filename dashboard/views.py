@@ -1,13 +1,21 @@
+from urllib.parse import quote
+
 import requests
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.views import login_required
 from django.core.cache import cache
 from django.db.models.functions import Lower
-from django.http import HttpResponseRedirect
+from django.http import (
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+    HttpResponseRedirect,
+)
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.views.decorators.http import require_GET
 
 from connect.models import DeviceToken, UserId
 from friends.views import (
@@ -33,6 +41,7 @@ from .forms import (
 )
 
 # Create your views here.
+
 
 def register(request):
     register_form = RequestUserForm()
@@ -236,7 +245,11 @@ def index(request):
     return render(
         request,
         "dashboard/index.html",
-        {"town_form": town_form, "currency_form": currency_form},
+        {
+            "town_form": town_form,
+            "town_viewer_url": settings.TOWN_VIEWER_URL,
+            "currency_form": currency_form,
+        },
     )
 
 
@@ -264,6 +277,7 @@ def profile(request):
         profile_form = UserProfileForm(instance=request.user)
 
     return render(request, "dashboard/profile.html", {"profile_form": profile_form})
+
 
 @login_required
 def friends(request):
@@ -299,6 +313,7 @@ def friends(request):
         "search_matches": search_matches,
         "received_requests": received_requests,
         "sent_requests": sent_requests,
+        "town_viewer_url": settings.TOWN_VIEWER_URL,
         "friends": friends,
     }
 
@@ -388,12 +403,15 @@ def delete_account(request):
                 # Send email notifying about account termination and data removal.
                 apikey = cache.get("tsto_api_key")
                 try:
-                    response = requests.post("https://tsto.app/api/account/wipeNotice",
+                    response = requests.post(
+                        "https://tsto.app/api/account/wipeNotice",
                         params={"apikey": apikey},
                         data={
                             "emailAddress": request.user.email,
                             "wipedBy": request.user.username,
-                            "source": cache.get("tsto_api_team_name", default="TSTO API"),
+                            "source": cache.get(
+                                "tsto_api_team_name", default="TSTO API"
+                            ),
                             "deletedItems": [
                                 "Device data.",
                                 "Login tokens.",
@@ -402,9 +420,11 @@ def delete_account(request):
                                 "Email address.",
                                 "Advertisting ID.",
                             ],
-                        }
+                        },
                     )
-                    confirmed = response.status_code == 200 and response.json().get("success")
+                    confirmed = response.status_code == 200 and response.json().get(
+                        "success"
+                    )
                 except (requests.exceptions.RequestException, ValueError):
                     confirmed = False
 
@@ -416,7 +436,9 @@ def delete_account(request):
                     user.delete()
                     return HttpResponseRedirect(reverse("dashboard:login"))
 
-                messages.error(request, "A notification email could not be delivered. Try again!")
+                messages.error(
+                    request, "A notification email could not be delivered. Try again!"
+                )
 
             elif status is None:
                 return HttpResponseRedirect(reverse("dashboard:profile"))
@@ -433,3 +455,22 @@ def delete_account(request):
     }
 
     return render(request, "dashboard/delete-account.html", context)
+
+
+@require_GET
+def viewer(request):
+    if not settings.TOWN_VIEWER_URL:
+        return HttpResponseForbidden("Town viewer is not configured.")
+
+    if not request.GET.get("url"):
+        return HttpResponseBadRequest("Missing url parameter.")
+
+    src = settings.TOWN_VIEWER_URL
+    origin = quote(request.build_absolute_uri(reverse("dashboard:viewer")))
+    url_param = quote(request.GET["url"])
+
+    return render(
+        request,
+        "dashboard/viewer.html",
+        {"src": f"{src}?origin={origin}&url={url_param}"},
+    )

@@ -176,7 +176,11 @@
               <img src="{{ friend.avatar_url }}" alt="" width="100" height="100">
             </td>
             <td>
-              {{ friend.username }}
+              {% if town_viewer_url and friend.town %}
+                <a target="_blank" rel="noopener noreferrer" href="{% url 'dashboard:viewer' %}?url={{ friend.town.url|urlencode }}">{{ friend.username }}</a>
+              {% else %}
+                {{ friend.username }}
+              {% endif %}
             </td>
             <td>
               {{ friend.last_authenticated }}

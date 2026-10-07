@@ -566,6 +566,8 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 
 - `[TIME_ZONE]`: Time zone string for the Django application. Default: `UTC`.
 
+- `[TOWN_VIEWER_URL]`: URL for the town viewer backend service. Default: `None`.
+
 - `[TSTO_API_KEY]`: TSTO API authentication key. Optional; overrides custom email delivery when provided.
 
 - `[TSTO_API_TEAM_NAME]`: TSTO API team name. Optional.

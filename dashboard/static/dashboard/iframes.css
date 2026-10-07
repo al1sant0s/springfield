@@ -1,0 +1,10 @@
+#town-viewer {
+  border: solid 2px #c5c5c5;
+}
+
+main article section {
+  background: none;
+  max-width: none;
+  border: none;
+  padding: 0;
+}

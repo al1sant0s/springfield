@@ -38,6 +38,11 @@
     <button type="submit" class="btn" name="town-form">Upload</button>
   </div>
 </form>
+{% if town_viewer_url and request.user.town %}
+  <div>
+    <a class="btn btn-link" rel="noopener noreferrer" href="{% url 'dashboard:viewer' %}?url={{ request.user.town.url|urlencode }}">Explore your town</a>
+  </div>
+{% endif %}
 <hr>
 <h1>- Edit currencies +</h1>
 {% if messages or currency_form.errors %}
