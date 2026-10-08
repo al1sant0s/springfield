@@ -333,6 +333,10 @@ section a:hover {
   color: yellow;
 }
 
+.friend-town:hover {
+  color: royalblue;
+}
+
 /* Multifactor-authentication-(MFA) */
 
 .bg-white {

@@ -177,7 +177,7 @@
             </td>
             <td>
               {% if town_viewer_url and friend.town %}
-                <a target="_blank" rel="noopener noreferrer" href="{% url 'dashboard:viewer' %}?url={{ friend.town.url|urlencode }}">{{ friend.username }}</a>
+                <a class="friend-town" target="_blank" rel="noopener noreferrer" href="{% url 'dashboard:viewer' %}?url={{ friend.town.url|urlencode }}">{{ friend.username }}</a>
               {% else %}
                 {{ friend.username }}
               {% endif %}
