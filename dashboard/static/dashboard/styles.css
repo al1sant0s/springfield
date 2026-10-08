@@ -330,7 +330,7 @@ section a {
 }
 
 section a:hover {
-  color: white;
+  color: yellow;
 }
 
 /* Multifactor-authentication-(MFA) */
