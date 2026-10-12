@@ -439,3 +439,11 @@ footer p {
   font-size: 1.2rem;
   text-align: center;
 }
+
+#server-creator {
+  color: white;
+}
+
+#server-creator a:hover{
+  color: gold;
+}
