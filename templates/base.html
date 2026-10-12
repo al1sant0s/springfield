@@ -4,11 +4,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}User dashboard{% endblock title %}</title>
-    <link rel="icon" href="{% block favicon %}data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% block favicon_emoji %}🏡{% endblock favicon_emoji %}</text></svg>{% endblock favicon %}">
+    <title>{% block title %}User Dashboard{% endblock title %}</title>
+
+    <link rel="icon" href="{% block favicon %}data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{% block favicon_emoji %}🏡{% endblock favicon_emoji %}</text></svg>{% endblock favicon %}">
+
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
     <link rel="stylesheet" href="{% static 'dashboard/media.css' %}">
     {% block extra_css %}{% endblock extra_css %}
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
@@ -21,10 +24,10 @@
     <header>
       {% block hamburger %}
       {% if request.user.is_authenticated %}
-      <a href="#nav-menu" class="hamburger">
-          <span></span>
-          <span></span>
-          <span></span>
+      <a href="#nav-menu" class="hamburger" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
       </a>
       {% endif %}
       {% endblock hamburger %}
@@ -34,7 +37,7 @@
 
     {% block nav %}
     {% if request.user.is_authenticated %}
-    <nav id="nav-wide-menu">
+    <nav id="nav-wide-menu" aria-label="Main Navigation">
       <ul>
         <li>
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
@@ -51,24 +54,24 @@
         <li>
           <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
+            <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
-        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
+        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url|default:'' }}')"></li>
         <li class="nav-username">
           <p>{{ request.user.username }}</p>
         </li>
       </ul>
     </nav>
 
-    <nav id="nav-menu">
+    <nav id="nav-menu" aria-label="Mobile Navigation">
       <ul>
         <li class="nav-close">
-          <a href="#" class="close-btn">✕</a>
+          <a href="#" class="close-btn" aria-label="Close menu">✕</a>
         </li>
         <li class="nav-user-info-container">
           <ul class="nav-user-info">
-            <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
+            <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url|default:'' }}')"></li>
             <li class="nav-username">
               <p>{{ request.user.username }}</p>
             </li>
@@ -89,7 +92,7 @@
         <li>
           <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
+            <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
       </ul>

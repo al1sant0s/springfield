@@ -253,11 +253,11 @@ section {
   background: linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
-section h1 {
+section h2 {
   font-size: 1.8rem;
 }
 
-section h1, section h2, section h3 {
+section h2, section h3 {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
