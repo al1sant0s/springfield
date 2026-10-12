@@ -4,11 +4,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}User dashboard{% endblock title %}</title>
-    <link rel="icon" href="{% block favicon %}data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>{% block favicon_emoji %}🏡{% endblock favicon_emoji %}</text></svg>{% endblock favicon %}">
+    <title>{% block title %}User Dashboard{% endblock title %}</title>
+
+    <link rel="icon" href="{% block favicon %}data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{% block favicon_emoji %}🏡{% endblock favicon_emoji %}</text></svg>{% endblock favicon %}">
+
     <link rel="stylesheet" href="{% static 'dashboard/styles.css' %}">
     <link rel="stylesheet" href="{% static 'dashboard/media.css' %}">
     {% block extra_css %}{% endblock extra_css %}
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bungee+Inline&family=Corben:wght@400;700&family=Exo+2:ital,wght@0,100..900;1,100..900&family=Sriracha&display=swap" rel="stylesheet">
@@ -21,10 +24,10 @@
     <header>
       {% block hamburger %}
       {% if request.user.is_authenticated %}
-      <a href="#nav-menu" class="hamburger">
-          <span></span>
-          <span></span>
-          <span></span>
+      <a href="#nav-menu" class="hamburger" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
       </a>
       {% endif %}
       {% endblock hamburger %}
@@ -34,7 +37,7 @@
 
     {% block nav %}
     {% if request.user.is_authenticated %}
-    <nav id="nav-wide-menu">
+    <nav id="nav-wide-menu" aria-label="Main Navigation">
       <ul>
         <li>
           <a class="nav-item exo-2-generic" href="{% url 'dashboard:index' %}">Town 🏡</a>
@@ -51,24 +54,24 @@
         <li>
           <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
+            <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
-        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
+        <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url|default:'' }}')"></li>
         <li class="nav-username">
           <p>{{ request.user.username }}</p>
         </li>
       </ul>
     </nav>
 
-    <nav id="nav-menu">
+    <nav id="nav-menu" aria-label="Mobile Navigation">
       <ul>
         <li class="nav-close">
-          <a href="#" class="close-btn">✕</a>
+          <a href="#" class="close-btn" aria-label="Close menu">✕</a>
         </li>
         <li class="nav-user-info-container">
           <ul class="nav-user-info">
-            <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url }}')"></li>
+            <li class="nav-profile-pic" style="background-image: url('{{ request.user.avatar_url|default:'' }}')"></li>
             <li class="nav-username">
               <p>{{ request.user.username }}</p>
             </li>
@@ -89,7 +92,7 @@
         <li>
           <form class="logout" action="{% url 'dashboard:logout' %}" method="post">
             {% csrf_token %}
-              <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
+            <button type="submit" class="nav-item exo-2-generic">Logout 🚪</button>
           </form>
         </li>
       </ul>
@@ -108,7 +111,56 @@
 
     {% block footer %}
     <footer>
-      <p>
+      <ul id="footer-links">
+        <li class="footer-card">
+          <h3>Our Socials:</h3>
+          <ul class="footer-card-links">
+            <li>
+              <a href="https://discord.gg/rzP2qGjGww" target="_blank" rel="noopener noreferrer" class="social-link">
+                <img src="{% static 'dashboard/discord-8234.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Discord</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://www.reddit.com/r/springfield_heights/" target="_blank" rel="noopener noreferrer" class="social-link">
+                <img src="{% static 'dashboard/reddit-logo-2436.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Reddit</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://www.facebook.com/groups/1316351043546033" target="_blank" rel="noopener noreferrer" class="social-link">
+                <img src="{% static 'dashboard/facebook-2870.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Facebook</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="footer-card">
+          <h3>Download the game:</h3>
+          <ul class="footer-card-links">
+            <li>
+              <a href="https://cdn.al1sant0s.com/Springfield_Heights.apk" download class="social-link">
+                <img src="{% static 'dashboard/android-icon.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Android</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://cdn.al1sant0s.com/Springfield_Heights.ipa" download class="social-link">
+                <img src="{% static 'dashboard/apple-icon.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>iOS</span>
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'dashboard:index' %}" class="social-link">
+                <span class="social-icon social-emoji" aria-hidden="true">🏡</span>
+                <span>Home Page</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul> 
+      <p id="server-creator">
         Server created by <a target="_blank" rel="noopener noreferrer" href="https://github.com/al1sant0s">@al1sant0s</a>
       </p>
     </footer>

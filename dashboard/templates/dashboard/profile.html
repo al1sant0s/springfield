@@ -12,7 +12,7 @@
 {% block header_title %}User Profile{% endblock header_title %}
 
 {% block content %}
-<h1>Edit user profile</h1>
+<h2>Edit user profile</h2>
 <p>Change your avatar picture and username.</p>
 {% if messages or profile_form.errors %}
   <ul class="messages">
@@ -45,7 +45,7 @@
   </div>
 </form>
 <hr id="mfa-account">
-<h1>Multi-factor authentication</h1>
+<h2>Multi-factor authentication</h2>
 {% if user.is_authenticated and user.otp_device %}
   <p>MFA is currently <strong style="color: green;">enabled</strong> 🔐</p>
   <hr>
@@ -61,7 +61,7 @@
   </div>
 {% endif %}
 <hr id="delete-account">
-<h1>Delete user account</h1>
+<h2>Delete user account</h2>
 <p>‼️ Warning! Be <strong class="danger-emphasis">very careful</strong> with this. This action is <strong class="danger-emphasis">irreversible</strong>.</p>
 <hr>
 <div>

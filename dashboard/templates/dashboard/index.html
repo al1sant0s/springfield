@@ -7,7 +7,7 @@
 {% block header_title %}User Town{% endblock header_title %}
 
 {% block content %}
-<h1>Upload town file</h1>
+<h2>Upload town file</h2>
 {% if messages or town_form.errors %}
   <ul class="messages">
     {% for message in messages %}
@@ -44,7 +44,7 @@
   </div>
 {% endif %}
 <hr>
-<h1>- Edit currencies +</h1>
+<h2>- Edit currencies +</h2>
 {% if messages or currency_form.errors %}
   <ul class="messages">
     {% for message in messages %}

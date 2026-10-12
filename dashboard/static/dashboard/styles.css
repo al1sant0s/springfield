@@ -253,11 +253,11 @@ section {
   background: linear-gradient(to right, yellow, 5%, coral, tomato);
 }
 
-section h1 {
+section h2 {
   font-size: 1.8rem;
 }
 
-section h1, section h2, section h3 {
+section h2, section h3 {
   color: #870c25;
   margin: 0 0 0 auto;
   padding: 5px 10px 0px 10px;
@@ -468,7 +468,7 @@ footer p {
   margin: 50px;
 }
 
-.footer-card h1 {
+.footer-card h2 {
   font-size: 1.05rem;
   font-weight: 700;
   font-style: italic;
@@ -480,7 +480,7 @@ footer p {
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.4);
 }
 
-.footer-card h2 {
+.footer-card h3 {
   font-size: 0.95rem;
   color: #e8ff7c;
   padding: 0;
