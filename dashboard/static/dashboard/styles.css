@@ -447,3 +447,92 @@ footer p {
   font-size: 1.2rem;
   text-align: center;
 }
+
+#footer-links {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;     /* Stretches cards to equal height */
+  gap: 30px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-card {
+  width: 300px;
+  border: 2.5px solid rgba(151, 210, 102, 0.67);
+  border-radius: 16px;
+  background: linear-gradient(to right, #009726, #77c75a);
+  overflow: hidden;         /* Clips the top bar to match the border-radius */
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  margin: 50px;
+}
+
+.footer-card h1 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-style: italic;
+  background-color: #0b7020;
+  text-align: center;
+  color: snow;
+  margin: 0;
+  padding: 12px 10px;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.4);
+}
+
+.footer-card h2 {
+  font-size: 0.95rem;
+  color: #e8ff7c;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-card-links {
+  list-style: none;
+  padding: 24px 20px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;                /* Space between each link row */
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: white;
+  font-weight: 600;
+  font-style: italic;
+  font-size: 0.95rem;
+  transition: transform 0.15s ease;
+}
+
+.social-link:hover {
+  color: yellow;
+  transform: translateX(4px); /* Subtle hover feedback */
+}
+
+.social-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;             /* Centers content both horizontally and vertically */
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;            /* Strips extra line-height leading */
+}
+
+.social-emoji {
+  font-size: 1.75rem;
+  font-style: normal;
+  user-select: none;
+}
+
+#server-creator {
+  color: white;
+}
+
+#server-creator a:hover{
+  color: gold;
+}
