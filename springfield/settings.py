@@ -42,6 +42,10 @@ CSRF_TRUSTED_ORIGINS = env.list(
     "CSRF_TRUSTED_ORIGINS", default=["http://localhost:8000", "http://127.0.0.1:8000"]
 )
 
+# Trust the reverse proxy's X-Forwarded-Proto so request.is_secure() and
+# build_absolute_uri() produce https URLs when TLS is terminated upstream.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 INTERNAL_IPS = env.list("INTERNAL_IPS", default=["127.0.0.1", "::1"])
 
 
