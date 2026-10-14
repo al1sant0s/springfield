@@ -145,4 +145,13 @@
     margin-left: 0;
   }
 
+  #footer-links {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .footer-card {
+    margin: 20px 0;
+  }
+
 }
