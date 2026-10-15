@@ -1,0 +1,60 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'dashboard/footer-links.css' %}">
+      <ul id="footer-links">
+        <li class="footer-card">
+          <h2>Our socials</h2>
+          <ul class="footer-card-links">
+            <li>
+              <h3>Springfield Heights Server:</h3>
+            </li>
+            <li>
+              <a href="https://discord.gg/rzP2qGjGww" target="_blank" rel="noopener noreferrer" class="social-link">
+                <img src="{% static 'dashboard/discord-8234.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Discord</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://www.reddit.com/r/springfield_heights/" target="_blank" rel="noopener noreferrer" class="social-link">
+                <img src="{% static 'dashboard/reddit-logo-2436.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Reddit</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://www.facebook.com/groups/1316351043546033" target="_blank" rel="noopener noreferrer" class="social-link">
+                <img src="{% static 'dashboard/facebook-2870.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Facebook</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="footer-card">
+          <h2>Play the game</h2>
+          <ul class="footer-card-links">
+            <li>
+              <h3>Download the game:</h3>
+            </li>
+            <li>
+              <a href="https://cdn.al1sant0s.com/Springfield_Heights.apk" download class="social-link">
+                <img src="{% static 'dashboard/android-7925.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>Android</span>
+              </a>
+            </li>
+            <li>
+              <a href="https://cdn.al1sant0s.com/Springfield_Heights.ipa" download class="social-link">
+                <img src="{% static 'dashboard/apple-logo-black-27774.svg' %}" alt="" aria-hidden="true" width="40" height="40" class="social-icon">
+                <span>iOS</span>
+              </a>
+            </li>
+            <li>
+              <h3>Access the user dashboard:</h3>
+            </li>
+            <li>
+              <a href="{% url 'dashboard:index' %}" class="social-link">
+                <span class="social-icon social-emoji" aria-hidden="true">🏡</span>
+                <span>Home Page</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
