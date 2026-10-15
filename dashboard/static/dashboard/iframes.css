@@ -13,4 +13,6 @@ main article section {
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   background-color: #000;
+  overscroll-behavior: contain;
+  touch-action: manipulation;
 }

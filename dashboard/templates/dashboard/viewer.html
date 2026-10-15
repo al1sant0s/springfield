@@ -12,6 +12,6 @@
 {% block header_title %}Town Viewer{% endblock header_title %}
 
 {% block content %}
-<iframe id="town-viewer" src="{{ src }}" allow="fullscreen" allowfullscreen></iframe>
+<iframe id="town-viewer" src="{{ src }}" allow="fullscreen" allowfullscreen loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
 {% endblock content %}
 

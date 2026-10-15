@@ -119,6 +119,12 @@
     font-size: 1.4rem;
   }
 
+  #town-viewer {
+    aspect-ratio: 9 / 16;
+    max-height: 80dvh;
+    margin: 0 auto;
+  }
+
   #reset-password {
     text-align: center;
   }
