@@ -542,7 +542,7 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 
 - `HCAPTCHA_SECRET`: Backend key to validate the captcha during user deletion.
 
-- `[LOGIN_ATTEMPTS]`: Maximum number of failed login attempts permitted before temporarily blocking user access (via *django-axes*). Default: `0` (disabled).
+- `[LOGIN_ATTEMPTS]`: Maximum number of failed login attempts permitted before temporarily blocking user access (via _django-axes_). Default: `0` (disabled).
 
 - `[LOGIN_FAIL_COOLOFF_TIME]`: Duration in minutes that an IP remains locked out after exceeding `LOGIN_ATTEMPTS`. Default: `30` minutes.
 
