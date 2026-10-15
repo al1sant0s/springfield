@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY environment.yaml .
 
-RUN conda env create --file environment.yaml
+RUN mamba env create --file environment.yaml && mamba clean --all --yes
 
 COPY . .
 
