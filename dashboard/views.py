@@ -40,8 +40,6 @@ from .forms import (
     UserProfileForm,
 )
 
-# Create your views here.
-
 
 def register(request):
     register_form = RequestUserForm()
@@ -418,9 +416,10 @@ def delete_account(request):
                                 "Profile picture.",
                                 "Username.",
                                 "Email address.",
-                                "Advertisting ID.",
+                                "Advertising ID.",
                             ],
                         },
+                        timeout=10,
                     )
                     confirmed = response.status_code == 200 and response.json().get(
                         "success"
