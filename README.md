@@ -538,9 +538,9 @@ Service URLs for caching, storage, and email use _django-service-urls_ / _django
 
 - `[INTERNAL_IPS]`: Comma-separated list of internal IP addresses for Django debug toolbar. Default: `127.0.0.1,::1`.
 
-- `HCAPTCHA_SITEKEY`: Frontend captcha key for the "Delete User" form in the dashboard.
+- `[HCAPTCHA_SITEKEY]`: Frontend captcha key for the "Delete User" form in the dashboard. Default: hCaptcha test key (`10000000-ffff-ffff-ffff-000000000001`), for development only.
 
-- `HCAPTCHA_SECRET`: Backend key to validate the captcha during user deletion.
+- `[HCAPTCHA_SECRET]`: Backend key to validate the captcha during user deletion. Default: hCaptcha test secret (`0x0000000000000000000000000000000000000000`), for development only.
 
 - `[LOGIN_ATTEMPTS]`: Maximum number of failed login attempts permitted before temporarily blocking user access (via _django-axes_). Default: `0` (disabled).
 
