@@ -422,12 +422,6 @@ def protoland(request, mayhem_id):
             )
 
     else:
-        # Avoid user tampering with other towns.
-        if mayhem_id != land_token.user.mayhem_id.int:
-            return HttpResponseBadRequest(
-                "User Mayhem ID and URL Mayhem ID don't match!"
-            )
-
         # Try to decompress.
         if request.headers.get("Content-Encoding") == "gzip":
             decompressed_data = gzip.decompress(request.body)
@@ -464,12 +458,6 @@ def protocurrency(request, mayhem_id):
             DeviceToken.objects.select_related("user"),
             current_client_session_id=session_uuid,
         ).user
-
-        # Avoid user tampering with other towns.
-        if mayhem_id != user.mayhem_id.int:
-            return HttpResponseBadRequest(
-                "User Mayhem ID and URL Mayhem ID don't match!"
-            )
 
         # Initial currency setup.
         protocurrency_response = PurchaseData_pb2.CurrencyData()
@@ -511,10 +499,6 @@ def extraLandUpdate(request, mayhem_id):
         user = get_object_or_404(
             LandToken.objects.select_related("user"), land_token=land_token
         ).user
-
-    # Avoid user tampering with other towns.
-    if mayhem_id != user.mayhem_id.int:
-        return HttpResponseBadRequest("User Mayhem ID and URL Mayhem ID don't match!")
 
     # Try to decompress.
     if request.headers.get("Content-Encoding") == "gzip":
