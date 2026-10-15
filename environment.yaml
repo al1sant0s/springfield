@@ -1,4 +1,4 @@
-name: django-public-server
+name: django
 channels:
   - conda-forge
 dependencies:
