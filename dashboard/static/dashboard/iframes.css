@@ -16,3 +16,11 @@ main article section {
   overscroll-behavior: contain;
   touch-action: manipulation;
 }
+
+@media screen and (width < 712px) and (orientation: portrait) {
+  #town-viewer {
+    aspect-ratio: 9 / 16;
+    max-height: 80dvh;
+    margin: 0 auto;
+  }
+}
