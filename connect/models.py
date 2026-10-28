@@ -15,6 +15,11 @@ from PIL import Image
 from protofiles import LandData_pb2
 
 
+def avatar_upload_to(instance, filename):
+    ext = Path(filename).suffix.lower() or ".png"
+    return f"avatars/{instance.user_id}{ext}"
+
+
 def validate_avatar(file):
     if not file:
         return
@@ -116,7 +121,7 @@ class UserId(AbstractUser):
     friends = models.ManyToManyField("self", symmetrical=True, blank=True)
     avatar = models.ImageField(
         "Avatar Picture",
-        upload_to="avatars/",
+        upload_to=avatar_upload_to,
         blank=True,
         validators=[validate_avatar],
     )
