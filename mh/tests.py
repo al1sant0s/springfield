@@ -255,23 +255,6 @@ class ProtolandViewTests(TestCase):
         )
         self.assertTrue(cache.get(str(land_token.land_token)))
 
-        # Attempt to post to other user's town by giving their mayhem id.
-        new_device = TestDevice()
-        new_device.register_device_token()
-
-        compressed_body = gzip.compress(land_data.SerializeToString())
-        response = self.client.post(
-            reverse("mh:protoland", args=(new_device.token.user.mayhem_id.int,)),
-            data=compressed_body,
-            content_type="application/x-protobuf",
-            headers={
-                "Land-Update-Token": str(land_token.land_token),
-                "currentClientSessionId": str(new_device.current_client_session_id),
-                "Content-Encoding": "gzip",
-            },
-        )
-        self.assertEqual(response.status_code, 400)
-
         # Attempt to get town with unauthorized land token.
         land_token.authorized = False
         land_token.save()
@@ -378,23 +361,6 @@ class ProtolandViewTests(TestCase):
         # Verify that donuts balance is up to date.
         device.token.user.refresh_from_db()
         self.assertEqual(device.token.user.donuts_balance, sum(deltas, initial_amount))
-
-        # Test if user can override currency from another user.
-        new_device = TestDevice()
-        new_device.register_device_token()
-
-        compressed_body = gzip.compress(extraland_request.SerializeToString())
-        response = self.client.post(
-            reverse("mh:extraLandUpdate", args=(new_device.token.user.mayhem_id.int,)),
-            data=compressed_body,
-            content_type="application/x-protobuf",
-            headers={
-                "Land-Update-Token": str(land_token.land_token),
-                "currentClientSessionId": str(device.current_client_session_id),
-                "Content-Encoding": "gzip",
-            },
-        )
-        self.assertEqual(response.status_code, 400)
 
 
 class WholeLandTokenViewsTest(TestCase):

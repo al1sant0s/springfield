@@ -72,7 +72,12 @@ class ResetPasswordForm(forms.Form):
             RegexValidator(
                 regex=r"^[a-zA-Z0-9_]{5,16}$",
                 message="Username must be between 5 and 16 characters and contain only letters, numbers, and underscores.",
-            )
+            ),
+            RegexValidator(
+                regex=r"^u\d{13}00$",
+                inverse_match=True,
+                message="This username is already taken.",
+            ),
         ],
     )
     password = forms.CharField(
