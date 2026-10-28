@@ -84,6 +84,9 @@ def validate_town(file):
 
 
 class UserId(AbstractUser):
+    # Default usernames of non registered users (u + 13 digit persona_id + 00) are reserved, so a registered
+    # user can never take the username of a user about to be created. Non registered users are created
+    # through save(), which does not run validators, so they are not affected.
     username = models.CharField(
         max_length=16,
         blank=True,
@@ -92,10 +95,15 @@ class UserId(AbstractUser):
             RegexValidator(
                 regex=r"^[a-zA-Z0-9_]{5,16}$",
                 message="Username must be between 5 and 16 characters and contain only letters, numbers, and underscores.",
-            )
+            ),
+            RegexValidator(
+                regex=r"^u\d{13}00$",
+                inverse_match=True,
+                message="This username is already taken.",
+            ),
         ],
     )
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, null=True)
     is_registered = models.BooleanField(default=False)
     persona_id = models.BigIntegerField(unique=True, blank=True, null=True)
     user_id = models.BigIntegerField(unique=True, blank=True, null=True)
@@ -159,9 +167,7 @@ class UserId(AbstractUser):
             if not self.password:
                 self.set_unusable_password()
             if not self.username:
-                self.username = f"u{self.persona_id}{secrets.token_hex(1)}"
-            if not self.email:
-                self.email = f"{self.username}@user.com"
+                self.username = f"u{self.persona_id}00"
 
         super().save(*args, **kwargs)
 
