@@ -96,7 +96,7 @@ def auth(request, device_id):
         # Normal user registration.
         else:
             token = get_object_or_404(
-                DeviceToken.objects.select_related("user"),
+                DeviceToken.objects.prefetch_related("user"),
                 Q(device_id=device_id) | Q(device_id_cache=device_id),
             )
             email = BaseUserManager.normalize_email(json_data["email"])
@@ -154,7 +154,7 @@ def auth(request, device_id):
 @csrf_exempt
 def get_token(request, device_id):
     token = get_object_or_404(
-        DeviceToken.objects.select_related("user"),
+        DeviceToken.objects.prefetch_related("user"),
         Q(code=request.GET.get("code"))
         | Q(device_id=device_id)
         | Q(device_id_cache=device_id),
@@ -204,7 +204,7 @@ def get_token(request, device_id):
 def tokeninfo(request, device_id):
     # Update session keys and timestamps.
     token = get_object_or_404(
-        DeviceToken.objects.select_related("user"),
+        DeviceToken.objects.prefetch_related("user"),
         Q(device_id=device_id)
         | Q(device_id_cache=device_id)
         | Q(access_token=request.GET.get("access_token")),

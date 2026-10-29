@@ -126,7 +126,7 @@ def users(request):
 
         else:
             user = get_object_or_404(
-                DeviceToken.objects.select_related("user"),
+                DeviceToken.objects.prefetch_related("user"),
                 current_client_session_id=session_uuid,
             ).user
             root = ET.Element("Resources")
@@ -262,7 +262,7 @@ def friendData(request):
 
         else:
             user = get_object_or_404(
-                DeviceToken.objects.select_related("user"),
+                DeviceToken.objects.prefetch_related("user"),
                 current_client_session_id=session_uuid,
             ).user
 
@@ -401,7 +401,7 @@ def protoland(request, mayhem_id):
 
     else:
         land_token = get_object_or_404(
-            LandToken.objects.select_related("user"), land_token=land_token
+            LandToken.objects.prefetch_related("user"), land_token=land_token
         )
 
     # Load town.
@@ -455,7 +455,7 @@ def protocurrency(request, mayhem_id):
 
     else:
         user = get_object_or_404(
-            DeviceToken.objects.select_related("user"),
+            DeviceToken.objects.prefetch_related("user"),
             current_client_session_id=session_uuid,
         ).user
 
@@ -491,13 +491,13 @@ def extraLandUpdate(request, mayhem_id):
 
         else:
             user = get_object_or_404(
-                DeviceToken.objects.select_related("user"),
+                DeviceToken.objects.prefetch_related("user"),
                 current_client_session_id=session_uuid,
             ).user
 
     else:
         user = get_object_or_404(
-            LandToken.objects.select_related("user"), land_token=land_token
+            LandToken.objects.prefetch_related("user"), land_token=land_token
         ).user
 
     # Try to decompress.

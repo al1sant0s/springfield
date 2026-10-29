@@ -282,11 +282,11 @@ def friends(request):
         search_matches = list()
 
     # Get pending requests.
-    received_requests = request.user.received_invitations.select_related(
+    received_requests = request.user.received_invitations.prefetch_related(
         "from_user"
     ).order_by("-invitation_date")
 
-    sent_requests = request.user.sent_invitations.select_related("to_user").order_by(
+    sent_requests = request.user.sent_invitations.prefetch_related("to_user").order_by(
         "-invitation_date"
     )
 

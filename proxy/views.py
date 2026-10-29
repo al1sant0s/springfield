@@ -210,7 +210,7 @@ def pids_personas(request):
 
 def user_id_personas(request, user_id):
     user = get_object_or_404(
-        DeviceToken.objects.select_related("user"),
+        DeviceToken.objects.prefetch_related("user"),
         access_token=request.headers.get("Authorization", "").split(" ")[-1],
     ).user
     response = {
@@ -251,7 +251,7 @@ def personas(request):
 
 
     our_user = get_object_or_404(
-        DeviceToken.objects.select_related("user"),
+        DeviceToken.objects.prefetch_related("user"),
         access_token=request.headers.get("Authorization", "").split(" ")[-1],
     ).user
 
@@ -298,7 +298,7 @@ def progreg_code(request):
 
 def links(request):
     token = get_object_or_404(
-        DeviceToken.objects.select_related("user"),
+        DeviceToken.objects.prefetch_related("user"),
         access_token=request.headers.get("Authorization", "").split(" ")[-1],
     )
     response = {
