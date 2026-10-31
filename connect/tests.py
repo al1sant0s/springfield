@@ -41,7 +41,7 @@ class ConnectViewsTests(TestCase):
     def test_anonymous_connection(self):
         """
         The first connection should receive a sig parameter from URL
-        and use the data to create a new User and DeviceToken entries
+        and use the data to create new User and DeviceToken entries
         in the database.
         """
 
@@ -103,7 +103,7 @@ class ConnectViewsTests(TestCase):
         self.assertEqual(type(response_data), dict)
         self.assertIn("code", response_data)
         self.assertIn("lnglv_token", response_data)
-        self.assertTrue(token.login_status, "Login have failed")
+        self.assertTrue(token.login_status, "Login has failed")
 
 
     def test_logout_user(self):

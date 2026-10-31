@@ -159,7 +159,7 @@ def userstats(request):
         device_id = uuid.UUID(request.GET.get("device_id"))
 
     except (TypeError, ValueError):
-        return HttpResponseBadRequest("Missing or invalid URL paramater: device_id")
+        return HttpResponseBadRequest("Missing or invalid URL parameter: device_id")
 
     else:
         token = get_object_or_404(
