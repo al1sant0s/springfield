@@ -24,7 +24,7 @@ from .models import ProgRegCode
 
 def search_friends(user, search_username):
     # Do not show ourselves. Neither show non registered users and users that are already our friends.
-    # Also hide superusers. Finally, do not show users whose have sent or received a friend request from us.
+    # Also hide superusers. Finally, do not show users who have sent or received a friend request from us.
     friend_query_set = FriendInvitation.objects.filter(
         Q(from_user__in=[user]) | Q(to_user__in=[user])
     )

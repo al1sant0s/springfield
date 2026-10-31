@@ -8,7 +8,7 @@ def getDeviceID(request, device_id, platform):
     # This will be used again to associate a header called "currentClientSessionId"
     # with a device. Since most headers have underscores which are dropped by default,
     # this is the only header we can use in the mh application to identify a device.
-    # We do not have access to headers such access_token and any of the sorts whose
+    # We do not have access to headers such as access_token and any of the sorts that
     # contain underscores.
     response = {
         "deviceId": str(device_id),

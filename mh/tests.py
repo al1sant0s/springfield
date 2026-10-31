@@ -51,7 +51,7 @@ class UserStatsViewTests(TestCase):
         self.assertTrue(land_token.authorized)
         self.assertEqual(response.status_code, 409)
 
-    def test_missing_currenct_client_session_id(self):
+    def test_missing_current_client_session_id(self):
         device = TestDevice()
         response = self.client.post(
             reverse("mh:userstats"), query_params={"device_id": str(device.device_id)}

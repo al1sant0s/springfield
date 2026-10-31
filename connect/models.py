@@ -183,7 +183,7 @@ class DeviceToken(models.Model):
     )
     advertising_id = models.UUIDField(primary_key=True)
 
-    # This field exists to circuvent issues with headers with underscores like "access_token".
+    # This field exists to circumvent issues with headers with underscores like "access_token".
     # When /connect/tokeninfo is requested we will receive /<uuid:device_id>/connect/tokeninfo
     # and be able to find the DeviceToken. We can also use it in other apps.
     device_id = models.UUIDField(default=uuid.uuid4, unique=True)

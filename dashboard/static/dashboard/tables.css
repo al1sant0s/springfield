@@ -4,7 +4,7 @@
 }
 
 .tableFixHead {
-  overflow-y: auto; /* Make the table scrollable if height is more than the what is specified bellow */
+  overflow-y: auto; /* Make the table scrollable if height is more than what is specified below */
   max-height: 620px;
   margin: 0 auto 70px auto;
 }

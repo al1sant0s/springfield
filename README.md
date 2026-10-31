@@ -1,6 +1,6 @@
 # Heads up
 
-> If you have stumbled upon this project and you're just looking for an easy way to play the game again, without having to host a server by yourself, you can do so by joinining this [public server](https://discord.com/invite/rzP2qGjGww).
+> If you have stumbled upon this project and you're just looking for an easy way to play the game again, without having to host a server by yourself, you can do so by joining this [public server](https://discord.com/invite/rzP2qGjGww).
 > Otherwise, if you would rather prefer to host your own server, continue reading the guide.
 
 <h1 align="center">Welcome to Springfield 👋</h1>
