@@ -174,9 +174,10 @@ def userstats(request):
             land_token.authorized = False
             land_token.save(update_fields=["authorized"])
 
-        elif land_token.retrieved:
+        else:
+            land_token.retrieved = True
             land_token.authorized = True
-            land_token.save(update_fields=["authorized"])
+            land_token.save(update_fields=["retrieved", "authorized"])
             # Save cached town.
             cache_entry = str(land_token.land_token)
             cached_town = cache.get(cache_entry)
