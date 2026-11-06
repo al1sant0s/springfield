@@ -1,3 +1,5 @@
+import copy
+
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.contrib.auth.models import BaseUserManager
@@ -166,7 +168,7 @@ def index(request):
     if request.method == "POST":
         if "town-form" in request.POST:
             town_form = UploadTownForm(
-                request.POST, request.FILES, instance=request.user
+                request.POST, request.FILES, instance=copy.copy(request.user)
             )
             if town_form.is_valid():
                 town_form.save()
@@ -240,8 +242,10 @@ def index(request):
 @login_required
 def profile(request):
     if request.method == "POST":
+        # Bind the form to a copy. A ModelForm writes the submitted values onto its instance while
+        # validating, so a rejected username would otherwise leak into request.user (and the navbar).
         profile_form = UserProfileForm(
-            request.POST, request.FILES, instance=request.user
+            request.POST, request.FILES, instance=copy.copy(request.user)
         )
         if profile_form.is_valid():
             if profile_form.has_changed():
