@@ -94,7 +94,6 @@ class UserId(AbstractUser):
     # through save(), which does not run validators, so they are not affected.
     username = models.CharField(
         max_length=16,
-        blank=True,
         unique=True,
         validators=[
             RegexValidator(
