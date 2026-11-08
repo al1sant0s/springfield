@@ -111,7 +111,7 @@ class UserProfileForm(forms.ModelForm):
 
 
 class SearchUserForm(forms.Form):
-    search_text = forms.CharField(min_length=5, max_length=16, label="Search user")
+    search_text = forms.CharField(min_length=5, label="Search user")
 
 
 class DeleteUserForm(forms.Form):
