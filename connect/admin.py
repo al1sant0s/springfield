@@ -78,7 +78,7 @@ class DeviceTokenAdmin(admin.ModelAdmin):
 class UserIdAdmin(UserAdmin):
     list_display = ["email", "username", "is_registered", "last_authenticated"]
     list_filter = ["is_superuser", "is_registered", "is_active"]
-    search_fields = ["advertising_id", "user__email", "user__username"]
+    search_fields = ["device_tokens__advertising_id", "email", "username"]
     ordering = ["-persona_id"]
     filter_horizontal = ("friends",)
     readonly_fields = (
