@@ -29,28 +29,25 @@ def search_friends(user, search_username):
         Q(from_user__in=[user]) | Q(to_user__in=[user])
     )
 
-    users = UserId.objects.filter(
-        (
-            Q(username__icontains=search_username) |
-            Q(email__iexact=search_username)
-        ) &
-        Q(is_registered=True) &
-        Q(is_superuser=False)
-    ).exclude(
-        id=user.id
-    ).exclude(
-        friends__in=[user]
-    ).exclude(
-        sent_invitations__in=friend_query_set
-    ).exclude(
-        received_invitations__in=friend_query_set
+    users = (
+        UserId.objects.filter(
+            (
+                Q(username__icontains=search_username)
+                | Q(email=search_username.lower())
+            )
+            & Q(is_registered=True)
+            & Q(is_superuser=False)
+        )
+        .exclude(id=user.id)
+        .exclude(friends__in=[user])
+        .exclude(sent_invitations__in=friend_query_set)
+        .exclude(received_invitations__in=friend_query_set)
     )
 
     return users
 
 
 def check_tsto_api():
-
     tsto_api_available = cache.get("tsto_api_available")
 
     if tsto_api_available is None:
@@ -62,7 +59,11 @@ def check_tsto_api():
 
         if tsto_api_key is not None and tsto_api_team_name is not None:
             try:
-                response = requests.get("https://tsto.app/api/handshake/", params={"apikey": tsto_api_key})
+                response = requests.get(
+                    "https://tsto.app/api/handshake/",
+                    params={"apikey": tsto_api_key},
+                    timeout=(5, 10),
+                )
                 if response.status_code == 200 and response.json().get("valid", False):
                     tsto_api_available = True
             except (requests.exceptions.RequestException, ValueError):
@@ -74,12 +75,13 @@ def check_tsto_api():
 
 
 def get_auth_code(email, username="user", send_email=True):
-
     # If a non expired auth code exists in the database already use it.
     # Otherwise get a new code.
-    auth_code_queryset = ProgRegCode.objects.filter(email=email)
-    if auth_code_queryset.exists() and auth_code_queryset.first().expiry_on > timezone.now():
-        return auth_code_queryset.first()
+    auth_code = ProgRegCode.objects.filter(
+        email=email, expiry_on__gt=timezone.now()
+    ).first()
+    if auth_code is not None:
+        return auth_code
 
     else:
         code = get_random_string(6, allowed_chars="0123456789")
@@ -96,22 +98,21 @@ def get_auth_code(email, username="user", send_email=True):
                 },
             )
 
-
         # Search for current active code in database.
         # If it cannot find one, create a new one.
         auth_code, _ = ProgRegCode.objects.update_or_create(
             email=email,
             defaults={
                 "code": code,
-                "expiry_on": timezone.now() + datetime.timedelta(minutes=env("AUTH_CODE_MINUTES", default=30))
-            }
+                "expiry_on": timezone.now()
+                + datetime.timedelta(minutes=env("AUTH_CODE_MINUTES", default=30)),
+            },
         )
 
         return auth_code
 
 
 def request_auth_code(email):
-
     try:
         user = UserId.objects.get(email=email)
 
@@ -124,9 +125,15 @@ def request_auth_code(email):
     # Get code from TSTO API if available.
     if check_tsto_api():
         try:
-            response = requests.post("https://tsto.app/api/auth/generateCode/",
+            response = requests.post(
+                "https://tsto.app/api/auth/generateCode/",
                 params={"apikey": cache.get("tsto_api_key")},
-                data={"email": email, "username": username, "teamName": cache.get("tsto_api_team_name")}
+                data={
+                    "email": email,
+                    "username": username,
+                    "teamName": cache.get("tsto_api_team_name"),
+                },
+                timeout=(5, 10),
             )
             if response.status_code == 200:
                 content = response.json()
@@ -135,18 +142,18 @@ def request_auth_code(email):
         except (requests.exceptions.RequestException, ValueError):
             pass
 
-
     get_auth_code(BaseUserManager.normalize_email(email), username=username)
     return True
 
 
 def validate_auth_code(email, code):
-
     if check_tsto_api():
         try:
-            response = requests.post("https://tsto.app/api/auth/validateCode/",
+            response = requests.post(
+                "https://tsto.app/api/auth/validateCode/",
                 params={"apikey": cache.get("tsto_api_key")},
-                data={"email": email, "code": code}
+                data={"email": email, "code": code},
+                timeout=(5, 10),
             )
             if response.status_code == 200:
                 content = response.json()
@@ -171,13 +178,14 @@ def validate_auth_code(email, code):
 
 # Create your views here.
 
+
 def geoagerequirements(request):
     response = {
         "geoAgeRequirements": {
             "minLegalRegAge": 13,
             "minAgeWithConsent": "3",
             "minLegalContactAge": 13,
-            "country": "US"
+            "country": "US",
         }
     }
     return JsonResponse(response)
@@ -196,16 +204,20 @@ def me_personas(request, persona_id):
             "status": "ACTIVE",
             "statusReasonCode": "",
             "showPersona": "EVERYONE",
-            "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
-            "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
-            "anonymousId": base64.b64encode(hashlib.md5(user.username.encode("utf-8")).digest()).decode("utf-8")
+            "dateCreated": user.date_joined.strftime("%Y-%m-%dT%H:%MZ"),
+            "lastAuthenticated": user.last_authenticated.strftime("%Y-%m-%dT%H:%MZ"),
+            "anonymousId": base64.b64encode(
+                hashlib.md5(user.username.encode("utf-8")).digest()
+            ).decode("utf-8"),
         }
     }
     return JsonResponse(response)
 
 
 def pids_personas(request):
-    return JsonResponse({"error":"not_found","error_description":"no mediator found"})
+    return JsonResponse(
+        {"error": "not_found", "error_description": "no mediator found"}
+    )
 
 
 def user_id_personas(request, user_id):
@@ -226,8 +238,10 @@ def user_id_personas(request, user_id):
                     "status": "ACTIVE",
                     "statusReasonCode": "",
                     "showPersona": "FRIENDS",
-                    "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
-                    "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
+                    "dateCreated": user.date_joined.strftime("%Y-%m-%dT%H:%MZ"),
+                    "lastAuthenticated": user.last_authenticated.strftime(
+                        "%Y-%m-%dT%H:%MZ"
+                    ),
                 }
             ]
         }
@@ -236,7 +250,6 @@ def user_id_personas(request, user_id):
 
 
 def personas(request):
-
     friends = list()
     username = request.GET.get("displayName")
 
@@ -249,27 +262,29 @@ def personas(request):
     elif username.endswith("*"):
         username = username[:-1]
 
-
     our_user = get_object_or_404(
         DeviceToken.objects.prefetch_related("user"),
         access_token=request.headers.get("Authorization", "").split(" ")[-1],
     ).user
 
     for user in search_friends(our_user, username)[:100]:
-
         friends.append(
             {
                 "personaId": user.persona_id,
                 "pidId": user.user_id,
                 "displayName": user.username,
                 "name": user.username,
-                "namespaceName": request.GET.get("namespaceName", "gsp-redcrow-simpsons4"),
+                "namespaceName": request.GET.get(
+                    "namespaceName", "gsp-redcrow-simpsons4"
+                ),
                 "isVisible": True,
                 "status": "ACTIVE",
                 "statusReasonCode": "",
                 "showPersona": "NO_ONE",
-                "dateCreated": user.date_joined.strftime('%Y-%m-%dT%H:%MZ'),
-                "lastAuthenticated": user.last_authenticated.strftime('%Y-%m-%dT%H:%MZ'),
+                "dateCreated": user.date_joined.strftime("%Y-%m-%dT%H:%MZ"),
+                "lastAuthenticated": user.last_authenticated.strftime(
+                    "%Y-%m-%dT%H:%MZ"
+                ),
             }
         )
 
@@ -279,7 +294,6 @@ def personas(request):
 @csrf_exempt
 @require_POST
 def progreg_code(request):
-
     try:
         json_data = json.loads(request.body)
 
@@ -307,10 +321,12 @@ def links(request):
                 {
                     "newCreated": False,
                     "personaId": token.user.persona_id,
-                    "personaNamespace": request.GET.get("personaNamespace", "gsp-redcrow-simpsons4"),
+                    "personaNamespace": request.GET.get(
+                        "personaNamespace", "gsp-redcrow-simpsons4"
+                    ),
                     "pidGamePersonaMappingId": token.user.persona_id,
                     "pidId": token.user.user_id,
-                    "status":"ACTIVE"
+                    "status": "ACTIVE",
                 }
             ]
         }

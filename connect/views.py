@@ -72,7 +72,6 @@ def auth(request, device_id):
 
             # Generate new code and new access token.
             token.code = hashlib.sha1(secrets.token_bytes(32)).hexdigest()
-
             token.access_token = ":".join(
                 [
                     "AT0",
@@ -86,7 +85,7 @@ def auth(request, device_id):
             )
             token.refresh_token = token.access_token.replace("AT0", "RT0")
             token.access_token = base64.b64encode(token.access_token.encode()).decode()
-            token.refresh_token = base64.b64encode(token.access_token.encode()).decode()
+            token.refresh_token = base64.b64encode(token.refresh_token.encode()).decode()
             token.save()
 
             response = {"code": token.code, "lnglv_token": token.access_token}

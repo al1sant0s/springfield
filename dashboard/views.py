@@ -136,26 +136,13 @@ def reset_password(request):
     if "auth_email" not in request.session or "auth_username" not in request.session:
         return HttpResponseRedirect(reverse("dashboard:login"))
 
-    elif request.method == "POST":
-        password_form = ResetPasswordForm(request.POST)
+    user = get_object_or_404(UserId, email=request.session["auth_email"])
+
+    if request.method == "POST":
+        password_form = ResetPasswordForm(request.POST, instance=user)
 
         if password_form.is_valid():
-            user = get_object_or_404(UserId, email=request.session["auth_email"])
-            new_username = password_form.cleaned_data["username"]
-
-            # Only check if user actually changed their username
-            if new_username != user.username:
-                if UserId.objects.filter(username__iexact=new_username).exists():
-                    messages.error(request, "This username is already taken.")
-                    return render(
-                        request,
-                        "dashboard/reset-password.html",
-                        {"password_form": password_form},
-                    )
-                user.username = new_username
-
-            user.set_password(password_form.cleaned_data["password"])
-            user.save(update_fields=["username", "password"])
+            password_form.save()
 
             # User will have to request a new auth code to be able to revisit the reset password view.
             request.session.pop("auth_email", None)
@@ -163,9 +150,7 @@ def reset_password(request):
             return HttpResponseRedirect(reverse("dashboard:login"))
 
     else:
-        password_form = ResetPasswordForm(
-            initial={"username": request.session["auth_username"]}
-        )
+        password_form = ResetPasswordForm(instance=user)
 
     return render(
         request, "dashboard/reset-password.html", {"password_form": password_form}

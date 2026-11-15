@@ -1,11 +1,9 @@
 from django import forms
-from django.core.files.base import ContentFile
-from django.core.validators import RegexValidator
-from google.protobuf.message import DecodeError
 from hcaptcha.fields import hCaptchaField
 
 from connect.models import UserId
-from protofiles import LandData_pb2
+from mh.views import save_town
+from protofiles import GetFriendData_pb2
 
 
 class UploadTownForm(forms.ModelForm):
@@ -15,35 +13,10 @@ class UploadTownForm(forms.ModelForm):
         model = UserId
         fields = ["town"]
 
-    def clean_town(self):
-        data = self.cleaned_data["town"].read()
-        land_data = LandData_pb2.LandMessage()
-
-        try:
-            land_data.ParseFromString(data)
-
-        except DecodeError:
-            try:
-                land_data.ParseFromString(data[0x0C:])  # tstole.de backup offset
-
-            except DecodeError:
-                raise forms.ValidationError(
-                    "Invalid town file. The uploaded file is corrupted or not a valid Springfield town file."
-                )
-
-        land_data.id = str(self.instance.mayhem_id.int)
-        land_data.friendData.name = self.instance.username
-
-        return ContentFile(
-            land_data.SerializeToString(), name=f"{self.instance.mayhem_id.int}.pb"
-        )
-
     def save(self, commit=True):
-        user = super().save(commit=False)
-        user.events = bytes()
         if commit:
-            user.save()
-        return user
+            save_town(self.instance, self.cleaned_data["town"].read())
+        return self.instance
 
 
 class EditCurrenciesForm(forms.ModelForm):
@@ -63,28 +36,39 @@ class AuthCodeForm(forms.Form):
     code = forms.CharField(min_length=5, max_length=6)
 
 
-class ResetPasswordForm(forms.Form):
-    username = forms.CharField(
-        min_length=5,
-        max_length=16,
-        validators=[
-            RegexValidator(
-                regex=r"^[a-zA-Z0-9_]{5,16}$",
-                message="Username must be between 5 and 16 characters and contain only letters, numbers, and underscores.",
-            ),
-            RegexValidator(
-                regex=r"^u\d{13}00$",
-                inverse_match=True,
-                message="This username is already taken.",
-            ),
-        ],
-    )
+class UsernameModelForm(forms.ModelForm):
+    def clean_username(self):
+        username = self.cleaned_data["username"]
+        if (
+            UserId.objects.filter(username__iexact=username)
+            .exclude(pk=self.instance.pk)
+            .exists()
+        ):
+            raise forms.ValidationError("This username is already taken.")
+        return username
+
+    def update_friend_data_username(self):
+        if "username" in self.changed_data and self.instance.friend_data:
+            friend_data_pair = (
+                GetFriendData_pb2.GetFriendDataResponse.FriendDataPair.FromString(
+                    bytes(self.instance.friend_data)
+                )
+            )
+            friend_data_pair.friendData.name = self.instance.username
+            self.instance.friend_data = friend_data_pair.SerializeToString()
+
+
+class ResetPasswordForm(UsernameModelForm):
     password = forms.CharField(
         label="Password", widget=forms.PasswordInput, min_length=8
     )
     same_password = forms.CharField(
         label="Password", widget=forms.PasswordInput, min_length=8
     )
+
+    class Meta:
+        model = UserId
+        fields = ["username"]
 
     def clean(self):
         cleaned_data = super().clean()
@@ -96,19 +80,32 @@ class ResetPasswordForm(forms.Form):
 
         return cleaned_data
 
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password"])
+        self.update_friend_data_username()
+        if commit:
+            user.save(update_fields=["username", "password", "friend_data"])
+        return user
 
-class UserProfileForm(forms.ModelForm):
-    username = forms.CharField(
-        min_length=5,
-        max_length=16,
-        label_suffix="",
-    )
 
+class UserProfileForm(UsernameModelForm):
     class Meta:
         model = UserId
         fields = ["avatar", "username"]
         widgets = {"avatar": forms.FileInput}
         labels = {"avatar": False}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].label_suffix = ""
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        self.update_friend_data_username()
+        if commit:
+            user.save()
+        return user
 
 
 class SearchUserForm(forms.Form):

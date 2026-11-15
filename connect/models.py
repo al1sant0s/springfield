@@ -109,10 +109,10 @@ class UserId(AbstractUser):
     )
     email = models.EmailField(unique=True, null=True)
     is_registered = models.BooleanField(default=False)
-    persona_id = models.BigIntegerField(unique=True, blank=True, null=True)
-    user_id = models.BigIntegerField(unique=True, blank=True, null=True)
-    pid_id = models.BigIntegerField(unique=True, blank=True, null=True)
-    telemetry_id = models.BigIntegerField(unique=True, blank=True, null=True)
+    persona_id = models.BigIntegerField(unique=True, null=True, blank=True)
+    user_id = models.BigIntegerField(unique=True, null=True, blank=True)
+    pid_id = models.BigIntegerField(unique=True, null=True, blank=True)
+    telemetry_id = models.BigIntegerField(unique=True, null=True, blank=True)
     mayhem_id = models.UUIDField(default=uuid.uuid4, unique=True)
     session_key = models.CharField(max_length=44, unique=True)
     donuts_balance = models.PositiveIntegerField("Donuts", default=0)
@@ -128,6 +128,7 @@ class UserId(AbstractUser):
         "Town File", upload_to="towns/", blank=True, validators=[validate_town]
     )
     events = models.BinaryField(default=b"", blank=True)
+    friend_data = models.BinaryField(default=b"", blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
@@ -190,12 +191,12 @@ class DeviceToken(models.Model):
     device_id_cache = models.UUIDField(unique=True, null=True, blank=True)
 
     # For mh endpoint POST method identification. Usable in friendData/origin
-    current_client_session_id = models.UUIDField(null=True, blank=True)
+    current_client_session_id = models.UUIDField(null=True, unique=True, blank=True)
     manufacturer = models.CharField(max_length=64, default="unknown")
     device_model = models.CharField(max_length=64, default="unknown")
-    code = models.CharField(max_length=64, blank=True)
-    access_token = models.TextField()
-    refresh_token = models.TextField()
+    code = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    access_token = models.TextField(unique=True, null=True, blank=True)
+    refresh_token = models.TextField(unique=True, null=True, blank=True)
     timestamp = models.DateTimeField("Token Creation / Update Time", auto_now=True)
     login_status = models.BooleanField(default=False)
 

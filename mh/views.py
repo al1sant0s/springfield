@@ -9,6 +9,7 @@ from pathlib import Path
 from django.conf import settings
 from django.core.cache import cache
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.db.models import F, Q
 from django.http import (
     HttpResponse,
@@ -19,6 +20,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
+from google.protobuf.message import DecodeError
 
 from connect.models import DeviceToken, UserId
 from mh.models import LandToken
@@ -39,9 +41,26 @@ def starting_town(user):
 
 
 def save_town(user, land_data):
-    user.town = ContentFile(land_data, f"{user.mayhem_id.int}.pb")
+    land_message = LandData_pb2.LandMessage()
+    try:
+        land_message.ParseFromString(land_data)
+    except DecodeError:
+        land_message.ParseFromString(land_data[0x0C:])
+
+    land_message.id = str(user.mayhem_id.int)
+    land_message.friendData.name = user.username
+    friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(
+        friendId=str(user.mayhem_id.int),
+        friendData=land_message.friendData,
+        authService=0,
+        externalId=str(user.user_id),
+    )
+    user.town = ContentFile(
+        land_message.SerializeToString(), f"{user.mayhem_id.int}.pb"
+    )
     user.events = bytes()
-    user.save(update_fields=["town", "events"])
+    user.friend_data = friend_data_pair.SerializeToString()
+    user.save(update_fields=["town", "events", "friend_data"])
     return True
 
 
@@ -99,7 +118,7 @@ def gameplayconfig(request):
                 setattr(entry, key, value)
 
         gameplayconfig_response = gameplayconfig_response.SerializeToString()
-        cache.set("gameplayconfig_response", gameplayconfig_response)
+        cache.set("gameplayconfig", gameplayconfig_response)
 
     return HttpResponse(gameplayconfig_response, content_type="application/x-protobuf")
 
@@ -243,7 +262,6 @@ def protoClientConfig(request):
 
 @csrf_exempt
 def friendData(request):
-    friend_data_pairs = list()
     debug_mayhem_id = request.GET.get("debug_mayhem_id")
 
     # Find user friends.
@@ -267,41 +285,18 @@ def friendData(request):
                 current_client_session_id=session_uuid,
             ).user
 
-            target_users = user.friends.all()
+            target_users = user.friends.only("friend_data")
 
-    for friend in target_users:
-        land_data = LandData_pb2.LandMessage()
-        land_data.ParseFromString(load_town(friend))
+    friend_data_response = GetFriendData_pb2.GetFriendDataResponse(
+        friendData=(
+            GetFriendData_pb2.GetFriendDataResponse.FriendDataPair.FromString(
+                bytes(friend.friend_data)
+            )
+            for friend in target_users
+            if friend.friend_data
+        )
+    )
 
-        friend_data_pair = GetFriendData_pb2.GetFriendDataResponse.FriendDataPair(
-            friendId=str(friend.mayhem_id.int)
-        )
-        friend_data_pair.friendData.name = friend.username
-        friend_data_pair.authService = 0
-        friend_data_pair.externalId = str(friend.user_id)
-        friend_data_pair.friendData.dataVersion = land_data.friendData.dataVersion
-        friend_data_pair.friendData.hasLemonTree = land_data.friendData.hasLemonTree
-        friend_data_pair.friendData.language = land_data.friendData.language
-        friend_data_pair.friendData.level = land_data.friendData.level
-        friend_data_pair.friendData.rating = land_data.friendData.rating
-        friend_data_pair.friendData.spendable.extend(
-            list(land_data.friendData.spendable)
-        )
-        friend_data_pair.friendData.landVersion = land_data.friendData.landVersion
-        friend_data_pair.friendData.sublandInfos.extend(
-            list(land_data.friendData.sublandInfos)
-        )
-        friend_data_pair.friendData.boardwalkTileCount = (
-            land_data.friendData.boardwalkTileCount
-        )
-        friend_data_pair.friendData.lastPlayedTime = land_data.friendData.lastPlayedTime
-        friend_data_pair.friendData.sharedVariableSet.variable.extend(
-            list(land_data.friendData.sharedVariableSet.variable)
-        )
-        friend_data_pairs.append(friend_data_pair)
-
-    friend_data_response = GetFriendData_pb2.GetFriendDataResponse()
-    friend_data_response.friendData.extend(friend_data_pairs)
     return HttpResponse(
         friend_data_response.SerializeToString(), content_type="application/x-protobuf"
     )
@@ -546,31 +541,43 @@ def extraLandUpdate(request, mayhem_id):
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def event_user(request, mayhem_id):
+    try:
+        land_token = uuid.UUID(request.headers.get("Land-Update-Token"))
+
+    except (TypeError, ValueError):
+        return HttpResponseBadRequest("Missing or invalid header: Land-Update-Token")
+
+    land_token = get_object_or_404(
+        LandToken.objects.prefetch_related("user"), land_token=land_token
+    )
+
     if request.method == "POST":
-        event_request = LandData_pb2.EventMessage()
-        event_request.ParseFromString(request.body)
+        event_request = LandData_pb2.EventMessage.FromString(request.body)
         event_request.id = str(uuid.uuid4())
-        event_request.fromPlayerId = str(mayhem_id)
-        user = get_object_or_404(
-            UserId, mayhem_id=uuid.UUID(int=int(event_request.toPlayerId))
-        )
-        event_data = LandData_pb2.EventsMessage()
-        event_data.ParseFromString(user.events)
-        event_data.event.extend([event_request])
-        user.events = event_data.SerializeToString()
-        user.save(update_fields=["events"])
+        event_request.fromPlayerId = str(land_token.user.mayhem_id.int)
+
+        with transaction.atomic():
+            target_user = get_object_or_404(
+                land_token.user.friends.select_for_update(),
+                mayhem_id=uuid.UUID(int=int(event_request.toPlayerId)),
+            )
+            event_data = LandData_pb2.EventsMessage()
+            if target_user.events:
+                event_data.ParseFromString(bytes(target_user.events))
+            event_data.event.append(event_request)
+            target_user.events = event_data.SerializeToString()
+            target_user.save(update_fields=["events"])
+
         root = ET.Element("Land")
         return HttpResponse(
             ET.tostring(root, "utf8", "xml"), content_type="application/xml"
         )
 
-    else:
-        user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
-        event_response = LandData_pb2.EventsMessage()
-        event_response.ParseFromString(user.events)
-        return HttpResponse(
-            event_response.SerializeToString(), content_type="application/x-protobuf"
-        )
+    target_user = get_object_or_404(UserId, mayhem_id=uuid.UUID(int=mayhem_id))
+    return HttpResponse(
+        bytes(target_user.events),
+        content_type="application/x-protobuf",
+    )
 
 
 def event_fakefriend(request):
