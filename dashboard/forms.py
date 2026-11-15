@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 from hcaptcha.fields import hCaptchaField
 
@@ -38,9 +40,15 @@ class AuthCodeForm(forms.Form):
 
 class UsernameModelForm(forms.ModelForm):
     def clean_username(self):
+        # Default usernames of non-registered users (u + 13 digit persona_id + 00) are reserved,
+        # so a user can never take the username of a user about to be created.
         username = self.cleaned_data["username"]
         if (
-            UserId.objects.filter(username__iexact=username)
+            (
+                re.match(r"^u\d{13}00$", username, re.IGNORECASE)
+                and username.lower() != f"u{self.instance.persona_id}00"
+            )
+            or UserId.objects.filter(username__iexact=username)
             .exclude(pk=self.instance.pk)
             .exists()
         ):
