@@ -19,13 +19,9 @@ def getDirectionByPackage(request, platform):
 
         # Load settings and override urls.
         services = {
-            directions_android["serverData"][i]["key"]: i
-            for i in range(len(directions_android["serverData"]))
+            service["key"]: settings.SERVER_BASE_URL
+            for service in directions_android["serverData"]
         }
-        directions_url = settings.SERVER_BASE_URL
-
-        for i in services.values():
-            directions_android["serverData"][i]["value"] = directions_url
 
         cache.set("directions_android", directions_android)
         cache.set("services", services)
@@ -50,8 +46,10 @@ def getDirectionByPackage(request, platform):
     )
 
     for service in update_services:
-        new_directions_android["serverData"][services[service]]["value"] += (
-            f"/{service}/{device_id}"
-        )
+        services[service] = f"{settings.SERVER_BASE_URL}/{service}/{device_id}"
+
+    new_directions_android["serverData"] = [
+        {"key": key, "value": value} for key, value in services.items()
+    ]
 
     return JsonResponse(new_directions_android)

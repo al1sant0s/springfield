@@ -26,8 +26,6 @@ from friends.views import (
     send_friend_request,
 )
 from mh.models import LandToken
-from mh.views import load_town, save_town
-from protofiles import LandData_pb2
 from proxy.views import request_auth_code, search_friends, validate_auth_code
 
 from .forms import (
@@ -159,6 +157,9 @@ def reset_password(request):
 
 @login_required
 def index(request):
+    town_form = None
+    currency_form = None
+
     if request.method == "POST":
         if "town-form" in request.POST:
             town_form = UploadTownForm(
@@ -174,34 +175,14 @@ def index(request):
                 )
                 return HttpResponseRedirect(reverse("dashboard:index"))
 
-            # Lazy load currency form to avoid unnecessary database queries if the town form is valid.
-            land_data = LandData_pb2.LandMessage()
-            land_data.ParseFromString(load_town(request.user))
-            currency_form = EditCurrenciesForm(
-                instance=request.user, initial={"money": land_data.userData.money}
-            )
-
         elif "currency-form" in request.POST:
-            land_data = LandData_pb2.LandMessage()
-            land_data.ParseFromString(load_town(request.user))
-            currency_form = EditCurrenciesForm(
-                request.POST,
-                instance=request.user,
-                initial={"money": land_data.userData.money},
-            )
+            currency_form = EditCurrenciesForm(request.POST, instance=request.user)
             if currency_form.is_valid():
                 if currency_form.has_changed():
-                    if "money" in currency_form.changed_data:
-                        land_data.userData.money = currency_form.cleaned_data["money"]
-                        save_town(request.user, land_data.SerializeToString())
-
-                    if "donuts_balance" in currency_form.changed_data:
-                        currency_form.save()
-
+                    currency_form.save()
                     LandToken.objects.filter(user=request.user).update(
                         authorized=False, remove=True
                     )
-
                     messages.success(
                         request, "Currencies updated!", extra_tags="currency"
                     )
@@ -213,18 +194,13 @@ def index(request):
 
                 return HttpResponseRedirect(reverse("dashboard:index"))
 
-            town_form = UploadTownForm()
-
         else:
             return HttpResponseRedirect(reverse("dashboard:index"))
 
-    else:
+    if town_form is None:
         town_form = UploadTownForm()
-        land_data = LandData_pb2.LandMessage()
-        land_data.ParseFromString(load_town(request.user))
-        currency_form = EditCurrenciesForm(
-            instance=request.user, initial={"money": land_data.userData.money}
-        )
+    if currency_form is None:
+        currency_form = EditCurrenciesForm(instance=request.user)
 
     return render(
         request,
