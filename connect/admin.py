@@ -20,10 +20,12 @@ class DeviceTokenInLine(admin.TabularInline):
     model = DeviceToken
     extra = 0
     fields = [
+        "advertising_id",
         "manufacturer",
         "device_model",
         "login_status",
     ]
+    readonly_fields = ["advertising_id"]
 
     def has_add_permission(self, request, obj):
         return False
