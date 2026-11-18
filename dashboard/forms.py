@@ -61,7 +61,7 @@ class EditCurrenciesForm(forms.ModelForm):
                 if token_type in self.spendables:
                     self.spendables[token_type].amount = amount
                 else:
-                    self.land_data.spendablesData .spendable.add(
+                    self.land_data.spendablesData.spendable.add(
                         type=token_type, amount=amount
                     )
 
